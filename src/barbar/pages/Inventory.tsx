@@ -23,7 +23,7 @@ import {
 } from '../model';
 import { BottleArt, Empty, ExportButton, Field, Metric, Modal, PageHeading, Submit } from '../components';
 import { useBar } from '../store';
-import type { Alcohol } from '../types';
+import type { Alcohol, Purchase } from '../types';
 
 function AlcoholForm({ alcohol, close }: { alcohol?: Alcohol; close: () => void }) {
   const { data, run } = useBar();
@@ -73,7 +73,7 @@ function AlcoholForm({ alcohol, close }: { alcohol?: Alcohol; close: () => void 
             }
           >
             <option value="alcohol">Алкоголь</option>
-            <option value="mixer">Безалкогольный ингредиент / миксер</option>
+            <option value="mixer">Продукты и миксеры (без алкоголя)</option>
           </select>
         </Field>
         <Field label="Единица измерения">
@@ -226,6 +226,84 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
     </Modal>
   );
 }
+function CorrectPurchaseForm({ purchase, close }: { purchase: Purchase; close: () => void }) {
+  const { data, run, busy } = useBar();
+  const [amount, setAmount] = useState(String(purchase.ml));
+  const [remove, setRemove] = useState(false);
+  const [confirm, setConfirm] = useState('');
+  const drink = data.alcohol.find((a) => a.id === purchase.alcoholId);
+  const nextMl = remove ? 0 : Number(amount);
+  const difference = round(nextMl - purchase.ml);
+  return (
+    <Modal title={`Исправить закупку «${drink?.name}»`} close={close}>
+      <form
+        onSubmit={async (event) => {
+          event.preventDefault();
+          if (remove && confirm.trim().toUpperCase() !== 'УДАЛИТЬ') return;
+          if (
+            await run(
+              { type: 'correctPurchase', purchaseId: purchase.id, expectedMl: purchase.ml, ml: nextMl },
+              remove ? 'Ошибочная закупка удалена.' : 'Количество в закупке исправлено.',
+            )
+          )
+            close();
+        }}
+      >
+        <p className="form-help">
+          Купили 1 000 мл, а записали 10 000? Укажите правильное количество — 1 000. Лишние 9 000 мл будут
+          вычтены из склада, сумма закупки пересчитается.
+        </p>
+        <Field label={`Правильное количество, ${ingredientUnit(data, purchase.alcoholId)}`}>
+          <input
+            type="number"
+            required
+            min="0.01"
+            max="1000000000"
+            step="0.01"
+            disabled={remove}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </Field>
+        <label className="form-help">
+          <input type="checkbox" checked={remove} onChange={(e) => setRemove(e.target.checked)} /> Закупки не
+          было — удалить запись целиком
+        </label>
+        <div className="form-total">
+          <span>
+            Изменение остатка
+            <strong>
+              {difference > 0 ? '+' : ''}
+              {ingredientVolume(data, purchase.alcoholId, difference)}
+            </strong>
+          </span>
+          <small>
+            На складе станет:{' '}
+            {ingredientVolume(data, purchase.alcoholId, stock(data, purchase.alcoholId) + difference)}
+          </small>
+          <small>Сумма закупки: {money(round((nextMl * purchase.costPerLiter) / 1000))}</small>
+        </div>
+        {remove && (
+          <Field label="Для удаления напишите УДАЛИТЬ">
+            <input value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          </Field>
+        )}
+        <div className="reset-actions">
+          <button type="button" className="button secondary" disabled={busy} onClick={close}>
+            Отмена
+          </button>
+          <button
+            className="button danger-button"
+            type="submit"
+            disabled={busy || difference === 0 || (remove && confirm.trim().toUpperCase() !== 'УДАЛИТЬ')}
+          >
+            {remove ? 'Удалить закупку' : 'Сохранить правильное количество'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 function ResetStockForm({ alcohol, close }: { alcohol: Alcohol; close: () => void }) {
   const { data, run, busy } = useBar();
   const [confirmation, setConfirmation] = useState('');
@@ -292,6 +370,7 @@ export default function Inventory() {
   const [category, setCategory] = useState('all');
   const [edit, setEdit] = useState<Alcohol | 'new' | null>(null);
   const [purchase, setPurchase] = useState<string | null>(null);
+  const [correction, setCorrection] = useState<Purchase | null>(null);
   const [reset, setReset] = useState<Alcohol | null>(null);
   const filtered = data.alcohol.filter(
     (a) =>
@@ -329,7 +408,7 @@ export default function Inventory() {
         <Metric
           label="Напитков в каталоге"
           value={String(data.alcohol.length)}
-          hint="Алкоголь и миксеры"
+          hint="Алкоголь, продукты и миксеры"
           icon={<Boxes size={18} />}
           accent
         />
@@ -365,7 +444,7 @@ export default function Inventory() {
             {[
               ['all', 'Все'],
               ['alcohol', 'Алкоголь'],
-              ['mixer', 'Миксеры'],
+              ['mixer', 'Продукты и миксеры'],
             ].map(([id, label]) => (
               <button
                 key={id}
@@ -409,7 +488,7 @@ export default function Inventory() {
                       <BottleArt drink={a} />
                       <span>
                         <strong>{a.name}</strong>
-                        <small>{a.category === 'mixer' ? 'Миксер' : 'Алкоголь'}</small>
+                        <small>{a.category === 'mixer' ? 'Продукт / миксер' : 'Алкоголь'}</small>
                       </span>
                     </div>
                   </td>
@@ -490,6 +569,7 @@ export default function Inventory() {
                   <th>Объём</th>
                   <th>Цена / л или кг</th>
                   <th>Сумма</th>
+                  <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -503,6 +583,15 @@ export default function Inventory() {
                       <td>{money(p.costPerLiter)}</td>
                       <td>
                         <strong>{money(round((p.ml * p.costPerLiter) / 1000))}</strong>
+                      </td>
+                      <td>
+                        <button
+                          className="button small secondary"
+                          onClick={() => setCorrection(p)}
+                          disabled={!!data.archived && p.date < data.archived.before}
+                        >
+                          <Pencil size={14} /> Исправить / удалить
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -549,6 +638,7 @@ export default function Inventory() {
           </div>
         </section>
       )}
+      {correction && <CorrectPurchaseForm purchase={correction} close={() => setCorrection(null)} />}
       {reset && <ResetStockForm alcohol={reset} close={() => setReset(null)} />}
       {edit && <AlcoholForm alcohol={edit === 'new' ? undefined : edit} close={() => setEdit(null)} />}
       {purchase !== null && (

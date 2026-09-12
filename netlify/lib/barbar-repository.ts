@@ -44,7 +44,10 @@ export async function readSnapshot(storage: Storage): Promise<Snapshot> {
     const sales = entries
       .flatMap((item) => item!.value as Sale[])
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
-    return { data: { ...manifest.data, sales }, revision: entry.etag, days: manifest.days };
+    const data = { ...manifest.data, sales };
+    const existing = new Set(data.alcohol.map((a) => a.id));
+    data.alcohol = [...data.alcohol, ...initialData().alcohol.filter((a) => !existing.has(a.id))];
+    return { data, revision: entry.etag, days: manifest.days };
   }
   throw new Error('Concurrent updates prevented a consistent read');
 }

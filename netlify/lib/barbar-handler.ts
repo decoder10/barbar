@@ -30,11 +30,14 @@ export const handleBarApi = async (request: Request, storage: Storage) => {
     }
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const current = await readSnapshot(storage);
-      if (['restore', 'purge'].includes(input.command?.type) && input.revision !== current.revision) {
+      if (
+        ['restore', 'purge', 'correctPurchase'].includes(input.command?.type) &&
+        !current.data.operations.includes(input.command.id) &&
+        input.revision !== current.revision
+      ) {
         return json(
           {
-            error:
-              'Данные изменились на другом устройстве. Обновите страницу перед очисткой или восстановлением.',
+            error: 'Данные изменились на другом устройстве. Обновите страницу перед изменением истории.',
           },
           409,
         );

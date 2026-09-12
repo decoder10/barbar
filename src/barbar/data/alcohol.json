@@ -250,5 +250,284 @@
     "costPerLiter": 0,
     "pricePerLiter": 0,
     "color": "#b58475"
+  },
+  {
+    "id": "lime-fruit",
+    "name": "Лайм",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "lemon-fruit",
+    "name": "Лимон",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "orange-fruit",
+    "name": "Апельсин",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "grapefruit",
+    "name": "Грейпфрут",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "pineapple",
+    "name": "Ананас",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "strawberry",
+    "name": "Клубника",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "raspberry",
+    "name": "Малина",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "plum",
+    "name": "Слива",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "apricot",
+    "name": "Абрикос",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "peach",
+    "name": "Персик",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "kiwi",
+    "name": "Киви",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "tangerine",
+    "name": "Мандарин",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "mint",
+    "name": "Мята",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "ice",
+    "name": "Лёд",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "honey",
+    "name": "Мёд",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "salt",
+    "name": "Соль",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "cinnamon",
+    "name": "Корица",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "coffee",
+    "name": "Кофе",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "tea",
+    "name": "Чай",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "cocoa",
+    "name": "Какао",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "cream",
+    "name": "Сливки",
+    "category": "mixer",
+    "unit": "ml",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "milk",
+    "name": "Молоко",
+    "category": "mixer",
+    "unit": "ml",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "coconut-milk",
+    "name": "Кокосовое молоко",
+    "category": "mixer",
+    "unit": "ml",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "tomato-juice",
+    "name": "Томатный сок",
+    "category": "mixer",
+    "unit": "ml",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "pineapple-juice",
+    "name": "Ананасовый сок",
+    "category": "mixer",
+    "unit": "ml",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "grenadine",
+    "name": "Гренадин",
+    "category": "mixer",
+    "unit": "ml",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "egg-white",
+    "name": "Яичный белок",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "celery",
+    "name": "Сельдерей",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "toffee",
+    "name": "Ириски",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "candy",
+    "name": "Конфеты",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
+  },
+  {
+    "id": "barberry",
+    "name": "Барбарис",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#85a183"
   }
 ]

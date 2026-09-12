@@ -184,3 +184,74 @@ test('inventory highlights actual recipe shortages and clears them after a purch
   await expect(gin.locator('.stock-pill')).toHaveText('50 мл');
   await expect(gin.locator('summary')).toHaveCount(0);
 });
+
+test('purchase quantity can be corrected and a mistaken purchase deleted with confirmation', async ({
+  page,
+}) => {
+  await workspace(page);
+  await page.getByRole('link', { name: 'Склад Напитки и закупки' }).click();
+  const history = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'История закупок' }) });
+  const entry = history.getByRole('row').filter({ hasText: 'Vodka' });
+  await entry.getByRole('button', { name: 'Исправить / удалить' }).click();
+  await page.getByLabel('Правильное количество, мл').fill('1000');
+  await page.getByRole('button', { name: 'Сохранить правильное количество' }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(entry).toContainText('1 000 мл');
+  await entry.getByRole('button', { name: 'Исправить / удалить' }).click();
+  await page.getByLabel('Закупки не было — удалить запись целиком').check();
+  await expect(page.getByRole('button', { name: 'Удалить закупку', exact: true })).toBeDisabled();
+  await page.getByLabel('Для удаления напишите УДАЛИТЬ').fill('УДАЛИТЬ');
+  await page.getByRole('button', { name: 'Удалить закупку', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(entry).toHaveCount(0);
+  await expect(
+    page.locator('.inventory-table').getByRole('row').filter({ hasText: 'Vodka' }).locator('.stock-pill'),
+  ).toHaveText('0 мл');
+});
+
+test('menu has varied matched images and manual photo selection persists', async ({ page }) => {
+  await workspace(page);
+  await page.getByRole('link', { name: /Меню и рецепты/ }).click();
+  const cards = page.locator('.drink-card');
+  const positions = await cards
+    .locator('.cocktail-art')
+    .evaluateAll((els) => els.map((el) => el.getAttribute('style')));
+  expect(new Set(positions).size).toBeGreaterThan(10);
+  await page.screenshot({ path: '/private/tmp/barbar-new-menu.png', fullPage: false });
+  await page.getByRole('button', { name: /КОКТЕЙЛИ.*Gin tonic Beefeater/ }).click();
+  await page.getByRole('button', { name: 'Авторские коктейли', exact: true }).click();
+  await page.getByRole('button', { name: 'Изображение: Margarita', exact: true }).click();
+  await page.getByRole('button', { name: 'Сохранить позицию' }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.reload();
+  await page.getByRole('button', { name: /КОКТЕЙЛИ.*Gin tonic Beefeater/ }).click();
+  await expect(page.getByRole('button', { name: 'Изображение: Margarita', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+});
+
+test('products have their own inventory filter and can be costed per cocktail in drams', async ({ page }) => {
+  await workspace(page);
+  await page.getByRole('link', { name: 'Склад Напитки и закупки' }).click();
+  await page.getByRole('button', { name: 'Продукты и миксеры', exact: true }).click();
+  await expect(page.locator('.inventory-table').getByText('Лимон', { exact: true })).toBeVisible();
+  await expect(page.locator('.inventory-table').getByText('Vodka', { exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: /Меню и рецепты/ }).click();
+  await page.getByRole('button', { name: /КОКТЕЙЛИ.*Gin tonic Beefeater/ }).click();
+  await page.getByRole('button', { name: 'Добавить продукт по стоимости' }).click();
+  await page.getByLabel('Продукт по стоимости 1', { exact: true }).selectOption('lemon-fruit');
+  await page.getByLabel('Стоимость продукта 1, ֏').fill('50');
+  await expect(page.getByRole('dialog')).toContainText('645 ֏');
+  await page.getByRole('button', { name: 'Сохранить позицию' }).click();
+  await page.getByRole('link', { name: 'Продажи Каждый день' }).click();
+  await page.getByRole('button', { name: /КОКТЕЙЛИ.*Gin tonic Beefeater/ }).click();
+  await page.getByLabel('Количество порций').fill('2');
+  await expect(page.getByRole('dialog')).toContainText('Себестоимость: 1 290 ֏');
+  await expect(page.getByRole('dialog')).toContainText('БЕЗ СПИСАНИЯ КОЛИЧЕСТВА');
+  await page.getByRole('button', { name: 'Записать продажу' }).click();
+  await page.getByRole('link', { name: 'Отчёты Всё в цифрах' }).click();
+  await expect(page.getByRole('row').filter({ hasText: 'Gin tonic Beefeater' })).toContainText('1 290');
+});

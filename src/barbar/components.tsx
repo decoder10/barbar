@@ -10,6 +10,7 @@ import {
 import { ArrowDownToLine, ArrowUpRight, Check, GlassWater, Plus, X } from 'lucide-react';
 import { categoryLabel, money, volume } from './model';
 import { useBar } from './store';
+import { menuImage, menuPhotos } from './images';
 import type { Alcohol, Cocktail } from './types';
 
 export function Brand() {
@@ -157,11 +158,21 @@ export function Submit({
   );
 }
 export function CocktailArt({ image, name }: { image: number; name: string }) {
+  const photo = menuPhotos.find((p) => p.id === image);
   return (
     <div
       role="img"
       aria-label={name}
-      className={`cocktail-art sheet-${Math.floor(image / 4)} art-${image % 4}`}
+      className={photo ? 'cocktail-art' : `cocktail-art sheet-${Math.floor(image / 4)} art-${image % 4}`}
+      style={
+        photo
+          ? {
+              backgroundImage: `url('/barbar/${photo.file}')`,
+              backgroundSize: '400% 400%',
+              backgroundPosition: `${((photo.tile % 4) * 100) / 3}% ${(Math.floor(photo.tile / 4) * 100) / 3}%`,
+            }
+          : undefined
+      }
     />
   );
 }
@@ -210,7 +221,7 @@ export function CocktailCard({
   return (
     <button className="drink-card" onClick={action}>
       <div className="card-image">
-        <CocktailArt image={cocktail.image} name={cocktail.name} />
+        <CocktailArt image={menuImage(cocktail)} name={cocktail.name} />
         <span className="card-badge">{categoryLabel(cocktail.category).toLocaleUpperCase()}</span>
         <span className="card-open">
           <ArrowUpRight size={17} />

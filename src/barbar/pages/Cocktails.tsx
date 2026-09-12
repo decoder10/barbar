@@ -24,6 +24,7 @@ import {
 } from '../model';
 import { useSearchParams } from 'react-router-dom';
 import { useBar } from '../store';
+import { menuImage, menuPhotos, photoGroups } from '../images';
 import type { Cocktail } from '../types';
 
 function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => void }) {
@@ -33,9 +34,10 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
       ? JSON.parse(JSON.stringify(cocktail))
       : { id: uid(), name: '', category: 'cocktail', price: 0, ingredients: [], image: 0 },
   );
+  const [photoGroup, setPhotoGroup] = useState(() => Math.floor((menuImage(cocktail || value) - 12) / 16));
   const [markup, setMarkup] = useState('200');
-  const cost = recipeCost(data, value.ingredients);
-  const ready = recipeReady(data, value.ingredients);
+  const cost = recipeCost(data, value.ingredients, value.extraCosts);
+  const ready = recipeReady(data, value.ingredients, value.extraCosts);
   const suggested = Math.ceil((cost * (1 + Number(markup) / 100)) / 50) * 50;
   const updateIngredient = (index: number, update: object) =>
     setValue({
@@ -81,19 +83,37 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
         </Field>
         <div className="field">
           <span>Изображение</span>
-          <div className="image-options">
-            {Array.from({ length: 12 }, (_, i) => i).map((i) => (
+          <p className="form-help">64 иллюстрации. Выберите подходящую форму бокала и подачу.</p>
+          <div className="photo-group-tabs">
+            {photoGroups.map((group, index) => (
               <button
                 type="button"
-                key={i}
-                aria-label={`Стиль коктейля ${i + 1}`}
-                aria-pressed={value.image === i}
-                className={value.image === i ? 'selected' : ''}
-                onClick={() => setValue({ ...value, image: i })}
+                key={group.file}
+                aria-pressed={photoGroup === index}
+                className={photoGroup === index ? 'selected' : ''}
+                onClick={() => setPhotoGroup(index)}
               >
-                <CocktailArt image={i} name={`Вариант ${i + 1}`} />
+                {group.label}
               </button>
             ))}
+          </div>
+          <div className="image-options">
+            {menuPhotos
+              .filter((photo) => photo.sheet === photoGroup)
+              .map((photo) => (
+                <button
+                  type="button"
+                  key={photo.id}
+                  aria-label={`Изображение: ${photo.name}`}
+                  title={photo.name}
+                  aria-pressed={menuImage(value) === photo.id}
+                  className={menuImage(value) === photo.id ? 'selected' : ''}
+                  onClick={() => setValue({ ...value, image: photo.id })}
+                >
+                  <CocktailArt image={photo.id} name={photo.name} />
+                  <span>{photo.name}</span>
+                </button>
+              ))}
           </div>
         </div>
         <div className="ingredient-label">
@@ -111,7 +131,9 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
               {data.alcohol
                 .filter(
                   (a) =>
-                    a.id === ingredient.alcoholId || !value.ingredients.some((i) => i.alcoholId === a.id),
+                    a.id === ingredient.alcoholId ||
+                    (!value.ingredients.some((i) => i.alcoholId === a.id) &&
+                      !value.extraCosts?.some((i) => i.alcoholId === a.id)),
                 )
                 .map((a) => (
                   <option key={a.id} value={a.id}>
@@ -135,7 +157,7 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
             <button
               type="button"
               className="icon-button"
-              disabled={value.ingredients.length <= 1}
+
               aria-label={`Удалить ингредиент ${index + 1}`}
               onClick={() =>
                 setValue({ ...value, ingredients: value.ingredients.filter((_, i) => i !== index) })
@@ -150,13 +172,105 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
           type="button"
           disabled={value.ingredients.length >= Math.min(30, data.alcohol.length)}
           onClick={() => {
-            const next = data.alcohol.find((a) => !value.ingredients.some((i) => i.alcoholId === a.id));
+            const next = data.alcohol.find(
+              (a) =>
+                !value.ingredients.some((i) => i.alcoholId === a.id) &&
+                !value.extraCosts?.some((i) => i.alcoholId === a.id),
+            );
             if (next) {
               setValue({ ...value, ingredients: [...value.ingredients, { alcoholId: next.id, ml: 30 }] });
             }
           }}
         >
           <Plus size={15} /> Добавить ингредиент
+        </button>
+        <div className="ingredient-label">
+          <span>Продукты: стоимость на порцию</span>
+          <small>Без взвешивания</small>
+        </div>
+        <p className="form-help">
+          Например, лимон — 50 ֏, лёд — 20 ֏. Сумма входит в себестоимость каждой порции. Количество продукта
+          со склада не списывается. Для точного остатка добавьте продукт выше в мл/г.
+        </p>
+        {(value.extraCosts || []).map((expense, index) => (
+          <div className="ingredient-inputs" key={index}>
+            <select
+              aria-label={`Продукт по стоимости ${index + 1}`}
+              value={expense.alcoholId}
+              onChange={(e) =>
+                setValue({
+                  ...value,
+                  extraCosts: value.extraCosts!.map((x, j) =>
+                    j === index ? { ...x, alcoholId: e.target.value } : x,
+                  ),
+                })
+              }
+            >
+              {data.alcohol
+                .filter(
+                  (a) =>
+                    a.category === 'mixer' &&
+                    (a.id === expense.alcoholId ||
+                      (!value.ingredients.some((i) => i.alcoholId === a.id) &&
+                        !value.extraCosts?.some((i) => i.alcoholId === a.id))),
+                )
+                .map((a) => (
+                  <option value={a.id} key={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+            </select>
+            <label>
+              <input
+                required
+                type="number"
+                min="0.01"
+                max="1000000000"
+                step="0.01"
+                aria-label={`Стоимость продукта ${index + 1}, ֏`}
+                value={expense.cost || ''}
+                onChange={(e) =>
+                  setValue({
+                    ...value,
+                    extraCosts: value.extraCosts!.map((x, j) =>
+                      j === index ? { ...x, cost: Number(e.target.value) } : x,
+                    ),
+                  })
+                }
+              />
+              <span>֏</span>
+            </label>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label={`Удалить продукт по стоимости ${index + 1}`}
+              onClick={() =>
+                setValue({ ...value, extraCosts: value.extraCosts!.filter((_, j) => j !== index) })
+              }
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="text-link add-ingredient"
+          disabled={(value.extraCosts?.length || 0) >= 30}
+          onClick={() => {
+            const product = data.alcohol.find(
+              (a) =>
+                a.category === 'mixer' &&
+                !value.ingredients.some((i) => i.alcoholId === a.id) &&
+                !value.extraCosts?.some((i) => i.alcoholId === a.id),
+            );
+            if (product)
+              setValue({
+                ...value,
+                extraCosts: [...(value.extraCosts || []), { alcoholId: product.id, cost: 0 }],
+              });
+          }}
+        >
+          <Plus size={15} /> Добавить продукт по стоимости
         </button>
         <Field label="Заметка о рецепте">
           <input
@@ -179,6 +293,12 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
                 {ingredientVolume(data, i.alcoholId, i.ml)}
               </span>
               <b>{money(round((averageCost(data, i.alcoholId) * i.ml) / 1000))}</b>
+            </p>
+          ))}
+          {(value.extraCosts || []).map((i) => (
+            <p key={i.alcoholId}>
+              <span>{data.alcohol.find((a) => a.id === i.alcoholId)?.name} · примерно на порцию</span>
+              <b>{money(i.cost)}</b>
             </p>
           ))}
           {!ready && (
@@ -305,12 +425,15 @@ export default function Cocktails() {
             <CocktailCard
               cocktail={c}
               detail={
-                c.ingredients
-                  .map(
+                [
+                  ...c.ingredients.map(
                     (i) =>
                       `${data.alcohol.find((a) => a.id === i.alcoholId)?.name} ${ingredientVolume(data, i.alcoholId, i.ml)}`,
-                  )
-                  .join(' · ') || 'Состав пока не заполнен'
+                  ),
+                  ...(c.extraCosts || []).map(
+                    (i) => `${data.alcohol.find((a) => a.id === i.alcoholId)?.name} ≈ ${money(i.cost)}`,
+                  ),
+                ].join(' · ') || 'Состав пока не заполнен'
               }
               footer={<span className="edit-recipe">Рецепт ↗</span>}
               action={() => setSelected(c)}
@@ -318,7 +441,11 @@ export default function Cocktails() {
             <div className="recipe-card-meta">
               <span>
                 Себестоимость{' '}
-                <b>{c.ingredients.length ? money(recipeCost(data, c.ingredients)) : 'Добавьте состав'}</b>
+                <b>
+                  {c.ingredients.length || c.extraCosts?.length
+                    ? money(recipeCost(data, c.ingredients, c.extraCosts))
+                    : 'Добавьте состав'}
+                </b>
               </span>
               <span>
                 Категория <b>{categoryLabel(c.category)}</b>

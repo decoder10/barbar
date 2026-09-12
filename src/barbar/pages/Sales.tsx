@@ -59,9 +59,17 @@ function SaleForm({
   const amount = Number(quantity);
   const price = kind === 'cocktail' ? cocktail.price : alcohol.pricePerLiter / 1000;
   const cost =
-    kind === 'cocktail' ? recipeCost(data, cocktail.ingredients) : averageCost(data, product.id) / 1000;
+    kind === 'cocktail'
+      ? recipeCost(data, cocktail.ingredients, cocktail.extraCosts)
+      : averageCost(data, product.id) / 1000;
   const recipe = kind === 'cocktail' ? cocktail.ingredients : [{ alcoholId: product.id, ml: 1 }];
-  const available = kind === 'cocktail' ? portions(data, recipe) : stock(data, product.id);
+  const hasRecipe = recipe.length > 0 || (kind === 'cocktail' && !!cocktail.extraCosts?.length);
+  const untracked = kind === 'cocktail' && !recipe.length && !!cocktail.extraCosts?.length;
+  const available = untracked
+    ? Infinity
+    : kind === 'cocktail'
+      ? portions(data, recipe)
+      : stock(data, product.id);
   return (
     <Modal
       title={product.name}
@@ -83,7 +91,11 @@ function SaleForm({
       >
         <Field
           label={kind === 'cocktail' ? 'Количество порций' : 'Объём продажи, мл'}
-          hint={`Сейчас доступно: ${kind === 'cocktail' ? `${available} порций` : volume(available)}`}
+          hint={
+            untracked
+              ? 'Продукты учитываются по стоимости, без контроля количества'
+              : `Сейчас доступно: ${kind === 'cocktail' ? `${available} порций` : volume(available)}`
+          }
         >
           <input
             type="number"
@@ -116,6 +128,17 @@ function SaleForm({
             </div>
           ))}
         </div>
+        {kind === 'cocktail' && !!cocktail.extraCosts?.length && (
+          <div className="recipe-breakdown">
+            <div className="eyebrow">ПРОДУКТЫ ПО СТОИМОСТИ · БЕЗ СПИСАНИЯ КОЛИЧЕСТВА</div>
+            {cocktail.extraCosts.map((i) => (
+              <div key={i.alcoholId}>
+                <span>{data.alcohol.find((a) => a.id === i.alcoholId)?.name}</span>
+                <b>{money(round(i.cost * (amount || 0)))}</b>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="form-total">
           <span>
             К оплате<strong>{money(round(price * (amount || 0)))}</strong>
@@ -127,14 +150,12 @@ function SaleForm({
             Сначала задайте цену в разделе «{kind === 'cocktail' ? 'Меню и рецепты' : 'Склад'}».
           </p>
         )}
-        {kind === 'cocktail' && !recipe.length && (
+        {kind === 'cocktail' && !hasRecipe && (
           <Link className="button secondary full" to={`/cocktails?edit=${product.id}`}>
             Добавить состав в редакторе
           </Link>
         )}
-        <Submit disabled={!price || !recipe.length || available < amount || amount <= 0}>
-          Записать продажу
-        </Submit>
+        <Submit disabled={!price || !hasRecipe || available < amount || amount <= 0}>Записать продажу</Submit>
         {available < amount && (
           <p className="form-warning">Недостаточно ингредиентов. Добавьте закупку на складе.</p>
         )}
@@ -311,17 +332,21 @@ export default function Sales() {
                 key={c.id}
                 cocktail={c}
                 detail={
-                  c.ingredients
+                  [...c.ingredients, ...(c.extraCosts || [])]
                     .map((i) => data.alcohol.find((a) => a.id === i.alcoholId)?.name)
                     .join(' · ') || 'Добавьте состав в редакторе'
                 }
                 footer={
-                  <span className={`stock-pill ${portions(data, c.ingredients) ? '' : 'low'}`}>
-                    {portions(data, c.ingredients)
-                      ? `${portions(data, c.ingredients)} порц.`
-                      : c.ingredients.length
-                        ? 'Нет запаса'
-                        : 'Нет состава'}
+                  <span
+                    className={`stock-pill ${portions(data, c.ingredients) || (!c.ingredients.length && c.extraCosts?.length) ? '' : 'low'}`}
+                  >
+                    {!c.ingredients.length && c.extraCosts?.length
+                      ? 'По стоимости'
+                      : portions(data, c.ingredients)
+                        ? `${portions(data, c.ingredients)} порц.`
+                        : c.ingredients.length || c.extraCosts?.length
+                          ? 'Нет запаса'
+                          : 'Нет состава'}
                   </span>
                 }
                 action={() => setSelected({ kind: 'cocktail', product: c })}

@@ -13,7 +13,12 @@ export interface Ingredient {
 }
 export type MenuCategory =
   'cocktail' | 'tincture' | 'shot' | 'set' | 'beer' | 'snack' | 'hot' | 'soft' | 'wine';
+export interface PortionExpense {
+  alcoholId: string;
+  cost: number;
+}
 export interface Cocktail {
+  extraCosts?: PortionExpense[];
   category?: MenuCategory;
   notes?: string;
   id: string;
@@ -30,6 +35,7 @@ export interface Purchase {
   costPerLiter: number;
 }
 export interface Sale {
+  extraCosts?: (PortionExpense & { name: string })[];
   category?: MenuCategory;
   id: string;
   date: string;
@@ -66,6 +72,7 @@ export type Action =
   | { type: 'alcohol'; value: Alcohol }
   | { type: 'cocktail'; value: Cocktail }
   | { type: 'purchase'; value: Purchase }
+  | { type: 'correctPurchase'; purchaseId: string; expectedMl: number; ml: number }
   | { type: 'sale'; value: { kind: Sale['kind']; productId: string; quantity: number; date: string } }
   | { type: 'void'; saleId: string }
   | { type: 'resetStock'; alcoholId: string; expectedMl: number; expectedCost: number }

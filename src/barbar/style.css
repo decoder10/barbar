@@ -3170,3 +3170,29 @@ small {
   display: block;
   margin-top: 3px;
 }
+
+.photo-group-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.photo-group-tabs button {
+  border: 1px solid #e4d9df;
+  background: #fff9fc;
+  color: #5f4652;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.photo-group-tabs button.selected {
+  background: #713e59;
+  color: white;
+}
+.image-options button span {
+  display: block;
+  font-size: 9px;
+  padding: 6px 3px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}

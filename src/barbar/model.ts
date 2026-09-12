@@ -1,7 +1,8 @@
 import alcoholDefaults from './data/alcohol.json' with { type: 'json' };
 import cocktailDefaults from './data/cocktails.json' with { type: 'json' };
+import { maxMenuImage } from './images';
 import salesDefaults from './data/sales/initial.json' with { type: 'json' };
-import { Alcohol, BarData, Cocktail, Command, Ingredient, MenuCategory, Sale } from './types';
+import { Alcohol, BarData, Cocktail, Command, Ingredient, MenuCategory, Sale, PortionExpense } from './types';
 
 export const round = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 export const today = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Yerevan' }).format(new Date());
@@ -90,10 +91,15 @@ export const averageCost = (data: BarData, id: string) => {
       1000,
   );
 };
-export const recipeCost = (data: BarData, recipe: Ingredient[]) =>
-  round(recipe.reduce((n, i) => n + (averageCost(data, i.alcoholId) * i.ml) / 1000, 0));
-export const recipeReady = (data: BarData, recipe: Ingredient[]) =>
-  recipe.length > 0 && recipe.every((i) => averageCost(data, i.alcoholId) > 0);
+export const recipeCost = (data: BarData, recipe: Ingredient[], extraCosts: PortionExpense[] = []) =>
+  round(
+    recipe.reduce((n, i) => n + (averageCost(data, i.alcoholId) * i.ml) / 1000, 0) +
+      extraCosts.reduce((n, i) => n + i.cost, 0),
+  );
+export const recipeReady = (data: BarData, recipe: Ingredient[], extraCosts: PortionExpense[] = []) =>
+  (recipe.length > 0 || extraCosts.length > 0) &&
+  recipe.every((i) => averageCost(data, i.alcoholId) > 0) &&
+  extraCosts.every((i) => i.cost > 0);
 export const portions = (data: BarData, recipe: Ingredient[]) =>
   recipe.length
     ? Math.max(0, Math.floor(Math.min(...recipe.map((i) => stock(data, i.alcoholId) / i.ml))))
@@ -121,6 +127,20 @@ function alcoholValid(a: Alcohol) {
     /^#[a-fA-F0-9]{6}$/.test(a.color)
   );
 }
+function expensesValid(expenses: PortionExpense[] | undefined, data: BarData) {
+  return (
+    expenses === undefined ||
+    (Array.isArray(expenses) &&
+      expenses.length <= 30 &&
+      new Set(expenses.map((i) => i?.alcoholId)).size === expenses.length &&
+      expenses.every(
+        (i) =>
+          i &&
+          number(i.cost, true) &&
+          data.alcohol.some((a) => a.id === i.alcoholId && a.category === 'mixer'),
+      ))
+  );
+}
 function cocktailValid(c: Cocktail, data: BarData) {
   return (
     c &&
@@ -129,9 +149,11 @@ function cocktailValid(c: Cocktail, data: BarData) {
     number(c.price) &&
     Number.isInteger(c.image) &&
     c.image >= 0 &&
-    c.image <= 11 &&
+    c.image <= maxMenuImage &&
     (c.category === undefined || categories.some((k) => k.id === c.category)) &&
     (c.notes === undefined || (typeof c.notes === 'string' && c.notes.length <= 1000)) &&
+    expensesValid(c.extraCosts, data) &&
+    !(c.extraCosts || []).some((e) => c.ingredients?.some((i) => i.alcoholId === e.alcoholId)) &&
     Array.isArray(c.ingredients) &&
     (c.ingredients.length === 0 || ingredientsValid(c.ingredients, data))
   );
@@ -221,9 +243,18 @@ export function validateData(value: unknown): BarData {
         number(s.revenue, true) &&
         number(s.cost) &&
         typeof s.voided === 'boolean' &&
-        ingredientsValid(s.ingredients, d) &&
+        Array.isArray(s.ingredients) &&
+        (s.ingredients.length > 0 ? ingredientsValid(s.ingredients, d) : !!s.extraCosts?.length) &&
+        expensesValid(s.extraCosts, d) &&
+        (s.extraCosts || []).every((i) => nameValid(i.name)) &&
         s.ingredients.every((i) => number(i.cost)) &&
-        Math.abs(s.cost - round(s.ingredients.reduce((sum, i) => sum + i.cost, 0))) < 0.001,
+        Math.abs(
+          s.cost -
+            round(
+              s.ingredients.reduce((sum, i) => sum + i.cost, 0) +
+                (s.extraCosts || []).reduce((sum, i) => sum + i.cost, 0),
+            ),
+        ) < 0.001,
     )
   ) {
     return fail('Некорректные продажи в файле.');
@@ -353,6 +384,41 @@ export function applyCommand(data: BarData, command: Command): BarData {
       );
       break;
     }
+    case 'correctPurchase': {
+      const index = next.purchases.findIndex((p) => p.id === command.purchaseId);
+      const purchase = next.purchases[index];
+      if (!purchase || !number(command.ml) || !number(command.expectedMl, true)) {
+        return fail('Проверьте закупку и новое количество.');
+      }
+      if (next.archived && purchase.date < next.archived.before) {
+        return fail('Период уже очищен. Закупки этого периода нельзя исправлять.');
+      }
+      if (purchase.ml !== command.expectedMl) {
+        return fail('Закупка уже изменена. Обновите склад и откройте её заново.');
+      }
+      if (command.ml === 0) next.purchases.splice(index, 1);
+      else next.purchases[index] = { ...purchase, ml: command.ml };
+      try {
+        assertLedger(next);
+      } catch {
+        return fail(
+          'Нельзя уменьшить закупку: часть количества уже использована в продажах или списаниях. Сначала исправьте связанные операции.',
+        );
+      }
+      const bought = next.purchases
+        .filter((p) => p.alcoholId === purchase.alcoholId)
+        .reduce((n, p) => n + (p.ml * p.costPerLiter) / 1000, 0);
+      const used = [...activeSales(next).flatMap((s) => s.ingredients), ...retired(next), ...resets(next)]
+        .filter((i) => i.alcoholId === purchase.alcoholId)
+        .reduce((n, i) => n + i.cost, 0);
+      if (
+        bought - used < -0.01 ||
+        (stock(next, purchase.alcoholId) === 0 && Math.abs(bought - used) > 0.01)
+      ) {
+        return fail('Нельзя исправить закупку: её стоимость уже учтена в продажах или списаниях.');
+      }
+      break;
+    }
     case 'sale': {
       const v = command.value;
       if (next.archived && v?.date < next.archived.before) {
@@ -373,7 +439,11 @@ export function applyCommand(data: BarData, command: Command): BarData {
       if (!product) {
         return fail('Напиток не найден. Обновите страницу.');
       }
-      if (v.kind === 'cocktail' && !(product as Cocktail).ingredients.length) {
+      if (
+        v.kind === 'cocktail' &&
+        !(product as Cocktail).ingredients.length &&
+        !(product as Cocktail).extraCosts?.length
+      ) {
         return fail('Добавьте состав в редакторе меню перед первой продажей.');
       }
       const price =
@@ -391,7 +461,17 @@ export function applyCommand(data: BarData, command: Command): BarData {
       if (!ingredients.every((i) => number(i.ml, true) && number(i.cost))) {
         return fail('Слишком большое количество.');
       }
+      const extraCosts =
+        v.kind === 'cocktail'
+          ? ((product as Cocktail).extraCosts || []).map((i) => ({
+              alcoholId: i.alcoholId,
+              name: next.alcohol.find((a) => a.id === i.alcoholId)!.name,
+              cost: round(i.cost * v.quantity),
+            }))
+          : [];
+      if (!extraCosts.every((i) => number(i.cost, true))) return fail('Слишком большая стоимость продуктов.');
       const sale: Sale = {
+        ...(extraCosts.length ? { extraCosts } : {}),
         id: command.id,
         ...(v.kind === 'cocktail' ? { category: (product as Cocktail).category || 'cocktail' } : {}),
         date: v.date,
@@ -401,7 +481,9 @@ export function applyCommand(data: BarData, command: Command): BarData {
         name: product.name,
         quantity: v.quantity,
         revenue: round(price * v.quantity),
-        cost: round(ingredients.reduce((sum, i) => sum + i.cost, 0)),
+        cost: round(
+          ingredients.reduce((sum, i) => sum + i.cost, 0) + extraCosts.reduce((sum, i) => sum + i.cost, 0),
+        ),
         ingredients,
         voided: false,
       };

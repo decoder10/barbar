@@ -212,3 +212,113 @@ describe('individual stock reset', () => {
     expect(() => validateData(invalid)).toThrow('списания');
   });
 });
+
+describe('purchase corrections', () => {
+  it('corrects an accidental extra zero and allows deleting an unused purchase', () => {
+    const original = buy(initialData(), 10000);
+    const purchase = original.purchases[0];
+    let data = applyCommand(original, {
+      type: 'correctPurchase',
+      id: 'correct-liters',
+      purchaseId: purchase.id,
+      expectedMl: 10000,
+      ml: 1000,
+    });
+    expect(stock(data, 'vodka')).toBe(1000);
+    expect(data.purchases[0].ml).toBe(1000);
+    expect(averageCost(data, 'vodka')).toBe(4000);
+    data = applyCommand(data, {
+      type: 'correctPurchase',
+      id: 'delete-purchase',
+      purchaseId: purchase.id,
+      expectedMl: 1000,
+      ml: 0,
+    });
+    expect(stock(data, 'vodka')).toBe(0);
+    expect(data.purchases).toHaveLength(0);
+    expect(validateData(data)).toEqual(data);
+  });
+  it('rejects corrections that would invalidate sales, archived history or stale quantities', () => {
+    const original = sell(buy(initialData(), 1000), 100);
+    const action: Command = {
+      type: 'correctPurchase',
+      id: 'bad-correction',
+      purchaseId: original.purchases[0].id,
+      expectedMl: 1000,
+      ml: 50,
+    };
+    expect(() => applyCommand(original, action)).toThrow('использована');
+    expect(() => applyCommand(original, { ...action, expectedMl: 2000 })).toThrow('уже изменена');
+    const archived = applyCommand(original, { type: 'purge', id: 'archive', before: '2026-09-11' });
+    expect(() => applyCommand(archived, action)).toThrow('Период');
+    expect(stock(original, 'vodka')).toBe(900);
+  });
+});
+
+describe('products costed per portion', () => {
+  it('adds approximate product costs without stock deductions and preserves sale snapshots', () => {
+    let data = buy(initialData());
+    const recipe = {
+      ...data.cocktails[0],
+      ingredients: [{ alcoholId: 'vodka', ml: 40 }],
+      extraCosts: [
+        { alcoholId: 'lemon-fruit', cost: 50 },
+        { alcoholId: 'ice', cost: 20 },
+      ],
+    };
+    data = applyCommand(data, { type: 'cocktail', id: 'cost-recipe', value: recipe });
+    expect(recipeCost(data, recipe.ingredients, recipe.extraCosts)).toBe(230);
+    data = applyCommand(data, {
+      type: 'sale',
+      id: 'cost-sale',
+      value: { kind: 'cocktail', productId: recipe.id, quantity: 3, date: '2026-09-12' },
+    });
+    expect(data.sales[0].cost).toBe(690);
+    expect(data.sales[0].extraCosts).toEqual([
+      { alcoholId: 'lemon-fruit', name: 'Лимон', cost: 150 },
+      { alcoholId: 'ice', name: 'Лёд', cost: 60 },
+    ]);
+    expect(stock(data, 'vodka')).toBe(880);
+    expect(stock(data, 'lemon-fruit')).toBe(0);
+    data = applyCommand(data, {
+      type: 'cocktail',
+      id: 'edit-cost-recipe',
+      value: { ...recipe, extraCosts: [{ alcoholId: 'lemon-fruit', cost: 999 }] },
+    });
+    expect(data.sales[0].cost).toBe(690);
+    expect(validateData(data)).toEqual(data);
+    const cancelled = applyCommand(data, { type: 'void', id: 'cancel-cost-sale', saleId: 'cost-sale' });
+    expect(stock(cancelled, 'vodka')).toBe(1000);
+    expect(stock(cancelled, 'lemon-fruit')).toBe(0);
+  });
+  it('supports a recipe entirely costed in money and prevents double-counting or alcohol estimates', () => {
+    const data = initialData();
+    const recipe = {
+      ...data.cocktails[0],
+      ingredients: [],
+      extraCosts: [{ alcoholId: 'lemon-fruit', cost: 50 }],
+    };
+    const saved = applyCommand(data, { type: 'cocktail', id: 'money-only', value: recipe });
+    const sold = applyCommand(saved, {
+      type: 'sale',
+      id: 'money-sale',
+      value: { kind: 'cocktail', productId: recipe.id, quantity: 2, date: '2026-09-12' },
+    });
+    expect(sold.sales[0].cost).toBe(100);
+    expect(validateData(sold)).toEqual(sold);
+    expect(() =>
+      applyCommand(data, {
+        type: 'cocktail',
+        id: 'double-count',
+        value: { ...recipe, ingredients: [{ alcoholId: 'lemon-fruit', ml: 10 }] },
+      }),
+    ).toThrow();
+    expect(() =>
+      applyCommand(data, {
+        type: 'cocktail',
+        id: 'alcohol-estimate',
+        value: { ...recipe, extraCosts: [{ alcoholId: 'vodka', cost: 50 }] },
+      }),
+    ).toThrow();
+  });
+});
