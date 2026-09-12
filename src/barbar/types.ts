@@ -43,6 +43,15 @@ export interface Sale {
   ingredients: (Ingredient & { cost: number })[];
   voided: boolean;
 }
+export interface StockReset {
+  id: string;
+  alcoholId: string;
+  name: string;
+  date: string;
+  createdAt: string;
+  ml: number;
+  cost: number;
+}
 export interface BarData {
   version: 1;
   alcohol: Alcohol[];
@@ -50,6 +59,7 @@ export interface BarData {
   purchases: Purchase[];
   sales: Sale[];
   operations: string[];
+  stockResets?: StockReset[];
   archived?: { before: string; ingredients: (Ingredient & { cost: number })[]; count: number };
 }
 export type Action =
@@ -58,6 +68,7 @@ export type Action =
   | { type: 'purchase'; value: Purchase }
   | { type: 'sale'; value: { kind: Sale['kind']; productId: string; quantity: number; date: string } }
   | { type: 'void'; saleId: string }
+  | { type: 'resetStock'; alcoholId: string; expectedMl: number; expectedCost: number }
   | { type: 'restore'; value: BarData }
   | { type: 'purge'; before: string };
 export type Command = Action & { id: string };

@@ -7,6 +7,7 @@ import {
   Pencil,
   Plus,
   Search,
+  RotateCcw,
   TriangleAlert,
 } from 'lucide-react';
 import {
@@ -225,12 +226,73 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
     </Modal>
   );
 }
+function ResetStockForm({ alcohol, close }: { alcohol: Alcohol; close: () => void }) {
+  const { data, run, busy } = useBar();
+  const [confirmation, setConfirmation] = useState('');
+  const [amount] = useState(() => stock(data, alcohol.id));
+  const [cost] = useState(() => round((averageCost(data, alcohol.id) * amount) / 1000));
+  return (
+    <Modal
+      title={`Обнулить остаток «${alcohol.name}»?`}
+      subtitle="Это спишет весь текущий запас выбранного напитка."
+      close={close}
+    >
+      <form
+        onSubmit={async (event) => {
+          event.preventDefault();
+          if (confirmation.trim().toLocaleUpperCase('ru-RU') !== 'СБРОС') return;
+          if (
+            await run(
+              { type: 'resetStock', alcoholId: alcohol.id, expectedMl: amount, expectedCost: cost },
+              `Остаток «${alcohol.name}» обнулён. Списание сохранено.`,
+            )
+          )
+            close();
+        }}
+      >
+        <div className="form-total">
+          <span>
+            Остаток после сброса
+            <strong>
+              {ingredientVolume(data, alcohol.id, amount)} → {ingredientVolume(data, alcohol.id, 0)}
+            </strong>
+          </span>
+          <small>Стоимость списания: {money(cost)}</small>
+        </div>
+        <p className="form-help">
+          Вы подтверждаете, что этого запаса больше нет на складе. Напиток, его цены, рецепты, закупки и
+          прошлые продажи сохранятся. Другие напитки не изменятся. Сброс увидят все устройства. Чтобы снова
+          пополнить запас, добавьте новую закупку.
+        </p>
+        <Field
+          label="Для подтверждения напишите СБРОС"
+          hint="Передумали? Нажмите «Отмена» — ничего не изменится."
+        >
+          <input autoComplete="off" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} />
+        </Field>
+        <div className="reset-actions">
+          <button type="button" className="button secondary" disabled={busy} onClick={close}>
+            Отмена
+          </button>
+          <button
+            type="submit"
+            className="button danger-button"
+            disabled={busy || confirmation.trim().toLocaleUpperCase('ru-RU') !== 'СБРОС'}
+          >
+            {busy ? 'Списываем…' : 'Да, обнулить остаток'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 export default function Inventory() {
   const { data } = useBar();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [edit, setEdit] = useState<Alcohol | 'new' | null>(null);
   const [purchase, setPurchase] = useState<string | null>(null);
+  const [reset, setReset] = useState<Alcohol | null>(null);
   const filtered = data.alcohol.filter(
     (a) =>
       a.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) &&
@@ -353,6 +415,14 @@ export default function Inventory() {
                         <Plus size={14} /> Закупка
                       </button>
                       <button
+                        className="button small secondary"
+                        aria-label={`Сбросить остаток ${a.name}`}
+                        disabled={stock(data, a.id) <= 0}
+                        onClick={() => setReset(a)}
+                      >
+                        <RotateCcw size={14} /> Сброс
+                      </button>
+                      <button
                         className="icon-button"
                         aria-label={`Изменить ${a.name}`}
                         onClick={() => setEdit(a)}
@@ -414,6 +484,40 @@ export default function Inventory() {
           />
         )}
       </section>
+      {!!data.stockResets?.length && (
+        <section className="panel">
+          <div className="section-title">
+            <div>
+              <h2>История сбросов</h2>
+              <p>Списания запасов при обнулении остатков</p>
+            </div>
+            <ExportButton name="stock-resets.json" value={data.stockResets} />
+          </div>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Напиток</th>
+                  <th>Списано</th>
+                  <th>Стоимость списания</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...data.stockResets].reverse().map((r) => (
+                  <tr key={r.id}>
+                    <td>{new Date(r.createdAt).toLocaleString('ru-RU', { timeZone: 'Asia/Yerevan' })}</td>
+                    <td>{r.name}</td>
+                    <td>{ingredientVolume(data, r.alcoholId, r.ml)}</td>
+                    <td>{money(r.cost)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+      {reset && <ResetStockForm alcohol={reset} close={() => setReset(null)} />}
       {edit && <AlcoholForm alcohol={edit === 'new' ? undefined : edit} close={() => setEdit(null)} />}
       {purchase !== null && (
         <PurchaseForm alcoholId={purchase || undefined} close={() => setPurchase(null)} />

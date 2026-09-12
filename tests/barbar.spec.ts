@@ -130,3 +130,28 @@ test('old history can be removed through the site without returning stock', asyn
     '1 950 мл',
   );
 });
+
+test('stock reset requires explicit confirmation and persists only the selected deduction', async ({
+  page,
+}) => {
+  await workspace(page);
+  await page.getByRole('link', { name: 'Склад Напитки и закупки' }).click();
+  const row = page.locator('.inventory-table').getByRole('row').filter({ hasText: 'Vodka' });
+  await row.getByRole('button', { name: 'Сбросить остаток Vodka', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('2 000 мл → 0 мл');
+  await expect(page.getByRole('button', { name: 'Да, обнулить остаток' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Отмена', exact: true }).click();
+  await expect(row).toContainText('2 000 мл');
+  await row.getByRole('button', { name: 'Сбросить остаток Vodka', exact: true }).click();
+  await page.getByLabel('Для подтверждения напишите СБРОС').fill('СБРОС');
+  await page.getByRole('button', { name: 'Да, обнулить остаток' }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(row.locator('.stock-pill')).toHaveText('0 мл');
+  await expect(row.getByRole('button', { name: 'Сбросить остаток Vodka', exact: true })).toBeDisabled();
+  await expect(page.getByRole('heading', { name: 'История сбросов' })).toBeVisible();
+  await page.reload();
+  await expect(row.locator('.stock-pill')).toHaveText('0 мл');
+  await expect(
+    page.locator('.inventory-table').getByRole('row').filter({ hasText: 'Gin Beefeater' }),
+  ).toContainText('2 000 мл');
+});

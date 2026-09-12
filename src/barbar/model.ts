@@ -27,6 +27,7 @@ export const ingredientUnit = (data: BarData, id: string) =>
   data.alcohol.find((a) => a.id === id)?.unit === 'g' ? 'г' : 'мл';
 export const ingredientVolume = (data: BarData, id: string, amount: number) =>
   `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(amount)} ${ingredientUnit(data, id)}`;
+const resets = (data: BarData) => data.stockResets || [];
 const retired = (data: BarData) => data.archived?.ingredients || [];
 
 const fail = (message: string): never => {
@@ -63,9 +64,7 @@ export const stock = (data: BarData, id: string) =>
         (n, s) => n + s.ingredients.filter((i) => i.alcoholId === id).reduce((sum, i) => sum + i.ml, 0),
         0,
       ) -
-      retired(data)
-        .filter((i) => i.alcoholId === id)
-        .reduce((n, i) => n + i.ml, 0),
+      [...retired(data), ...resets(data)].filter((i) => i.alcoholId === id).reduce((n, i) => n + i.ml, 0),
   );
 
 // Historical purchase prices and sale costs remain immutable. The current average
@@ -86,9 +85,7 @@ export const averageCost = (data: BarData, id: string) => {
     0,
     ((bought -
       used -
-      retired(data)
-        .filter((i) => i.alcoholId === id)
-        .reduce((n, i) => n + i.cost, 0)) /
+      [...retired(data), ...resets(data)].filter((i) => i.alcoholId === id).reduce((n, i) => n + i.cost, 0)) /
       remaining) *
       1000,
   );
@@ -156,6 +153,11 @@ function assertLedger(data: BarData) {
           },
         ]
       : []),
+    ...resets(data).map((r) => ({
+      date: data.archived && r.date < data.archived.before ? data.archived.before : r.date,
+      order: 2,
+      ingredients: [{ alcoholId: r.alcoholId, ml: -r.ml }],
+    })),
     ...activeSales(data).map((s) => ({
       date: s.date,
       order: 1,
@@ -226,6 +228,25 @@ export function validateData(value: unknown): BarData {
   ) {
     return fail('Некорректные продажи в файле.');
   }
+  if (
+    d.stockResets !== undefined &&
+    (!Array.isArray(d.stockResets) ||
+      new Set(d.stockResets.map((r) => r?.id)).size !== d.stockResets.length ||
+      !d.stockResets.every(
+        (r) =>
+          r &&
+          identifier(r.id) &&
+          d.alcohol.some((a) => a.id === r.alcoholId) &&
+          nameValid(r.name) &&
+          dateValid(r.date) &&
+          typeof r.createdAt === 'string' &&
+          Number.isFinite(Date.parse(r.createdAt)) &&
+          number(r.ml, true) &&
+          number(r.cost),
+      ))
+  ) {
+    return fail('Некорректные списания при сбросе склада.');
+  }
   if (!d.operations.every(identifier)) {
     return fail('Некорректный журнал операций.');
   }
@@ -249,7 +270,11 @@ export function applyCommand(data: BarData, command: Command): BarData {
   if (!command || !identifier(command.id)) {
     return fail('Некорректная операция.');
   }
-  if (data.operations.includes(command.id) || data.sales.some((s) => s.id === command.id)) {
+  if (
+    data.operations.includes(command.id) ||
+    data.sales.some((s) => s.id === command.id) ||
+    resets(data).some((r) => r.id === command.id)
+  ) {
     return data;
   }
   const next: BarData = JSON.parse(JSON.stringify(data));
@@ -384,6 +409,33 @@ export function applyCommand(data: BarData, command: Command): BarData {
         return fail('Сумма продажи выходит за допустимые пределы.');
       }
       next.sales.push(sale);
+      assertLedger(next);
+      break;
+    }
+    case 'resetStock': {
+      const drink = next.alcohol.find((a) => a.id === command.alcoholId);
+      if (!drink || !number(command.expectedMl, true) || !number(command.expectedCost)) {
+        return fail('Выберите напиток с ненулевым остатком.');
+      }
+      const ml = stock(next, drink.id);
+      const cost = round((averageCost(next, drink.id) * ml) / 1000);
+      if (ml !== command.expectedMl || cost !== command.expectedCost) {
+        return fail(
+          'Остаток или стоимость изменились. Закройте окно, обновите склад и подтвердите сброс заново.',
+        );
+      }
+      next.stockResets = [
+        ...resets(next),
+        {
+          id: command.id,
+          alcoholId: drink.id,
+          name: drink.name,
+          date: today(),
+          createdAt: new Date().toISOString(),
+          ml,
+          cost,
+        },
+      ];
       assertLedger(next);
       break;
     }

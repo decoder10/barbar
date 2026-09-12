@@ -158,3 +158,57 @@ describe('Barbar accounting', () => {
     expect(() => applyCommand(d, { id: 'bad-recipe', type: 'cocktail', value: invalid })).toThrow();
   });
 });
+
+describe('individual stock reset', () => {
+  const reset = (data: BarData, alcoholId = 'vodka', id = 'reset'): Command => ({
+    type: 'resetStock',
+    id,
+    alcoholId,
+    expectedMl: stock(data, alcoholId),
+    expectedCost: Math.round((averageCost(data, alcoholId) * stock(data, alcoholId)) / 10) / 100,
+  });
+  it('zeros only the selected drink, preserves history, and values the next purchase correctly', () => {
+    const original = sell(buy(buy(initialData()), 500, 1000, '2026-09-01', 'sugar'), 100);
+    const action = reset(original);
+    const data = applyCommand(original, action);
+    expect(stock(data, 'vodka')).toBe(0);
+    expect(stock(data, 'sugar')).toBe(500);
+    expect(data.sales).toEqual(original.sales);
+    expect(data.purchases).toEqual(original.purchases);
+    expect(data.cocktails).toEqual(original.cocktails);
+    expect(data.stockResets?.[0]).toMatchObject({ ml: 900, cost: 3600 });
+    expect(applyCommand(data, action)).toBe(data);
+    expect(validateData(JSON.parse(JSON.stringify(data)))).toEqual(data);
+    expect(() => sell(data, 1, '2026-09-12')).toThrow('Недостаточно');
+    const replenished = buy(data, 1000, 6000, '2026-09-12');
+    expect(stock(replenished, 'vodka')).toBe(1000);
+    expect(averageCost(replenished, 'vodka')).toBe(6000);
+    expect(applyCommand(replenished, action)).toBe(replenished);
+  });
+  it('rejects stale confirmation, missing products and zero stock', () => {
+    const data = buy(initialData());
+    const action = reset(data);
+    expect(() => applyCommand(sell(data), action)).toThrow('изменились');
+    expect(() => applyCommand(initialData(), reset(initialData()))).toThrow('ненулевым');
+    expect(() => applyCommand(data, { ...action, alcoholId: 'missing' } as Command)).toThrow();
+    expect(data.stockResets).toBeUndefined();
+  });
+  it('supports grams and preserves reset deductions after history cleanup and restore', () => {
+    vi.setSystemTime(new Date('2026-09-03T12:00:00Z'));
+    let data = sell(buy(buy(initialData()), 300, 2000, '2026-09-01', 'sugar'), 100, '2026-09-02');
+    data = applyCommand(data, reset(data));
+    data = applyCommand(data, reset(data, 'sugar', 'reset-sugar'));
+    vi.setSystemTime(new Date('2026-09-12T12:00:00Z'));
+    data = buy(data, 1000, 7000, '2026-09-06');
+    data = applyCommand(data, { id: 'purge-reset-history', type: 'purge', before: '2026-09-05' });
+    expect(stock(data, 'vodka')).toBe(1000);
+    expect(averageCost(data, 'vodka')).toBe(7000);
+    expect(stock(data, 'sugar')).toBe(0);
+    expect(validateData(data)).toEqual(data);
+    const restored = applyCommand(initialData(), { id: 'restore-reset', type: 'restore', value: data });
+    expect(stock(restored, 'vodka')).toBe(1000);
+    const invalid = structuredClone(data);
+    invalid.stockResets![0].ml = -1;
+    expect(() => validateData(invalid)).toThrow('списания');
+  });
+});
