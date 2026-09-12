@@ -3131,3 +3131,42 @@ small {
   gap: 12px;
   justify-content: flex-end;
 }
+
+.inventory-recipe-help {
+  font-size: 11px;
+  color: #77717a;
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+.inventory-table .inventory-shortage td {
+  background: #fff1f2;
+  border-bottom-color: #f3d7dc;
+}
+.inventory-table .inventory-shortage td:first-child {
+  box-shadow: inset 3px 0 #bb354e;
+}
+.inventory-shortage-details {
+  margin-top: 8px;
+  color: #a42a43;
+  font-size: 11px;
+  max-width: 300px;
+}
+.inventory-shortage-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.inventory-shortage-details summary svg {
+  vertical-align: middle;
+  margin-right: 4px;
+}
+.inventory-shortage-details ul {
+  margin: 10px 0 0;
+  padding-left: 16px;
+}
+.inventory-shortage-details li + li {
+  margin-top: 8px;
+}
+.inventory-shortage-details li span {
+  display: block;
+  margin-top: 3px;
+}

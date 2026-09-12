@@ -300,7 +300,17 @@ export default function Inventory() {
   );
   const totalMl = data.alcohol.filter((a) => a.unit !== 'g').reduce((n, a) => n + stock(data, a.id), 0);
   const worth = data.alcohol.reduce((n, a) => n + (stock(data, a.id) * averageCost(data, a.id)) / 1000, 0);
-  const low = data.alcohol.filter((a) => stock(data, a.id) < 200).length;
+  const shortages = new Map<string, { id: string; name: string; required: number; missing: number }[]>();
+  for (const recipe of data.cocktails) {
+    for (const ingredient of recipe.ingredients) {
+      const missing = round(ingredient.ml - stock(data, ingredient.alcoholId));
+      if (missing > 0) {
+        const items = shortages.get(ingredient.alcoholId) || [];
+        items.push({ id: recipe.id, name: recipe.name, required: ingredient.ml, missing });
+        shortages.set(ingredient.alcoholId, items);
+      }
+    }
+  }
   return (
     <>
       <PageHeading
@@ -336,9 +346,9 @@ export default function Inventory() {
           icon={<CircleDollarSign size={18} />}
         />
         <Metric
-          label="Пора пополнить"
-          value={String(low)}
-          hint="Остаток меньше 200 мл"
+          label="Не хватает для рецептов"
+          value={String(shortages.size)}
+          hint="Ингредиентов для одной порции"
           icon={<TriangleAlert size={18} />}
         />
       </section>
@@ -346,7 +356,7 @@ export default function Inventory() {
         <div className="section-title">
           <div>
             <h2>Ваш барный запас</h2>
-            <p>Для розлива цена задаётся за литр, продажа — в миллилитрах</p>
+            <p>Красным выделены ингредиенты, которых не хватает на одну порцию по сохранённым рецептам.</p>
           </div>
           <ExportButton name="alcohol.json" value={data.alcohol} />
         </div>
@@ -377,6 +387,9 @@ export default function Inventory() {
             />
           </label>
         </div>
+        <p className="inventory-recipe-help">
+          Позиции без состава не проверяются. Добавьте ингредиенты в разделе «Меню и рецепты».
+        </p>
         <div className="table-scroll">
           <table className="data-table inventory-table">
             <thead>
@@ -390,7 +403,7 @@ export default function Inventory() {
             </thead>
             <tbody>
               {filtered.map((a) => (
-                <tr key={a.id}>
+                <tr key={a.id} className={shortages.has(a.id) ? 'inventory-shortage' : undefined}>
                   <td>
                     <div className="table-product">
                       <BottleArt drink={a} />
@@ -401,9 +414,28 @@ export default function Inventory() {
                     </div>
                   </td>
                   <td>
-                    <span className={`stock-pill ${stock(data, a.id) < 200 ? 'low' : ''}`}>
+                    <span className={`stock-pill ${shortages.has(a.id) ? 'low' : ''}`}>
                       {ingredientVolume(data, a.id, stock(data, a.id))}
                     </span>
+                    {shortages.has(a.id) && (
+                      <details className="inventory-shortage-details">
+                        <summary>
+                          <TriangleAlert size={13} aria-hidden="true" /> Не хватает для рецептов:{' '}
+                          {shortages.get(a.id)!.length}
+                        </summary>
+                        <ul>
+                          {shortages.get(a.id)!.map((recipe) => (
+                            <li key={recipe.id}>
+                              <strong>{recipe.name}</strong>
+                              <span>
+                                На порцию нужно {ingredientVolume(data, a.id, recipe.required)}; не хватает{' '}
+                                {ingredientVolume(data, a.id, recipe.missing)}.
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                   </td>
                   <td>{money(round(averageCost(data, a.id)))}</td>
                   <td>

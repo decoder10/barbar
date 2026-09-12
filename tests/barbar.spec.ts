@@ -1,8 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { fixtureData } from './fixtures';
 import { applyCommand } from '../src/barbar/model';
-async function workspace(page: import('@playwright/test').Page, oldSale = false) {
+async function workspace(page: import('@playwright/test').Page, oldSale = false, lowStock = false) {
   let data = fixtureData();
+  if (lowStock) {
+    data.purchases = data.purchases.map((p) => ({
+      ...p,
+      ml: p.alcoholId === 'gin' ? 40 : p.alcoholId === 'tonic' ? 150 : p.ml,
+    }));
+  }
   if (oldSale) {
     data.purchases = data.purchases.map((p) => ({ ...p, date: '2026-09-01' }));
     data = applyCommand(data, {
@@ -154,4 +160,27 @@ test('stock reset requires explicit confirmation and persists only the selected 
   await expect(
     page.locator('.inventory-table').getByRole('row').filter({ hasText: 'Gin Beefeater' }),
   ).toContainText('2 000 мл');
+});
+
+test('inventory highlights actual recipe shortages and clears them after a purchase', async ({ page }) => {
+  await workspace(page, false, true);
+  await page.getByRole('link', { name: 'Склад Напитки и закупки' }).click();
+  const gin = page.locator('.inventory-table').getByRole('row').filter({ hasText: 'Gin Beefeater' });
+  const tonic = page
+    .locator('.inventory-table')
+    .getByRole('row')
+    .filter({ has: page.getByText('Тоник', { exact: true }) });
+  await expect(gin).toHaveClass('inventory-shortage');
+  await gin.locator('summary').click();
+  await expect(gin).toContainText('Gin tonic Beefeater');
+  await expect(gin).toContainText('На порцию нужно 50 мл; не хватает 10 мл.');
+  await expect(tonic).not.toHaveClass('inventory-shortage');
+  await expect(tonic.locator('.stock-pill')).toHaveText('150 мл');
+  await gin.getByRole('button', { name: 'Закупка', exact: true }).click();
+  await page.getByLabel('Количество, мл').fill('10');
+  await page.getByRole('button', { name: 'Добавить на склад' }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(gin).not.toHaveClass('inventory-shortage');
+  await expect(gin.locator('.stock-pill')).toHaveText('50 мл');
+  await expect(gin.locator('summary')).toHaveCount(0);
 });
