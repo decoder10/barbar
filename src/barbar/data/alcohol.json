@@ -1,0 +1,254 @@
+[
+  {
+    "id": "beer",
+    "name": "Пиво",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b58636",
+    "unit": "ml"
+  },
+  {
+    "id": "vodka",
+    "name": "Vodka",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 18000,
+    "color": "#91a6aa",
+    "unit": "ml"
+  },
+  {
+    "id": "wine",
+    "name": "Вино",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#923c51",
+    "unit": "ml"
+  },
+  {
+    "id": "martini",
+    "name": "Martini",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 32000,
+    "color": "#929568",
+    "unit": "ml"
+  },
+  {
+    "id": "aperol",
+    "name": "Aperol",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 28000,
+    "color": "#d76732",
+    "unit": "ml"
+  },
+  {
+    "id": "rum",
+    "name": "Bacardi",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 40000,
+    "color": "#967244",
+    "unit": "ml"
+  },
+  {
+    "id": "tequila",
+    "name": "Tequila",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 34000,
+    "color": "#b6a16d",
+    "unit": "ml"
+  },
+  {
+    "id": "whisky",
+    "name": "Jim Beam",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 40000,
+    "color": "#b67b39",
+    "unit": "ml"
+  },
+  {
+    "id": "cognac",
+    "name": "Ararat Brandy",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 40000,
+    "color": "#915132",
+    "unit": "ml"
+  },
+  {
+    "id": "gin",
+    "name": "Gin Beefeater",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 32000,
+    "color": "#6f937d",
+    "unit": "ml"
+  },
+  {
+    "id": "jager",
+    "name": "Jagermeister",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 34000,
+    "color": "#46654d",
+    "unit": "ml"
+  },
+  {
+    "id": "becherovka",
+    "name": "Becherovka",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 32000,
+    "color": "#7e9256",
+    "unit": "ml"
+  },
+  {
+    "id": "soda",
+    "name": "Содовая",
+    "category": "mixer",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#8baeb9",
+    "unit": "ml"
+  },
+  {
+    "id": "tonic",
+    "name": "Тоник",
+    "category": "mixer",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#90a283",
+    "unit": "ml"
+  },
+  {
+    "id": "cola",
+    "name": "Кола",
+    "category": "mixer",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#765044",
+    "unit": "ml"
+  },
+  {
+    "id": "campari",
+    "name": "Campari",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 34000,
+    "color": "#963953",
+    "unit": "ml"
+  },
+  {
+    "id": "jim-beam-apple",
+    "name": "Jim Beam Apple",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 40000,
+    "color": "#b67b39",
+    "unit": "ml"
+  },
+  {
+    "id": "jack-daniels",
+    "name": "Jack Daniels",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 46000,
+    "color": "#9b753e",
+    "unit": "ml"
+  },
+  {
+    "id": "jack-daniels-honey",
+    "name": "Jack Daniels Honey",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 46000,
+    "color": "#b69343",
+    "unit": "ml"
+  },
+  {
+    "id": "jameson",
+    "name": "Jameson",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 40000,
+    "color": "#547259",
+    "unit": "ml"
+  },
+  {
+    "id": "ararat-coffee",
+    "name": "Ararat Brandy Coffee",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 40000,
+    "color": "#815638",
+    "unit": "ml"
+  },
+  {
+    "id": "ararat-honey",
+    "name": "Ararat Brandy Honey",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 40000,
+    "color": "#a18339",
+    "unit": "ml"
+  },
+  {
+    "id": "ararat-cherry",
+    "name": "Ararat Brandy Cherry",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 40000,
+    "color": "#893d51",
+    "unit": "ml"
+  },
+  {
+    "id": "gin-bombay",
+    "name": "Gin Bombay",
+    "category": "alcohol",
+    "costPerLiter": 0,
+    "pricePerLiter": 38000,
+    "color": "#5c9bac",
+    "unit": "ml"
+  },
+  {
+    "id": "sugar",
+    "name": "Сахар",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b58475"
+  },
+  {
+    "id": "cherries",
+    "name": "Вишня (ягоды)",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b58475"
+  },
+  {
+    "id": "ginger",
+    "name": "Имбирь (корень)",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b58475"
+  },
+  {
+    "id": "pepper",
+    "name": "Перец (специя)",
+    "category": "mixer",
+    "unit": "g",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b58475"
+  }
+]

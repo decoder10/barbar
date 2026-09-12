@@ -1,0 +1,4 @@
+node_modules
+dist
+.barbar-data
+package-lock.json

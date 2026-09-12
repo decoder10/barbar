@@ -1,0 +1,1505 @@
+[
+  {
+    "id": "menu-001",
+    "name": "Gin tonic Beefeater",
+    "price": 2200,
+    "category": "cocktail",
+    "image": 2,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-002",
+    "name": "Gin tonic Bombay",
+    "price": 2800,
+    "category": "cocktail",
+    "image": 2,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-003",
+    "name": "Cuba Libre",
+    "price": 2900,
+    "category": "cocktail",
+    "image": 3,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-004",
+    "name": "Aperol Spritz",
+    "price": 2900,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-005",
+    "name": "Negroni",
+    "price": 2900,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-006",
+    "name": "Coconut cola",
+    "price": 2200,
+    "category": "cocktail",
+    "image": 3,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-007",
+    "name": "Blue Lagoon",
+    "price": 2500,
+    "category": "cocktail",
+    "image": 2,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-008",
+    "name": "White Russian",
+    "price": 2600,
+    "category": "cocktail",
+    "image": 3,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-009",
+    "name": "Gyumri Paloma",
+    "price": 2800,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-010",
+    "name": "Tequila Sunrise",
+    "price": 2600,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-011",
+    "name": "Fruit Jager",
+    "price": 2300,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-012",
+    "name": "Jagermonster",
+    "price": 2500,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-013",
+    "name": "My Honey",
+    "price": 2600,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-014",
+    "name": "Whiskey cola (Jim Beam)",
+    "price": 2400,
+    "category": "cocktail",
+    "image": 3,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-015",
+    "name": "Whiskey cola (Jack Daniels)",
+    "price": 2800,
+    "category": "cocktail",
+    "image": 3,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-016",
+    "name": "Holiday",
+    "price": 2700,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-017",
+    "name": "Spring cocktail",
+    "price": 2800,
+    "category": "cocktail",
+    "image": 2,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-018",
+    "name": "Tropical",
+    "price": 2700,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-019",
+    "name": "Underground",
+    "price": 2700,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-020",
+    "name": "Coconut Paradise",
+    "price": 2800,
+    "category": "cocktail",
+    "image": 2,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-021",
+    "name": "Margarita",
+    "price": 3000,
+    "category": "cocktail",
+    "image": 2,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-022",
+    "name": "Daiquiri",
+    "price": 2800,
+    "category": "cocktail",
+    "image": 2,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-023",
+    "name": "BarBar",
+    "price": 3000,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-024",
+    "name": "Bloody Mary",
+    "price": 2500,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-025",
+    "name": "Bloody Mary BarBar",
+    "price": 2900,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-026",
+    "name": "Manhattan",
+    "price": 2900,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-027",
+    "name": "Manhattan BarBar",
+    "price": 3200,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-028",
+    "name": "Grachevsky",
+    "price": 3500,
+    "category": "cocktail",
+    "image": 3,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-029",
+    "name": "Armenian kiss",
+    "price": 2600,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-030",
+    "name": "Aragats sling",
+    "price": 2900,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-031",
+    "name": "Spicy kiss",
+    "price": 2800,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-032",
+    "name": "Mr. Lander",
+    "price": 3000,
+    "category": "cocktail",
+    "image": 3,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-033",
+    "name": "Strawberry Daiquiri",
+    "price": 2800,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-034",
+    "name": "Nastoyka cocktail",
+    "price": 2000,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-035",
+    "name": "Jagerbomb",
+    "price": 2700,
+    "category": "cocktail",
+    "image": 3,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-036",
+    "name": "Armenian wife",
+    "price": 2900,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-037",
+    "name": "Armenian husband",
+    "price": 2900,
+    "category": "cocktail",
+    "image": 3,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-038",
+    "name": "Armenian mother-in-law",
+    "price": 2900,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-039",
+    "name": "Clover club",
+    "price": 2700,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-040",
+    "name": "Whiskey Sour",
+    "price": 2600,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-041",
+    "name": "Gyumri",
+    "price": 2700,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-042",
+    "name": "Alexandropol",
+    "price": 2700,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-043",
+    "name": "Leninakan",
+    "price": 2700,
+    "category": "cocktail",
+    "image": 2,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-044",
+    "name": "Your cocktail",
+    "price": 0,
+    "category": "cocktail",
+    "image": 0,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-045",
+    "name": "Special",
+    "price": 4500,
+    "category": "cocktail",
+    "image": 1,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-046",
+    "name": "Слива",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-047",
+    "name": "Вишня",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-048",
+    "name": "Абрикос",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-049",
+    "name": "Персик",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-050",
+    "name": "Клубника",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-051",
+    "name": "Малина",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-052",
+    "name": "Киви",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-053",
+    "name": "Мандарин",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-054",
+    "name": "Ириска",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-055",
+    "name": "Барбариска",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-056",
+    "name": "Конфеты",
+    "price": 1000,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-057",
+    "name": "Имбирь",
+    "price": 1500,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-058",
+    "name": "Перец",
+    "price": 1500,
+    "category": "tincture",
+    "image": 4,
+    "ingredients": [],
+    "notes": "Настойка. Укажите состав и объём одной порции."
+  },
+  {
+    "id": "menu-059",
+    "name": "BarBar set (6 shots)",
+    "price": 5000,
+    "category": "set",
+    "image": 6,
+    "ingredients": [],
+    "notes": "Укажите расход ингредиентов на полный сет."
+  },
+  {
+    "id": "menu-060",
+    "name": "Art set (10 shots)",
+    "price": 8000,
+    "category": "set",
+    "image": 6,
+    "ingredients": [],
+    "notes": "Укажите расход ингредиентов на полный сет."
+  },
+  {
+    "id": "menu-061",
+    "name": "Complete set (16 shots)",
+    "price": 14000,
+    "category": "set",
+    "image": 6,
+    "ingredients": [],
+    "notes": "Укажите расход ингредиентов на полный сет."
+  },
+  {
+    "id": "menu-062",
+    "name": "Unreal set (32 shots)",
+    "price": 26000,
+    "category": "set",
+    "image": 6,
+    "ingredients": [],
+    "notes": "Укажите расход ингредиентов на полный сет."
+  },
+  {
+    "id": "menu-063",
+    "name": "Pink me shot",
+    "price": 1500,
+    "category": "shot",
+    "image": 5,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-064",
+    "name": "Pink me spicy shot",
+    "price": 1500,
+    "category": "shot",
+    "image": 5,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-065",
+    "name": "Mint me shot",
+    "price": 1500,
+    "category": "shot",
+    "image": 5,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-066",
+    "name": "Bobr kurwa",
+    "price": 1000,
+    "category": "shot",
+    "image": 5,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-067",
+    "name": "Peach shot",
+    "price": 1500,
+    "category": "shot",
+    "image": 5,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-068",
+    "name": "BarBar shot",
+    "price": 1500,
+    "category": "shot",
+    "image": 5,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-069",
+    "name": "Street shot",
+    "price": 1500,
+    "category": "shot",
+    "image": 5,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-070",
+    "name": "Photo shot",
+    "price": 1500,
+    "category": "shot",
+    "image": 5,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-071",
+    "name": "Alexandropol",
+    "price": 1000,
+    "category": "beer",
+    "image": 7,
+    "ingredients": [],
+    "notes": "Укажите объём бутылки или порции и ингредиент для списания."
+  },
+  {
+    "id": "menu-072",
+    "name": "Ararat",
+    "price": 1000,
+    "category": "beer",
+    "image": 7,
+    "ingredients": [],
+    "notes": "Укажите объём бутылки или порции и ингредиент для списания."
+  },
+  {
+    "id": "menu-073",
+    "name": "Gyumri",
+    "price": 1000,
+    "category": "beer",
+    "image": 7,
+    "ingredients": [],
+    "notes": "Укажите объём бутылки или порции и ингредиент для списания."
+  },
+  {
+    "id": "menu-074",
+    "name": "Guinness",
+    "price": 2000,
+    "category": "beer",
+    "image": 7,
+    "ingredients": [],
+    "notes": "Укажите объём бутылки или порции и ингредиент для списания."
+  },
+  {
+    "id": "menu-075",
+    "name": "Cider",
+    "price": 2000,
+    "category": "beer",
+    "image": 7,
+    "ingredients": [],
+    "notes": "Укажите объём бутылки или порции и ингредиент для списания."
+  },
+  {
+    "id": "menu-076",
+    "name": "Blanc",
+    "price": 2000,
+    "category": "beer",
+    "image": 7,
+    "ingredients": [],
+    "notes": "Укажите объём бутылки или порции и ингредиент для списания."
+  },
+  {
+    "id": "menu-077",
+    "name": "IPA",
+    "price": 2000,
+    "category": "beer",
+    "image": 7,
+    "ingredients": [],
+    "notes": "Укажите объём бутылки или порции и ингредиент для списания."
+  },
+  {
+    "id": "menu-078",
+    "name": "IPA Volkovskaya",
+    "price": 1500,
+    "category": "beer",
+    "image": 7,
+    "ingredients": [],
+    "notes": "Укажите объём бутылки или порции и ингредиент для списания."
+  },
+  {
+    "id": "menu-079",
+    "name": "Kozel",
+    "price": 1000,
+    "category": "beer",
+    "image": 7,
+    "ingredients": [],
+    "notes": "Укажите объём бутылки или порции и ингредиент для списания."
+  },
+  {
+    "id": "menu-080",
+    "name": "German beer",
+    "price": 2000,
+    "category": "beer",
+    "image": 7,
+    "ingredients": [],
+    "notes": "Укажите объём бутылки или порции и ингредиент для списания."
+  },
+  {
+    "id": "menu-081",
+    "name": "Chips",
+    "price": 1000,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-082",
+    "name": "Nuts",
+    "price": 1000,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-083",
+    "name": "Jerky",
+    "price": 1000,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-084",
+    "name": "Crackers",
+    "price": 1000,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-085",
+    "name": "Sujuck",
+    "price": 1500,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-086",
+    "name": "Anchovy",
+    "price": 1000,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-087",
+    "name": "Pistachios",
+    "price": 1500,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-088",
+    "name": "Lemon",
+    "price": 600,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-089",
+    "name": "Honey",
+    "price": 1500,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-090",
+    "name": "Olives green/black",
+    "price": 1500,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-091",
+    "name": "Mini sausages and pickles",
+    "price": 2500,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-092",
+    "name": "Brtuch",
+    "price": 1200,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-093",
+    "name": "Snack set",
+    "price": 2800,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-094",
+    "name": "Beer set",
+    "price": 3800,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-095",
+    "name": "Sandwich",
+    "price": 1700,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-096",
+    "name": "Sandwich with sujuck",
+    "price": 2000,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-097",
+    "name": "BarBar sandwich",
+    "price": 2200,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-098",
+    "name": "Cheese set with honey",
+    "price": 3800,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-099",
+    "name": "Mikayelyan cheese with honey small set",
+    "price": 8000,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-100",
+    "name": "Mikayelyan cheese with honey large set",
+    "price": 16000,
+    "category": "snack",
+    "image": 8,
+    "ingredients": [],
+    "notes": "Добавьте состав порции для учёта себестоимости и списания."
+  },
+  {
+    "id": "menu-101",
+    "name": "Black tea",
+    "price": 1000,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-102",
+    "name": "Green tea",
+    "price": 1000,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-103",
+    "name": "Hibiscus tea",
+    "price": 1300,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-104",
+    "name": "Mint tea",
+    "price": 1500,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-105",
+    "name": "Cinnamon tea",
+    "price": 1500,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-106",
+    "name": "Fruit tea",
+    "price": 1500,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-107",
+    "name": "Cocoa",
+    "price": 500,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-108",
+    "name": "Armenian coffee",
+    "price": 500,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-109",
+    "name": "Instant coffee hot",
+    "price": 600,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-110",
+    "name": "Instant coffee cold",
+    "price": 700,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-111",
+    "name": "Americano hot",
+    "price": 600,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-112",
+    "name": "Americano cold",
+    "price": 800,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-113",
+    "name": "Coffee with milk hot",
+    "price": 600,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-114",
+    "name": "Coffee with milk cold",
+    "price": 800,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-115",
+    "name": "BarBar coffee with alcohol",
+    "price": 1500,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-116",
+    "name": "Hot chocolate",
+    "price": 600,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-117",
+    "name": "Cappuccino",
+    "price": 600,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-118",
+    "name": "Glentwine",
+    "price": 2200,
+    "category": "hot",
+    "image": 9,
+    "ingredients": [],
+    "notes": ""
+  },
+  {
+    "id": "menu-119",
+    "name": "BarBar lemonade",
+    "price": 1500,
+    "category": "soft",
+    "image": 2,
+    "ingredients": [],
+    "notes": "Объём порции не указан в меню — заполните состав."
+  },
+  {
+    "id": "menu-120",
+    "name": "Juice",
+    "price": 500,
+    "category": "soft",
+    "image": 2,
+    "ingredients": [],
+    "notes": "Объём порции не указан в меню — заполните состав."
+  },
+  {
+    "id": "menu-121",
+    "name": "Cola",
+    "price": 500,
+    "category": "soft",
+    "image": 2,
+    "ingredients": [],
+    "notes": "Объём порции не указан в меню — заполните состав."
+  },
+  {
+    "id": "menu-122",
+    "name": "Fanta",
+    "price": 500,
+    "category": "soft",
+    "image": 2,
+    "ingredients": [],
+    "notes": "Объём порции не указан в меню — заполните состав."
+  },
+  {
+    "id": "menu-123",
+    "name": "Sprite",
+    "price": 500,
+    "category": "soft",
+    "image": 2,
+    "ingredients": [],
+    "notes": "Объём порции не указан в меню — заполните состав."
+  },
+  {
+    "id": "menu-124",
+    "name": "Jermuk",
+    "price": 500,
+    "category": "soft",
+    "image": 2,
+    "ingredients": [],
+    "notes": "Объём порции не указан в меню — заполните состав."
+  },
+  {
+    "id": "menu-125",
+    "name": "Water",
+    "price": 300,
+    "category": "soft",
+    "image": 2,
+    "ingredients": [],
+    "notes": "Объём порции не указан в меню — заполните состав."
+  },
+  {
+    "id": "menu-126",
+    "name": "Tonic",
+    "price": 1000,
+    "category": "soft",
+    "image": 2,
+    "ingredients": [],
+    "notes": "Объём порции не указан в меню — заполните состав."
+  },
+  {
+    "id": "menu-127",
+    "name": "Energy drink",
+    "price": 1000,
+    "category": "soft",
+    "image": 2,
+    "ingredients": [],
+    "notes": "Объём порции не указан в меню — заполните состав."
+  },
+  {
+    "id": "menu-128",
+    "name": "Voskeni · Volcani red dry Haghtanak · бокал",
+    "price": 1500,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-129",
+    "name": "Voskeni · Volcani red dry Haghtanak · бутылка",
+    "price": 6500,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-130",
+    "name": "Voskeni · Volcani rose dry Tozot · бокал",
+    "price": 1500,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-131",
+    "name": "Voskeni · Volcani rose dry Tozot · бутылка",
+    "price": 6500,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-132",
+    "name": "Voskeni · Volcani white dry Kangun · бокал",
+    "price": 1500,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-133",
+    "name": "Voskeni · Volcani white dry Kangun · бутылка",
+    "price": 6500,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-134",
+    "name": "Voskeni · Volcani red dry Areni · бокал",
+    "price": 2200,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-135",
+    "name": "Voskeni · Volcani red dry Areni · бутылка",
+    "price": 9000,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-136",
+    "name": "Voskeni · White dry Voskehat · бокал",
+    "price": 2200,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-137",
+    "name": "Voskeni · White dry Voskehat · бутылка",
+    "price": 9000,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-138",
+    "name": "Voskeni · Rose dry Areni · бокал",
+    "price": 2300,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-139",
+    "name": "Voskeni · Rose dry Areni · бутылка",
+    "price": 9900,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-140",
+    "name": "Voskeni · Siro Melody Khatun Kharji · бокал",
+    "price": 2900,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-141",
+    "name": "Voskeni · Siro Melody Khatun Kharji · бутылка",
+    "price": 12000,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-142",
+    "name": "Tushpa · Reserve · бокал",
+    "price": 2900,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-143",
+    "name": "Tushpa · Reserve · бутылка",
+    "price": 11500,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-144",
+    "name": "Tushpa · Red dry Haghtanak · бокал",
+    "price": 2200,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-145",
+    "name": "Tushpa · Red dry Haghtanak · бутылка",
+    "price": 9000,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-146",
+    "name": "Tushpa · White dry Kangun · бокал",
+    "price": 1700,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-147",
+    "name": "Tushpa · White dry Kangun · бутылка",
+    "price": 7000,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-148",
+    "name": "Tushpa · Muskat · бокал",
+    "price": 1700,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-149",
+    "name": "Tushpa · Muskat · бутылка",
+    "price": 7000,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-150",
+    "name": "Tushpa · Pet Nat Lalvar · бутылка",
+    "price": 8500,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-151",
+    "name": "Tushpa · Pet Nat Bananc · бутылка",
+    "price": 8500,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-152",
+    "name": "Tushpa · Pet Nat Tozot · бутылка",
+    "price": 8500,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-153",
+    "name": "Tushpa · Pet Nat Tozot roze · бутылка",
+    "price": 8500,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-154",
+    "name": "Tushpa · Pet Nat Chrchuk · бутылка",
+    "price": 12000,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-155",
+    "name": "Tushpa · Pet Nat Koghbeni · бутылка",
+    "price": 12000,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-156",
+    "name": "Vayk · Zakare apricot · бокал",
+    "price": 1500,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-157",
+    "name": "Vayk · Zakare apricot · бутылка",
+    "price": 5500,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-158",
+    "name": "Vayk · Zakare cherry · бокал",
+    "price": 1500,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-159",
+    "name": "Vayk · Zakare cherry · бутылка",
+    "price": 5500,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-160",
+    "name": "Vayk · Zakare pomegranate · бокал",
+    "price": 1800,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-161",
+    "name": "Vayk · Zakare pomegranate · бутылка",
+    "price": 8000,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-162",
+    "name": "Vayk · Kars city red dry · бокал",
+    "price": 1800,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-163",
+    "name": "Vayk · Kars city red dry · бутылка",
+    "price": 7000,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-164",
+    "name": "Vayk · Kars city white dry · бокал",
+    "price": 1800,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-165",
+    "name": "Vayk · Kars city white dry · бутылка",
+    "price": 7000,
+    "category": "wine",
+    "image": 11,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-166",
+    "name": "Vayk · Zakare pomegranate reserve · бокал",
+    "price": 2400,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бокала уточняется в редакторе; цена перенесена из меню."
+  },
+  {
+    "id": "menu-167",
+    "name": "Vayk · Zakare pomegranate reserve · бутылка",
+    "price": 9000,
+    "category": "wine",
+    "image": 10,
+    "ingredients": [],
+    "notes": "Объём бутылки уточняется в редакторе; цена перенесена из меню."
+  }
+]
