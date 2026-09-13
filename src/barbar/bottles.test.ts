@@ -42,7 +42,7 @@ describe('bottle stock and brand pricing', () => {
   it('migrates unused menu brands once, preserves menu prices, and never invents purchases', () => {
     const old = initialData();
     const next = migrateBottleCatalog(old);
-    expect(next.alcohol.filter((a) => a.category === 'beer')).toHaveLength(10);
+    expect(next.alcohol.filter((a) => a.category === 'beer')).toHaveLength(15);
     expect(next.alcohol.filter((a) => a.category === 'wine')).toHaveLength(23);
     expect(next.alcohol.filter((a) => a.category === 'cognac')).toHaveLength(4);
     expect(next.alcohol.find((a) => a.id === 'bacardi-white')?.unit).toBe('ml');
@@ -52,6 +52,15 @@ describe('bottle stock and brand pricing', () => {
       { alcoholId: 'stock-menu-129', ml: 1 },
     ]);
     expect(next.cocktails.find((c) => c.id === 'menu-128')?.ingredients).toEqual([]);
+    const newBeers = next.alcohol.filter((a) => a.id.startsWith('beer-379-'));
+    expect(newBeers).toHaveLength(5);
+    for (const beer of newBeers) {
+      expect(beer).toMatchObject({ unit: 'bottle', costPerLiter: 0, pricePerLiter: 0 });
+      expect(stock(next, beer.id)).toBe(0);
+      expect(next.cocktails.find((c) => c.stockAlcoholId === beer.id)?.ingredients).toEqual([
+        { alcoholId: beer.id, ml: 1 },
+      ]);
+    }
     expect(next.purchases).toEqual(old.purchases);
     expect(next.sales).toEqual(old.sales);
     expect(migrateBottleCatalog(next)).toBe(next);

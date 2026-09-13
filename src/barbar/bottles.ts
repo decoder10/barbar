@@ -118,5 +118,49 @@ export function migrateBottleCatalog(data: BarData): BarData {
       changed = true;
     }
   }
+  for (const [slug, name] of [
+    ['cherry', '379 — Вишня'],
+    ['pilsner', '379 — Pilsner'],
+    ['dankel', '379 — Dankel'],
+    ['citrus', '379 — Citrus'],
+    ['weizen', '379 — ոեիսեն'],
+  ]) {
+    const id = `beer-379-${slug}`;
+    const menuId = `bottle-${id}`;
+    const existing = next.alcohol.find(
+      (a) => a.id === id || a.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase(),
+    );
+    if (existing && (existing.category !== 'beer' || existing.unit !== 'bottle')) continue;
+    if (
+      next.cocktails.some(
+        (c) =>
+          c.id === menuId ||
+          c.stockAlcoholId === (existing?.id || id) ||
+          (c.category === 'beer' && c.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase()),
+      )
+    )
+      continue;
+    const beer = existing || {
+      id,
+      name,
+      category: 'beer' as const,
+      unit: 'bottle' as const,
+      costPerLiter: 0,
+      pricePerLiter: 0,
+      color: '#b58636',
+    };
+    if (!existing) next.alcohol.push(beer);
+    next.cocktails.push({
+      id: menuId,
+      name: beer.name,
+      category: 'beer',
+      stockAlcoholId: beer.id,
+      ingredients: [{ alcoholId: beer.id, ml: 1 }],
+      price: beer.pricePerLiter,
+      image: 7,
+      notes: 'Одна продажа списывает одну бутылку этой марки.',
+    });
+    changed = true;
+  }
   return changed ? next : data;
 }
