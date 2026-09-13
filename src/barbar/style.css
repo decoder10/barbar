@@ -3220,3 +3220,80 @@ small {
   flex-wrap: wrap;
   max-width: 100%;
 }
+
+.staff-stock-art {
+  width: 48px;
+  height: 60px;
+  flex: 0 0 48px;
+  overflow: hidden;
+  border-radius: 7px;
+}
+.staff-stock-art .cocktail-art,
+.staff-stock-art .bottle-art {
+  width: 100%;
+  height: 100%;
+}
+.staff-inventory-table .staff-stock-missing td {
+  background: #fff1f2;
+  border-bottom-color: #f3d7dc;
+}
+.staff-inventory-table .staff-stock-missing td:first-child {
+  box-shadow: inset 3px 0 #bb354e;
+}
+.staff-inventory-table .stock-pill.low {
+  color: #a42a43;
+  background: #f9dce2;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.staff-recipe-missing,
+.card-content p.staff-recipe-missing {
+  color: #a42a43;
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: normal;
+  overflow: visible;
+  display: block;
+}
+.staff-recipe-missing svg {
+  vertical-align: middle;
+  margin-right: 5px;
+}
+.staff-recipe-ingredient {
+  margin-bottom: 14px;
+}
+
+.table-product .staff-mobile-availability {
+  display: none;
+}
+@media (max-width: 480px) {
+  .staff-inventory-table {
+    min-width: 0;
+    width: 100%;
+  }
+  .staff-inventory-table th:last-child,
+  .staff-inventory-table td:last-child {
+    display: none;
+  }
+  .staff-inventory-table td {
+    padding: 12px 10px;
+  }
+  .staff-inventory-table td:nth-child(2) {
+    white-space: nowrap;
+  }
+  .staff-inventory-table .table-product strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .table-product .staff-mobile-availability {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #387463;
+  }
+  .staff-stock-missing .table-product .staff-mobile-availability {
+    color: #a42a43;
+  }
+}

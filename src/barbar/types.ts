@@ -79,6 +79,13 @@ export type Action =
   | { type: 'alcohol'; value: Alcohol }
   | { type: 'cocktail'; value: Cocktail }
   | { type: 'createCocktail'; value: Omit<Cocktail, 'id' | 'price' | 'extraCosts'> }
+  | {
+      type: 'updateRecipe';
+      cocktailId: string;
+      ingredients: Ingredient[];
+      notes: string;
+      expected: { ingredients: Ingredient[]; notes: string };
+    }
   | { type: 'purchase'; value: Purchase }
   | { type: 'correctPurchase'; purchaseId: string; expectedMl: number; ml: number }
   | { type: 'sale'; value: { kind: Sale['kind']; productId: string; quantity: number; date: string } }
@@ -104,8 +111,16 @@ export type StaffSale = Pick<
   Sale,
   'id' | 'date' | 'createdAt' | 'kind' | 'productId' | 'name' | 'quantity' | 'voided' | 'category' | 'unit'
 >;
+export interface StaffRecipe extends Pick<
+  Cocktail,
+  'id' | 'name' | 'category' | 'image' | 'notes' | 'ingredients'
+> {
+  editable: boolean;
+  managedIngredientIds: string[];
+}
 export interface StaffData {
-  ingredients: (Pick<Alcohol, 'id' | 'name' | 'unit' | 'category' | 'bottleSizeMl'> & {
+  recipes: StaffRecipe[];
+  ingredients: (Pick<Alcohol, 'id' | 'name' | 'unit' | 'category' | 'bottleSizeMl' | 'color'> & {
     available: number;
   })[];
   products: StaffProduct[];

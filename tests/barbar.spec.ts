@@ -275,7 +275,7 @@ test('barbar sees quantities and read-only stock but cannot open admin pages', a
   });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true })).toBeVisible();
-  await expect(page.getByRole('navigation').getByRole('link')).toHaveCount(2);
+  await expect(page.getByRole('navigation').getByRole('link')).toHaveCount(3);
   await expect(page.locator('body')).not.toContainText(
     /֏|Выручка|Валовая прибыль|Себестоимость|закупочные цены/,
   );
@@ -294,7 +294,7 @@ test('barbar sees quantities and read-only stock but cannot open admin pages', a
   await expect(page.locator('.receipt-lines').first()).toContainText('Продаж пока нет');
   await page.getByLabel('Дата продаж').fill(today());
   await expect(page.locator('.receipt-lines').first()).toContainText('3 порц.');
-  for (const path of ['/reports', '/cocktails', '/files']) {
+  for (const path of ['/reports', '/files']) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true })).toBeVisible();

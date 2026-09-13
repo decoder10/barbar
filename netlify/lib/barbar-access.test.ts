@@ -194,4 +194,101 @@ describe('role isolation', () => {
     req.headers.set('origin', 'https://other.example');
     expect((await handleBarApi(req, repository())).status).toBe(403);
   });
+  it('lets staff edit existing ingredients while preserving prices, expenses and historical records', async () => {
+    const repo = repository();
+    const before = structuredClone((await repo.read()).data);
+    const recipe = before.cocktails[0];
+    const command = {
+      type: 'updateRecipe',
+      id: 'edit-staff-recipe',
+      cocktailId: recipe.id,
+      ingredients: [
+        { alcoholId: 'gin', ml: 60, cost: 999 },
+        { alcoholId: 'tonic', ml: 150 },
+      ],
+      notes: 'Добавить лёд и перемешать.',
+      expected: { ingredients: recipe.ingredients, notes: recipe.notes || '' },
+      price: 1,
+      name: 'Forged',
+      extraCosts: [],
+      stockAlcoholId: 'vodka',
+    };
+    for (let retry = 0; retry < 2; retry++) {
+      const response = await handleBarApi(request('barbar', command), repo);
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      noFinancialData(body);
+      expect(body.staffData.recipes.find((c: { id: string }) => c.id === recipe.id)).toMatchObject({
+        editable: true,
+        name: recipe.name,
+        managedIngredientIds: ['soda'],
+        ingredients: [
+          { alcoholId: 'gin', ml: 60 },
+          { alcoholId: 'tonic', ml: 150 },
+        ],
+      });
+    }
+    const after = (await repo.read()).data;
+    expect(after.cocktails[0]).toEqual({
+      ...recipe,
+      ingredients: [
+        { alcoholId: 'gin', ml: 60 },
+        { alcoholId: 'tonic', ml: 150 },
+      ],
+      notes: command.notes,
+    });
+    expect(after.sales).toEqual(before.sales);
+    expect(after.purchases).toEqual(before.purchases);
+    expect(after.alcohol).toEqual(before.alcohol);
+    expect(repo.commit).toHaveBeenCalledTimes(1);
+    const stale = await handleBarApi(request('barbar', { ...command, id: 'stale' }), repo);
+    expect(stale.status).toBe(400);
+    expect(repo.commit).toHaveBeenCalledTimes(1);
+  });
+  it('rejects staff edits to bottle stock links and invalid ingredient ids', async () => {
+    const repo = repository();
+    const before = await repo.read();
+    const next = applyCommand(before.data, {
+      id: 'new-bottle',
+      type: 'alcohol',
+      value: {
+        id: 'test-lager',
+        name: 'Test lager',
+        category: 'beer',
+        unit: 'bottle',
+        costPerLiter: 500,
+        pricePerLiter: 1000,
+        color: '#123456',
+      },
+    });
+    await repo.commit(before, next);
+    const bottle = next.cocktails.find((c) => c.stockAlcoholId === 'test-lager')!;
+    const result = await handleBarApi(
+      request('barbar', {
+        type: 'updateRecipe',
+        id: 'change-bottle',
+        cocktailId: bottle.id,
+        ingredients: [{ alcoholId: 'test-lager', ml: 2 }],
+        notes: '',
+        expected: { ingredients: bottle.ingredients, notes: '' },
+      }),
+      repo,
+    );
+    expect(result.status).toBe(400);
+    expect((await repo.read()).data).toEqual(next);
+    const recipe = next.cocktails[0];
+    const invalid = await handleBarApi(
+      request('barbar', {
+        type: 'updateRecipe',
+        id: 'invalid-recipe',
+        cocktailId: recipe.id,
+        ingredients: [{ alcoholId: 'not-an-ingredient', ml: 50 }],
+        notes: '',
+        expected: { ingredients: recipe.ingredients, notes: recipe.notes || '' },
+      }),
+      repo,
+    );
+    expect(invalid.status).toBe(400);
+    expect((await repo.read()).data).toEqual(next);
+  });
 });

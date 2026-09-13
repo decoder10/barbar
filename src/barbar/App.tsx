@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Brand, Field, Submit } from './components';
 import { useBar } from './store';
+const StaffRecipes = lazy(() => import('./pages/StaffRecipes'));
 const StaffInventory = lazy(() => import('./pages/StaffInventory'));
 const StaffSales = lazy(() => import('./pages/StaffSales'));
 const Sales = lazy(() => import('./pages/Sales'));
@@ -155,7 +156,7 @@ export default function App() {
         </div>
         <nav aria-label="Основная навигация">
           {navigation
-            .filter((item) => role === 'admin' || ['/', '/inventory'].includes(item.path))
+            .filter((item) => role === 'admin' || ['/', '/inventory', '/cocktails'].includes(item.path))
             .map(({ path, label, icon: Icon, caption }) => (
               <NavLink
                 key={path}
@@ -256,10 +257,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={role === 'admin' ? <Sales /> : <StaffSales />} />
               <Route path="/inventory" element={role === 'admin' ? <Inventory /> : <StaffInventory />} />
-              <Route
-                path="/cocktails"
-                element={role === 'admin' ? <Cocktails /> : <Navigate to="/" replace />}
-              />
+              <Route path="/cocktails" element={role === 'admin' ? <Cocktails /> : <StaffRecipes />} />
               <Route path="/reports" element={role === 'admin' ? <Reports /> : <Navigate to="/" replace />} />
               <Route path="/files" element={role === 'admin' ? <Backups /> : <Navigate to="/" replace />} />
               <Route path="/barbar/*" element={<Navigate to="/" replace />} />

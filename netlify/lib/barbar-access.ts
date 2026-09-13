@@ -3,11 +3,22 @@ import type { BarData, Role, StaffData } from '../../src/barbar/types';
 
 export function staffData(data: BarData): StaffData {
   return {
-    ingredients: data.alcohol.map(({ id, name, unit, category, bottleSizeMl }) => ({
+    recipes: data.cocktails.map((c) => ({
+      id: c.id,
+      name: c.name,
+      category: c.category || 'cocktail',
+      image: c.image,
+      notes: c.notes || '',
+      ingredients: c.ingredients.map((i) => ({ alcoholId: i.alcoholId, ml: i.ml })),
+      editable: !c.stockAlcoholId,
+      managedIngredientIds: (c.extraCosts || []).map((i) => i.alcoholId),
+    })),
+    ingredients: data.alcohol.map(({ id, name, unit, category, bottleSizeMl, color }) => ({
       id,
       name,
       unit: unit || 'ml',
       category,
+      color,
       available: stock(data, id),
       ...(bottleSizeMl ? { bottleSizeMl } : {}),
     })),

@@ -31,7 +31,7 @@ export const handleBarApi = async (request: Request, repository: Repository) => 
     } catch {
       return json({ error: 'Некорректный JSON.' }, 400);
     }
-    if (role !== 'admin' && !['sale', 'createCocktail'].includes(input?.command?.type)) {
+    if (role !== 'admin' && !['sale', 'createCocktail', 'updateRecipe'].includes(input?.command?.type)) {
       return json({ error: 'Эта операция доступна только администратору.' }, 403);
     }
     for (let attempt = 0; attempt < 5; attempt += 1) {

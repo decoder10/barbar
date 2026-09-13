@@ -176,7 +176,7 @@ export function CocktailArt({ image, name }: { image: number; name: string }) {
     />
   );
 }
-export function BottleArt({ drink }: { drink: Alcohol }) {
+export function BottleArt({ drink }: { drink: Pick<Alcohol, 'name' | 'color'> }) {
   return (
     <div className="bottle-art" style={{ '--bottle-color': drink.color } as React.CSSProperties}>
       <svg viewBox="0 0 96 150" role="img" aria-label={drink.name}>

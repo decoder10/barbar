@@ -511,6 +511,35 @@ export function applyCommand(data: BarData, command: Command): BarData {
         },
       });
     }
+    case 'updateRecipe': {
+      const existing = data.cocktails.find((c) => c.id === command.cocktailId);
+      if (!existing) return fail('Позиция меню не найдена. Обновите страницу.');
+      if (existing.stockAlcoholId)
+        return fail('Эта позиция связана со складом. Её состав изменяет администратор.');
+      if (
+        !Array.isArray(command.ingredients) ||
+        command.ingredients.length > 30 ||
+        typeof command.notes !== 'string'
+      )
+        return fail('Проверьте ингредиенты и описание рецепта.');
+      if (
+        !command.expected ||
+        JSON.stringify(existing.ingredients) !== JSON.stringify(command.expected.ingredients) ||
+        (existing.notes || '') !== command.expected.notes
+      )
+        return fail('Рецепт уже изменён. Закройте окно, обновите страницу и откройте рецепт заново.');
+      // Staff replace only recipe quantities and preparation notes. All prices,
+      // admin-managed expenses, identity and historical sales stay server-owned.
+      return applyCommand(data, {
+        id: command.id,
+        type: 'cocktail',
+        value: {
+          ...existing,
+          ingredients: command.ingredients.map((i) => ({ alcoholId: i?.alcoholId, ml: i?.ml })),
+          notes: command.notes,
+        },
+      });
+    }
     case 'cocktail': {
       const c = command.value;
       if (!cocktailValid(c, next)) {
