@@ -123,7 +123,7 @@ export function migrateBottleCatalog(data: BarData): BarData {
     ['pilsner', '379 — Pilsner'],
     ['dankel', '379 — Dankel'],
     ['citrus', '379 — Citrus'],
-    ['weizen', '379 — ոեիսեն'],
+    ['weizen', '379 — Weizen'],
   ]) {
     const id = `beer-379-${slug}`;
     const menuId = `bottle-${id}`;
@@ -161,6 +161,17 @@ export function migrateBottleCatalog(data: BarData): BarData {
       notes: 'Одна продажа списывает одну бутылку этой марки.',
     });
     changed = true;
+  }
+  const weizen = next.alcohol.find((a) => a.id === 'beer-379-weizen');
+  if (weizen?.name === '379 — ոեիսեն') {
+    weizen.name = '379 — Weizen';
+    changed = true;
+  }
+  for (const menu of next.cocktails) {
+    if (menu.stockAlcoholId === 'beer-379-weizen' && menu.name === '379 — ոեիսեն') {
+      menu.name = '379 — Weizen';
+      changed = true;
+    }
   }
   return changed ? next : data;
 }
