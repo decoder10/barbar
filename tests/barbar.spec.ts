@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fixtureData } from './fixtures';
-import { applyCommand } from '../src/barbar/model';
+import { staffData } from '../netlify/lib/barbar-access';
+import { applyCommand, today } from '../src/barbar/model';
 async function workspace(page: import('@playwright/test').Page, oldSale = false, lowStock = false) {
   let data = fixtureData();
   if (lowStock) {
@@ -17,13 +18,15 @@ async function workspace(page: import('@playwright/test').Page, oldSale = false,
       value: { kind: 'alcohol', productId: 'vodka', quantity: 50, date: '2026-09-02' },
     });
   }
-  await page.route('**/api/barbar/auth', (route) => route.fulfill({ json: { authenticated: true } }));
+  await page.route('**/api/barbar/auth', (route) =>
+    route.fulfill({ json: { authenticated: true, role: 'admin' } }),
+  );
   await page.route('**/api/barbar', async (route) => {
     try {
       if (route.request().method() === 'POST') {
         data = applyCommand(data, route.request().postDataJSON().command);
       }
-      await route.fulfill({ json: { data, revision: 'test' } });
+      await route.fulfill({ json: { data, revision: 'test', role: 'admin' } });
     } catch (error) {
       await route.fulfill({ status: 400, json: { error: (error as Error).message } });
     }
@@ -113,8 +116,8 @@ test('all menu categories and backup tools are accessible', async ({ page }) => 
   await expect(page.getByRole('button', { name: /Volcani red dry Haghtanak · бокал/ })).toContainText(
     '1 500',
   );
-  await page.getByRole('link', { name: 'Файлы и копии Ваши данные' }).click();
-  await expect(page.getByRole('heading', { name: 'Папка ежедневных продаж' })).toBeVisible();
+  await page.getByRole('link', { name: 'Данные и копии Ваши данные' }).click();
+  await expect(page.getByRole('heading', { name: 'Продажи по дням', level: 2 })).toBeVisible();
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Скачать резервную копию', exact: true }).click();
   expect((await downloadPromise).suggestedFilename()).toMatch(/barbar-backup/);
@@ -122,7 +125,7 @@ test('all menu categories and backup tools are accessible', async ({ page }) => 
 
 test('old history can be removed through the site without returning stock', async ({ page }) => {
   await workspace(page, true);
-  await page.getByRole('link', { name: 'Файлы и копии Ваши данные' }).click();
+  await page.getByRole('link', { name: 'Данные и копии Ваши данные' }).click();
   await expect(page.locator('.daily-file')).toContainText('sales/2026-09-02.json');
   await page.getByLabel('Удалить историю раньше').fill('2026-09-05');
   await page.getByRole('button', { name: 'Удалить старые продажи' }).click();
@@ -254,4 +257,117 @@ test('products have their own inventory filter and can be costed per cocktail in
   await page.getByRole('button', { name: 'Записать продажу' }).click();
   await page.getByRole('link', { name: 'Отчёты Всё в цифрах' }).click();
   await expect(page.getByRole('row').filter({ hasText: 'Gin tonic Beefeater' })).toContainText('1 290');
+});
+
+test('barbar sees quantities, can record sales, and cannot open admin pages', async ({ page }) => {
+  let data = fixtureData();
+  const product = data.cocktails[0];
+  await page.route('**/api/barbar/auth', (route) =>
+    route.fulfill({ json: { authenticated: true, role: 'barbar' } }),
+  );
+  await page.route('**/api/barbar', async (route) => {
+    if (route.request().method() === 'POST') {
+      const command = route.request().postDataJSON().command;
+      expect(command.type).toBe('sale');
+      data = applyCommand(data, command);
+    }
+    await route.fulfill({ json: { staffData: staffData(data), revision: 'test', role: 'barbar' } });
+  });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation').getByRole('link')).toHaveCount(1);
+  await expect(page.locator('body')).not.toContainText(
+    /֏|Выручка|Валовая прибыль|Себестоимость|закупочные цены/,
+  );
+  await page.getByRole('button', { name: new RegExp(product.name) }).click();
+  await expect(page.getByRole('dialog')).not.toContainText(/֏|Себестоимость|К оплате/);
+  await page.getByLabel('Количество порций').fill('2');
+  await page.getByRole('button', { name: 'Записать продажу', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.getByRole('button', { name: new RegExp(product.name) }).click();
+  await page.getByRole('button', { name: 'Записать продажу', exact: true }).click();
+  await expect(page.locator('.receipt-lines').first()).toContainText('3 порц.');
+  await expect(page.getByRole('button', { name: /Отменить продажу|Скачать/ })).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.receipt-lines').first()).toContainText('3 порц.');
+  await page.getByRole('button', { name: 'Предыдущий день' }).click();
+  await expect(page.locator('.receipt-lines').first()).toContainText('Продаж пока нет');
+  await page.getByLabel('Дата продаж').fill(today());
+  await expect(page.locator('.receipt-lines').first()).toContainText('3 порц.');
+  for (const path of ['/reports', '/inventory', '/cocktails', '/files']) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true })).toBeVisible();
+    await expect(page.locator('body')).not.toContainText(/֏|Выручка|Себестоимость/);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '/private/tmp/barbar-staff-mobile.png', fullPage: false });
+});
+
+test('real admin login uses the separate owner account and reads MongoDB', async ({ request }) => {
+  const result = await request.post('/api/barbar/auth', {
+    headers: { origin: 'http://127.0.0.1:4001' },
+    data: { username: 'admin', password: process.env.BARBAR_ADMIN_PASSWORD },
+  });
+  expect(result.status()).toBe(200);
+  expect(await result.json()).toEqual({ authenticated: true, role: 'admin' });
+  const state = await request.get('/api/barbar');
+  expect(state.status()).toBe(200);
+  const body = await state.json();
+  expect(body.role).toBe('admin');
+  expect(body.data.purchases).toBeInstanceOf(Array);
+  expect(body.data.sales).toBeInstanceOf(Array);
+});
+
+test('barbar can create a cocktail with a gram recipe without seeing or setting money', async ({ page }) => {
+  let data = fixtureData();
+  let role = 'barbar';
+  await page.route('**/api/barbar/auth', (route) => route.fulfill({ json: { authenticated: true, role } }));
+  await page.route('**/api/barbar', async (route) => {
+    if (route.request().method() === 'POST') {
+      const command = route.request().postDataJSON().command;
+      expect(command.type).toBe('createCocktail');
+      expect(command.value).not.toHaveProperty('price');
+      expect(command.value).not.toHaveProperty('extraCosts');
+      data = applyCommand(data, command);
+    }
+    await route.fulfill({
+      json:
+        role === 'admin'
+          ? { data, revision: 'test', role }
+          : { staffData: staffData(data), revision: 'test', role },
+    });
+  });
+  await page.goto('/');
+  const createButton = page
+    .locator('.page-heading')
+    .getByRole('button', { name: 'Добавить коктейль', exact: true });
+  await expect(createButton).toBeInViewport();
+  await createButton.click();
+  await expect(page.getByRole('dialog')).not.toContainText(/֏|Себестоимость|Цена|Выручка/);
+  await page.getByLabel('Название коктейля').fill('Коктейль сотрудника');
+  await page.getByRole('button', { name: 'Добавить ингредиент', exact: true }).click();
+  await page.getByLabel('Ингредиент 1', { exact: true }).selectOption('vodka');
+  await page.getByLabel('Количество ингредиента 1, мл').fill('50');
+  await page.getByRole('button', { name: 'Добавить ингредиент', exact: true }).click();
+  await page.getByLabel('Ингредиент 2', { exact: true }).selectOption('sugar');
+  await page.getByLabel('Количество ингредиента 2, г').fill('5');
+  await page.getByRole('button', { name: 'Сохранить коктейль', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.getByLabel('Поиск напитка').fill('Коктейль сотрудника');
+  await expect(page.getByRole('button', { name: /Коктейль сотрудника/ })).toBeVisible();
+  expect(data.cocktails.at(-1)?.price).toBe(0);
+  expect(data.cocktails.at(-1)?.ingredients).toEqual([
+    { alcoholId: 'vodka', ml: 50 },
+    { alcoholId: 'sugar', ml: 5 },
+  ]);
+  await page.reload();
+  await page.getByLabel('Поиск напитка').fill('Коктейль сотрудника');
+  await expect(page.getByRole('button', { name: /Коктейль сотрудника/ })).toBeVisible();
+  role = 'admin';
+  await page.goto('/cocktails');
+  await page.getByLabel('Поиск коктейля').fill('Коктейль сотрудника');
+  await page.getByRole('button', { name: /Коктейль сотрудника/ }).click();
+  await expect(page.getByLabel('Цена продажи, ֏')).toHaveValue('0');
 });

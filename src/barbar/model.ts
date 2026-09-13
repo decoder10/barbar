@@ -339,6 +339,32 @@ export function applyCommand(data: BarData, command: Command): BarData {
       }
       break;
     }
+    case 'createCocktail': {
+      const c = command.value;
+      if (
+        !c ||
+        !Array.isArray(c.ingredients) ||
+        c.ingredients.length > 30 ||
+        next.cocktails.some((item) => item.id === command.id)
+      ) {
+        return fail('Проверьте название и состав новой позиции.');
+      }
+      // Staff can create a recipe, but cannot set money fields or overwrite an existing item.
+      // Pick every field explicitly, including nested ingredient fields.
+      return applyCommand(data, {
+        type: 'cocktail',
+        id: command.id,
+        value: {
+          id: command.id,
+          name: c.name,
+          ...(c.category !== undefined ? { category: c.category } : {}),
+          ...(c.notes !== undefined ? { notes: c.notes } : {}),
+          image: c.image,
+          price: 0,
+          ingredients: c.ingredients.map((i) => ({ alcoholId: i?.alcoholId, ml: i?.ml })),
+        },
+      });
+    }
     case 'cocktail': {
       const c = command.value;
       if (!cocktailValid(c, next)) {

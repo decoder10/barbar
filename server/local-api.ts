@@ -1,9 +1,10 @@
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { loadEnv, type Plugin } from 'vite';
 import auth from '../netlify/functions/barbar-auth';
 import { handleBarApi } from '../netlify/lib/barbar-handler';
-import type { Storage } from '../netlify/lib/barbar-repository';
+import { readSnapshot, type Storage } from '../netlify/lib/barbar-repository';
+import { mongoConnection, mongoRepository } from '../netlify/lib/barbar-mongo';
 
 export function localApi(): Plugin {
   return {
@@ -12,10 +13,8 @@ export function localApi(): Plugin {
     configureServer(server) {
       // Development secrets are loaded from a Git-ignored .env file.
       const environment = loadEnv('development', process.cwd(), 'BARBAR_');
-      process.env.BARBAR_USERNAME ||= environment.BARBAR_USERNAME || 'barbar';
-      process.env.BARBAR_PASSWORD ||= environment.BARBAR_PASSWORD;
+      for (const [key, value] of Object.entries(environment)) process.env[key] ||= value;
       const folder = resolve(process.cwd(), '.barbar-data');
-      let lock = Promise.resolve();
       const read: Storage['read'] = async (key) => {
         try {
           return JSON.parse(await readFile(resolve(folder, key), 'utf8'));
@@ -26,33 +25,20 @@ export function localApi(): Plugin {
           throw error;
         }
       };
-      const storage: Storage = {
+      const legacy: Storage = {
         read,
-        write: (key, value, condition) => {
-          const work = lock.then(async () => {
-            const old = await read(key);
-            if (
-              ('onlyIfNew' in condition && old) ||
-              ('onlyIfMatch' in condition && old?.etag !== condition.onlyIfMatch)
-            ) {
-              return { modified: false };
-            }
-            const file = resolve(folder, key);
-            const etag = `"${crypto.randomUUID()}"`;
-            await mkdir(dirname(file), { recursive: true });
-            const temporary = `${file}.${crypto.randomUUID()}.tmp`;
-            await writeFile(temporary, JSON.stringify({ value, etag }, null, 2));
-            await rename(temporary, file);
-            return { modified: true, etag };
-          });
-          lock = work.then(
-            () => undefined,
-            () => undefined,
-          );
-          return work;
+        write: async () => {
+          throw new Error('Legacy storage is read-only');
         },
-        remove: (key) => rm(resolve(folder, key), { force: true }),
+        remove: async () => {
+          throw new Error('Legacy storage is read-only');
+        },
       };
+      const { client, db } = mongoConnection(true);
+      const repository = mongoRepository(client, db, async () => (await readSnapshot(legacy)).data);
+      server.httpServer?.once('close', () => {
+        void client.close();
+      });
       server.middlewares.use(async (request, response, next) => {
         if (!['/api/barbar', '/api/barbar/auth'].includes((request.url || '').split('?')[0])) {
           next();
@@ -84,7 +70,7 @@ export function localApi(): Plugin {
           });
           const result = request.url?.startsWith('/api/barbar/auth')
             ? await auth(input)
-            : await handleBarApi(input, storage);
+            : await handleBarApi(input, repository);
           response.writeHead(result.status, Object.fromEntries(result.headers));
           response.end(Buffer.from(await result.arrayBuffer()));
         } catch {

@@ -71,6 +71,7 @@ export interface BarData {
 export type Action =
   | { type: 'alcohol'; value: Alcohol }
   | { type: 'cocktail'; value: Cocktail }
+  | { type: 'createCocktail'; value: Omit<Cocktail, 'id' | 'price' | 'extraCosts'> }
   | { type: 'purchase'; value: Purchase }
   | { type: 'correctPurchase'; purchaseId: string; expectedMl: number; ml: number }
   | { type: 'sale'; value: { kind: Sale['kind']; productId: string; quantity: number; date: string } }
@@ -79,3 +80,25 @@ export type Action =
   | { type: 'restore'; value: BarData }
   | { type: 'purge'; before: string };
 export type Command = Action & { id: string };
+
+export type Role = 'admin' | 'barbar';
+// Explicit allowlist: staff never receive financial fields or the full ledger.
+export interface StaffProduct {
+  id: string;
+  kind: Sale['kind'];
+  name: string;
+  category: MenuCategory | 'alcohol';
+  image?: number;
+  available: number | null;
+  ready: boolean;
+}
+export type StaffSale = Pick<
+  Sale,
+  'id' | 'date' | 'createdAt' | 'kind' | 'productId' | 'name' | 'quantity' | 'voided'
+>;
+export interface StaffData {
+  ingredients: Pick<Alcohol, 'id' | 'name' | 'unit'>[];
+  products: StaffProduct[];
+  sales: StaffSale[];
+  archivedBefore?: string;
+}

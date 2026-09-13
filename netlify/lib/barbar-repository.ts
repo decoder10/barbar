@@ -105,3 +105,20 @@ export async function commitSnapshot(storage: Storage, current: Snapshot, next: 
     cleanupPending: cleanup.some((result) => result.status === 'rejected'),
   };
 }
+
+// Legacy file storage is retained only for migration and compatibility tests.
+export interface Repository {
+  read: () => Promise<Snapshot>;
+  commit: (
+    current: Snapshot,
+    next: BarData,
+  ) => Promise<{
+    modified: boolean;
+    revision?: string;
+    cleanupPending?: boolean;
+  }>;
+}
+export const legacyRepository = (storage: Storage): Repository => ({
+  read: () => readSnapshot(storage),
+  commit: (current, next) => commitSnapshot(storage, current, next),
+});

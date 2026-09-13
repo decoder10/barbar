@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import auth from '../functions/barbar-auth';
 import { sessionCookie } from './barbar-auth';
 import { handleBarApi } from './barbar-handler';
-import { commitSnapshot, readSnapshot, type Storage } from './barbar-repository';
+import { commitSnapshot, readSnapshot, type Storage, legacyRepository } from './barbar-repository';
 import { applyCommand, initialData, stock } from '../../src/barbar/model';
 import type { Command } from '../../src/barbar/types';
 function memoryStore() {
@@ -33,11 +33,13 @@ function request(command?: Command, revision: string | null = null) {
   const base = new Request(url);
   return new Request(url, {
     method: command ? 'POST' : 'GET',
-    headers: { origin: 'https://barbar.example', cookie: sessionCookie(base).split(';')[0] },
+    headers: { origin: 'https://barbar.example', cookie: sessionCookie(base, false, 'admin').split(';')[0] },
     ...(command ? { body: JSON.stringify({ command, revision }) } : {}),
   });
 }
 beforeEach(() => {
+  vi.stubEnv('BARBAR_ADMIN_PASSWORD', 'admin-fixture-password-123');
+  vi.stubEnv('BARBAR_ADMIN_USERNAME', 'admin');
   vi.stubEnv('BARBAR_PASSWORD', 'fixture-password-123');
   vi.stubEnv('BARBAR_USERNAME', 'barbar');
 });
@@ -45,7 +47,10 @@ afterEach(() => vi.unstubAllEnvs());
 describe('Node API and daily files', () => {
   it('requires authentication and checks login and origin', async () => {
     const { storage } = memoryStore();
-    expect((await handleBarApi(new Request('https://barbar.example/api/barbar'), storage)).status).toBe(401);
+    const repository = legacyRepository(storage);
+    expect((await handleBarApi(new Request('https://barbar.example/api/barbar'), repository)).status).toBe(
+      401,
+    );
     const login = (username: string, password: string, origin = 'https://barbar.example') =>
       new Request('https://barbar.example/api/barbar/auth', {
         method: 'POST',
@@ -81,20 +86,21 @@ describe('Node API and daily files', () => {
   });
   it('rejects one of two simultaneous sales that exceed stock', async () => {
     const { storage } = memoryStore();
+    const repository = legacyRepository(storage);
     const purchase: Command = {
       type: 'purchase',
       id: 'purchase',
       value: { id: 'p', alcoholId: 'vodka', date: '2026-09-01', ml: 100, costPerLiter: 4000 },
     };
-    expect((await handleBarApi(request(purchase), storage)).status).toBe(200);
+    expect((await handleBarApi(request(purchase), repository)).status).toBe(200);
     const sale = (id: string): Command => ({
       type: 'sale',
       id,
       value: { kind: 'alcohol', productId: 'vodka', quantity: 80, date: '2026-09-02' },
     });
     const results = await Promise.all([
-      handleBarApi(request(sale('sale-1')), storage),
-      handleBarApi(request(sale('sale-2')), storage),
+      handleBarApi(request(sale('sale-1')), repository),
+      handleBarApi(request(sale('sale-2')), repository),
     ]);
     expect(results.map((r) => r.status).sort()).toEqual([200, 400]);
     const state = await readSnapshot(storage);
@@ -103,13 +109,14 @@ describe('Node API and daily files', () => {
   });
   it('removes purged day files and preserves stock', async () => {
     const { storage, files } = memoryStore();
+    const repository = legacyRepository(storage);
     await handleBarApi(
       request({
         id: 'p',
         type: 'purchase',
         value: { id: 'purchase', alcoholId: 'vodka', ml: 1000, costPerLiter: 4000, date: '2026-09-01' },
       }),
-      storage,
+      repository,
     );
     await handleBarApi(
       request({
@@ -117,12 +124,12 @@ describe('Node API and daily files', () => {
         type: 'sale',
         value: { kind: 'alcohol', productId: 'vodka', quantity: 50, date: '2026-09-02' },
       }),
-      storage,
+      repository,
     );
     const before = await readSnapshot(storage);
     const result = await handleBarApi(
       request({ id: 'clean', type: 'purge', before: '2026-09-05' }, before.revision),
-      storage,
+      repository,
     );
     expect(result.status).toBe(200);
     expect([...files.keys()].filter((k) => k.startsWith('sales/'))).toEqual([]);
@@ -130,17 +137,18 @@ describe('Node API and daily files', () => {
   });
   it('blocks destructive changes based on a stale revision', async () => {
     const { storage } = memoryStore();
+    const repository = legacyRepository(storage);
     await handleBarApi(
       request({
         id: 'p',
         type: 'purchase',
         value: { id: 'purchase', alcoholId: 'vodka', ml: 1000, costPerLiter: 4000, date: '2026-09-01' },
       }),
-      storage,
+      repository,
     );
     const response = await handleBarApi(
       request({ id: 'restore', type: 'restore', value: initialData() }, null),
-      storage,
+      repository,
     );
     expect(response.status).toBe(409);
     expect(stock((await readSnapshot(storage)).data, 'vodka')).toBe(1000);

@@ -96,7 +96,7 @@ export const menuPhotos = photoGroups.flatMap((group, sheet) =>
 export const maxMenuImage = 11 + menuPhotos.length;
 
 // Legacy 0–11 choices get a matching photo without rewriting saved recipes or sales.
-export function menuImage(cocktail: Cocktail): number {
+export function menuImage(cocktail: Pick<Cocktail, 'name' | 'image' | 'category'>): number {
   if (cocktail.image >= 12 && cocktail.image <= maxMenuImage) return cocktail.image;
   const name = cocktail.name.toLowerCase();
   const category = cocktail.category || 'cocktail';

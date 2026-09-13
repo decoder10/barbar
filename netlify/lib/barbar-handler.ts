@@ -1,10 +1,12 @@
 import { applyCommand } from '../../src/barbar/model';
 import type { BarData, Command } from '../../src/barbar/types';
 import { authenticated, json, sameOrigin } from './barbar-auth';
-import { commitSnapshot, readSnapshot, type Storage } from './barbar-repository';
+import type { Repository } from './barbar-repository';
+import { publicSnapshot } from './barbar-access';
 
-export const handleBarApi = async (request: Request, storage: Storage) => {
-  if (!authenticated(request)) {
+export const handleBarApi = async (request: Request, repository: Repository) => {
+  const role = authenticated(request);
+  if (!role) {
     return json({ error: 'Войдите в Barbar Cafe.' }, 401);
   }
   if (!['GET', 'POST'].includes(request.method)) {
@@ -15,8 +17,8 @@ export const handleBarApi = async (request: Request, storage: Storage) => {
   }
   try {
     if (request.method === 'GET') {
-      const current = await readSnapshot(storage);
-      return json({ data: current.data, revision: current.revision });
+      const current = await repository.read();
+      return json(publicSnapshot(current.data, current.revision, role));
     }
     const body = await request.text();
     if (body.length > 3_000_000) {
@@ -25,11 +27,15 @@ export const handleBarApi = async (request: Request, storage: Storage) => {
     let input: { command: Command; revision: string | null };
     try {
       input = JSON.parse(body);
+      if (!input || typeof input !== 'object') throw new Error('Invalid request');
     } catch {
       return json({ error: 'Некорректный JSON.' }, 400);
     }
+    if (role !== 'admin' && !['sale', 'createCocktail'].includes(input?.command?.type)) {
+      return json({ error: 'Эта операция доступна только администратору.' }, 403);
+    }
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const current = await readSnapshot(storage);
+      const current = await repository.read();
       if (
         ['restore', 'purge', 'correctPurchase'].includes(input.command?.type) &&
         !current.data.operations.includes(input.command.id) &&
@@ -49,22 +55,21 @@ export const handleBarApi = async (request: Request, storage: Storage) => {
         return json({ error: error instanceof Error ? error.message : 'Некорректная операция.' }, 400);
       }
       if (next === current.data) {
-        return json({ data: current.data, revision: current.revision });
+        return json(publicSnapshot(current.data, current.revision, role));
       }
       if (JSON.stringify(next).length > 3_000_000) {
         return json(
           {
             error:
-              'История достигла лимита этой версии (3 МБ). Скачайте резервную копию и удалите старые продажи в разделе «Файлы и копии».',
+              'История достигла лимита этой версии (3 МБ). Скачайте резервную копию и удалите старые продажи в разделе «Данные и копии».',
           },
           413,
         );
       }
-      const result = await commitSnapshot(storage, current, next);
+      const result = await repository.commit(current, next);
       if (result.modified) {
         return json({
-          data: next,
-          revision: result.revision,
+          ...publicSnapshot(next, result.revision, role),
           warning: result.cleanupPending
             ? 'Операция сохранена, но часть устаревших файлов пока не удалена из хранилища. Обратитесь к владельцу сайта.'
             : undefined,
@@ -73,7 +78,7 @@ export const handleBarApi = async (request: Request, storage: Storage) => {
     }
     return json({ error: 'Другое устройство обновляет данные. Повторите операцию.' }, 409);
   } catch (error) {
-    console.error('Barbar storage error', error);
+    console.error('Barbar storage error', error instanceof Error ? error.name : 'UnknownError');
     return json(
       { error: 'Хранилище временно недоступно. Проверьте подключение и повторите попытку в той же форме.' },
       503,

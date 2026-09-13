@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { initialData, uid } from './model';
-import type { Action, BarData, Command } from './types';
+import type { Action, BarData, Command, Role, StaffData } from './types';
 
 type Mode = 'loading' | 'login' | 'cloud';
 type Notice = { text: string; error: boolean } | null;
 interface Store {
   data: BarData;
+  staffData: StaffData | null;
+  role: Role | null;
   mode: Mode;
   busy: boolean;
   notice: Notice;
@@ -58,6 +60,8 @@ async function api(path: string, options?: RequestInit) {
 }
 export function BarProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<BarData>(initialData);
+  const [role, setRole] = useState<Role | null>(null);
+  const [staffData, setStaffData] = useState<StaffData | null>(null);
   const [mode, setMode] = useState<Mode>('loading');
   const [busy, setBusy] = useState(false);
   const [connected, setConnected] = useState(true);
@@ -77,7 +81,9 @@ export function BarProvider({ children }: { children: ReactNode }) {
       if (current !== sequence.current) {
         return;
       }
-      setData(result.data);
+      setData(result.role === 'admin' ? result.data : initialData());
+      setStaffData(result.role === 'barbar' ? result.staffData : null);
+      setRole(result.role);
       revision.current = result.revision;
       setConnected(true);
     } catch (error) {
@@ -86,6 +92,9 @@ export function BarProvider({ children }: { children: ReactNode }) {
       }
       setConnected(false);
       if (error instanceof ApiError && error.status === 401) {
+        setData(initialData());
+        setStaffData(null);
+        setRole(null);
         setMode('login');
       }
       notify(error instanceof Error ? error.message : 'Не удалось обновить данные.', true);
@@ -97,10 +106,14 @@ export function BarProvider({ children }: { children: ReactNode }) {
       try {
         const auth = await api('/api/barbar/auth');
         if (active) {
+          setRole(auth.role || null);
           setMode(auth.authenticated ? 'cloud' : 'login');
         }
       } catch (error) {
         if (active) {
+          setData(initialData());
+          setStaffData(null);
+          setRole(null);
           setMode('login');
           notify(error instanceof Error ? error.message : 'Не удалось открыть данные.', true);
         }
@@ -152,7 +165,9 @@ export function BarProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         body: JSON.stringify({ command: pending.current.command, revision: revision.current }),
       });
-      setData(result.data);
+      setData(result.role === 'admin' ? result.data : initialData());
+      setStaffData(result.role === 'barbar' ? result.staffData : null);
+      setRole(result.role);
       revision.current = result.revision;
       setConnected(true);
       warning = result.warning;
@@ -161,6 +176,9 @@ export function BarProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
+        setData(initialData());
+        setStaffData(null);
+        setRole(null);
         setMode('login');
       }
       if (error instanceof ApiError && [400, 403, 413].includes(error.status)) {
@@ -176,7 +194,16 @@ export function BarProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string) => {
     setBusy(true);
     try {
-      await api('/api/barbar/auth', { method: 'POST', body: JSON.stringify({ username, password }) });
+      const auth = await api('/api/barbar/auth', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      });
+      ++sequence.current;
+      setData(initialData());
+      setStaffData(null);
+      setRole(auth.role);
+      revision.current = null;
+      pending.current = null;
       setNotice(null);
       setMode('cloud');
     } catch (error) {
@@ -193,7 +220,11 @@ export function BarProvider({ children }: { children: ReactNode }) {
       if (mode === 'cloud') {
         await api('/api/barbar/auth', { method: 'DELETE' });
       }
+      ++sequence.current;
       setData(initialData());
+      setStaffData(null);
+      setRole(null);
+      revision.current = null;
       setMode('login');
       setNotice(null);
       pending.current = null;
@@ -202,7 +233,9 @@ export function BarProvider({ children }: { children: ReactNode }) {
     }
   };
   return (
-    <Context.Provider value={{ data, mode, busy, notice, connected, run, login, logout, refresh, notify }}>
+    <Context.Provider
+      value={{ data, staffData, role, mode, busy, notice, connected, run, login, logout, refresh, notify }}
+    >
       {children}
     </Context.Provider>
   );

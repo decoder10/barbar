@@ -2,24 +2,25 @@ import {
   authenticated,
   json,
   passwordConfigured,
-  passwordMatches,
+  loginRole,
   sameOrigin,
   sessionCookie,
 } from '../lib/barbar-auth';
 
 export default async (request: Request) => {
-  if (!passwordConfigured()) {
+  if (!passwordConfigured() && !passwordConfigured('admin')) {
     return json(
       {
         error:
-          'Владелец сайта должен задать BARBAR_PASSWORD (от 12 символов) в Netlify и выполнить новый deploy.',
+          'Владелец должен настроить BARBAR_PASSWORD и отдельный BARBAR_ADMIN_PASSWORD (от 12 символов) на сервере.',
         setup: true,
       },
       503,
     );
   }
   if (request.method === 'GET') {
-    return json({ authenticated: authenticated(request) });
+    const role = authenticated(request);
+    return json({ authenticated: !!role, role });
   }
   if (!['POST', 'DELETE'].includes(request.method)) {
     return json({ error: 'Метод не поддерживается.' }, 405);
@@ -36,13 +37,11 @@ export default async (request: Request) => {
       return json({ error: 'Слишком длинный пароль.' }, 400);
     }
     const credentials = JSON.parse(body);
-    if (
-      credentials.username !== (process.env.BARBAR_USERNAME || 'barbar') ||
-      !passwordMatches(credentials.password)
-    ) {
+    const role = loginRole(credentials.username, credentials.password);
+    if (!role) {
       return json({ error: 'Неверный логин или пароль.' }, 401);
     }
-    return json({ authenticated: true }, 200, { 'Set-Cookie': sessionCookie(request) });
+    return json({ authenticated: true, role }, 200, { 'Set-Cookie': sessionCookie(request, false, role) });
   } catch {
     return json({ error: 'Некорректный запрос.' }, 400);
   }

@@ -11,13 +11,17 @@
     "typecheck": "tsc -b",
     "test:e2e": "playwright test",
     "format": "prettier --write src netlify server tests *.ts *.json *.md *.html",
-    "check-format": "prettier --check src netlify server tests *.ts *.json *.md *.html"
+    "check-format": "prettier --check src netlify server tests *.ts *.json *.md *.html",
+    "db:start": "docker compose up -d --wait",
+    "db:stop": "docker compose stop",
+    "test:db": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" vitest run netlify/lib/barbar-mongo.test.ts"
   },
   "dependencies": {
     "@fontsource/manrope": "^5.2.6",
     "@fontsource/playfair-display": "^5.2.6",
     "@netlify/blobs": "10.7.12",
     "lucide-react": "^0.468.0",
+    "mongodb": "^7.6.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.0"

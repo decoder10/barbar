@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Brand, Field, Submit } from './components';
 import { useBar } from './store';
+const StaffSales = lazy(() => import('./pages/StaffSales'));
 const Sales = lazy(() => import('./pages/Sales'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Cocktails = lazy(() => import('./pages/Cocktails'));
@@ -29,7 +30,7 @@ const navigation = [
   { path: '/inventory', label: 'Склад', icon: Boxes, caption: 'Напитки и закупки' },
   { path: '/cocktails', label: 'Меню и рецепты', icon: GlassWater, caption: 'Коктейли, настойки и всё меню' },
   { path: '/reports', label: 'Отчёты', icon: BarChart3, caption: 'Всё в цифрах' },
-  { path: '/files', label: 'Файлы и копии', icon: Files, caption: 'Ваши данные' },
+  { path: '/files', label: 'Данные и копии', icon: Files, caption: 'Ваши данные' },
 ];
 function Login() {
   const { login, notice } = useBar();
@@ -116,7 +117,7 @@ function Login() {
   );
 }
 export default function App() {
-  const { mode, notice, logout, refresh, connected, busy } = useBar();
+  const { mode, role, notice, logout, refresh, connected, busy } = useBar();
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
   if (mode === 'loading') {
@@ -152,22 +153,24 @@ export default function App() {
           <span /> УПРАВЛЕНИЕ БАРОМ
         </div>
         <nav aria-label="Основная навигация">
-          {navigation.map(({ path, label, icon: Icon, caption }) => (
-            <NavLink
-              key={path}
-              to={path}
-              end={path === '/'}
-              onClick={() => setMenu(false)}
-              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-            >
-              <Icon size={20} />
-              <span>
-                {label}
-                <small>{caption}</small>
-              </span>
-              <ChevronRight size={14} className="nav-arrow" />
-            </NavLink>
-          ))}
+          {navigation
+            .filter((item) => role === 'admin' || item.path === '/')
+            .map(({ path, label, icon: Icon, caption }) => (
+              <NavLink
+                key={path}
+                to={path}
+                end={path === '/'}
+                onClick={() => setMenu(false)}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+              >
+                <Icon size={20} />
+                <span>
+                  {label}
+                  <small>{caption}</small>
+                </span>
+                <ChevronRight size={14} className="nav-arrow" />
+              </NavLink>
+            ))}
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-tip">
@@ -188,7 +191,7 @@ export default function App() {
             <span className="avatar">B</span>
             <div>
               <strong>Barbar Cafe</strong>
-              <small>Команда бара</small>
+              <small>{role === 'admin' ? 'Администратор' : 'Продажи · barbar'}</small>
             </div>
             <button
               className="icon-button"
@@ -234,9 +237,11 @@ export default function App() {
                 <RefreshCw size={16} />
               </button>
             )}
-            <span className="currency-tag">
-              AMD <b>֏</b>
-            </span>
+            {role === 'admin' && (
+              <span className="currency-tag">
+                AMD <b>֏</b>
+              </span>
+            )}
           </div>
         </header>
         <main id="content" className="page-content">
@@ -248,11 +253,17 @@ export default function App() {
             }
           >
             <Routes>
-              <Route path="/" element={<Sales />} />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/cocktails" element={<Cocktails />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/files" element={<Backups />} />
+              <Route path="/" element={role === 'admin' ? <Sales /> : <StaffSales />} />
+              <Route
+                path="/inventory"
+                element={role === 'admin' ? <Inventory /> : <Navigate to="/" replace />}
+              />
+              <Route
+                path="/cocktails"
+                element={role === 'admin' ? <Cocktails /> : <Navigate to="/" replace />}
+              />
+              <Route path="/reports" element={role === 'admin' ? <Reports /> : <Navigate to="/" replace />} />
+              <Route path="/files" element={role === 'admin' ? <Backups /> : <Navigate to="/" replace />} />
               <Route path="/barbar/*" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
