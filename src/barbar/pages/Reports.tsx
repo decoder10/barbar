@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { ArrowDownToLine, ArrowUpRight, Banknote, CalendarDays, GlassWater, ReceiptText } from 'lucide-react';
-import { activeSales, categoryLabel, ingredientVolume, money, round, today, volume } from '../model';
+import {
+  activeSales,
+  saleUnit,
+  priceBasis,
+  categoryLabel,
+  ingredientVolume,
+  money,
+  round,
+  today,
+} from '../model';
 import { download, Empty, ExportButton, Metric, PageHeading } from '../components';
 import type { MenuCategory } from '../types';
 import { useBar } from '../store';
@@ -16,11 +25,21 @@ export default function Reports() {
   const purchases = data.purchases.filter((p) => p.date.startsWith(period));
   const revenue = round(sales.reduce((sum, s) => sum + s.revenue, 0));
   const cost = round(sales.reduce((sum, s) => sum + s.cost, 0));
-  const bought = round(purchases.reduce((sum, p) => sum + (p.ml * p.costPerLiter) / 1000, 0));
+  const bought = round(
+    purchases.reduce((sum, p) => sum + (p.ml * p.costPerLiter) / priceBasis(data, p.alcoholId), 0),
+  );
   const cocktailCount = sales.filter((s) => s.kind === 'cocktail').reduce((sum, s) => sum + s.quantity, 0);
   const groups: Record<
     string,
-    { name: string; category?: MenuCategory; kind: string; quantity: number; revenue: number; cost: number }
+    {
+      name: string;
+      unit?: 'bottle' | 'glass';
+      category?: MenuCategory;
+      kind: string;
+      quantity: number;
+      revenue: number;
+      cost: number;
+    }
   > = {};
   sales.forEach((s) => {
     const key = `${s.kind}-${s.productId}`;
@@ -28,6 +47,7 @@ export default function Reports() {
       name: s.name,
       category: s.category,
       kind: s.kind,
+      unit: s.unit,
       quantity: 0,
       revenue: 0,
       cost: 0,
@@ -79,7 +99,7 @@ export default function Reports() {
         s.name,
         s.kind === 'cocktail' ? categoryLabel(s.category) : 'Алкоголь',
         s.quantity,
-        s.kind === 'cocktail' ? 'порц.' : 'мл',
+        saleUnit(s),
         s.revenue,
         s.cost,
         round(s.revenue - s.cost),
@@ -244,7 +264,9 @@ export default function Reports() {
                         {r.kind === 'cocktail' ? categoryLabel(r.category) : 'Алкоголь'}
                       </small>
                     </td>
-                    <td>{r.kind === 'cocktail' ? `${r.quantity} порц.` : volume(r.quantity)}</td>
+                    <td>
+                      {r.quantity} {saleUnit(r)}
+                    </td>
                     <td>{money(round(r.revenue))}</td>
                     <td>{money(round(r.cost))}</td>
                     <td>

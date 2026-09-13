@@ -19,6 +19,7 @@ import {
   averageCost,
   categories,
   ingredientVolume,
+  saleUnit,
   money,
   portions,
   recipeCost,
@@ -90,11 +91,19 @@ function SaleForm({
         }}
       >
         <Field
-          label={kind === 'cocktail' ? 'Количество порций' : 'Объём продажи, мл'}
+          label={
+            cocktail.stockAlcoholId && cocktail.serving !== 'glass'
+              ? 'Количество бутылок'
+              : cocktail.serving === 'glass' && cocktail.category === 'wine'
+                ? 'Количество бокалов'
+                : kind === 'cocktail'
+                  ? 'Количество порций'
+                  : 'Объём продажи, мл'
+          }
           hint={
             untracked
               ? 'Продукты учитываются по стоимости, без контроля количества'
-              : `Сейчас доступно: ${kind === 'cocktail' ? `${available} порций` : volume(available)}`
+              : `Сейчас доступно: ${kind === 'cocktail' ? `${available} ${saleUnit({ kind, unit: cocktail.stockAlcoholId ? cocktail.serving || 'bottle' : undefined, category: cocktail.category })}` : volume(available)}`
           }
         >
           <input
@@ -393,7 +402,7 @@ export default function Sales() {
                   <div>
                     <strong>{s.name}</strong>
                     <small>
-                      {s.kind === 'cocktail' ? `${s.quantity} порц.` : volume(s.quantity)}
+                      {s.quantity} {saleUnit(s)}
                       {s.voided ? ' · отменена' : ''}
                     </small>
                   </div>

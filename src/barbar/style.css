@@ -3215,3 +3215,8 @@ small {
   align-items: stretch;
   gap: 10px;
 }
+
+.inventory-categories {
+  flex-wrap: wrap;
+  max-width: 100%;
+}

@@ -67,14 +67,24 @@ export default function StaffCocktailForm({ close }: { close: () => void }) {
           <small>Количество на одну порцию</small>
         </div>
         {ingredients.map((ingredient, index) => {
-          const unit = catalog.find((a) => a.id === ingredient.alcoholId)?.unit === 'g' ? 'г' : 'мл';
+          const unit =
+            catalog.find((a) => a.id === ingredient.alcoholId)?.unit === 'bottle'
+              ? 'бут.'
+              : catalog.find((a) => a.id === ingredient.alcoholId)?.unit === 'g'
+                ? 'г'
+                : 'мл';
           return (
             <div className="ingredient-inputs" key={index}>
               <select
                 aria-label={`Ингредиент ${index + 1}`}
                 required
                 value={ingredient.alcoholId}
-                onChange={(e) => update(index, { alcoholId: e.target.value })}
+                onChange={(e) =>
+                  update(index, {
+                    alcoholId: e.target.value,
+                    ml: catalog.find((a) => a.id === e.target.value)?.unit === 'bottle' ? 1 : 50,
+                  })
+                }
               >
                 {catalog
                   .filter(
@@ -114,7 +124,12 @@ export default function StaffCocktailForm({ close }: { close: () => void }) {
           type="button"
           className="button secondary full"
           disabled={!available.length || ingredients.length >= 30}
-          onClick={() => setIngredients([...ingredients, { alcoholId: available[0].id, ml: 50 }])}
+          onClick={() =>
+            setIngredients([
+              ...ingredients,
+              { alcoholId: available[0].id, ml: available[0].unit === 'bottle' ? 1 : 50 },
+            ])
+          }
         >
           <Plus size={16} /> Добавить ингредиент
         </button>

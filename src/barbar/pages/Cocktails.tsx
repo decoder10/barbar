@@ -15,6 +15,7 @@ import {
   categories,
   categoryLabel,
   ingredientUnit,
+  priceBasis,
   ingredientVolume,
   money,
   recipeCost,
@@ -49,7 +50,11 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
   return (
     <Modal
       title={cocktail ? 'Редактировать позицию' : 'Новая позиция меню'}
-      subtitle="Соберите рецепт из вашего каталога ингредиентов."
+      subtitle={
+        value.stockAlcoholId
+          ? 'Марка, объём бутылки и порции настраиваются в разделе «Склад».'
+          : 'Соберите рецепт из вашего каталога ингредиентов.'
+      }
       close={close}
     >
       <form
@@ -64,6 +69,7 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
           <input
             required
             maxLength={80}
+            disabled={!!value.stockAlcoholId}
             value={value.name}
             placeholder="Например, Barbar Sunset"
             onChange={(e) => setValue({ ...value, name: e.target.value })}
@@ -71,6 +77,7 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
         </Field>
         <Field label="Категория меню">
           <select
+            disabled={!!value.stockAlcoholId}
             value={value.category || 'cocktail'}
             onChange={(e) => setValue({ ...value, category: e.target.value as Cocktail['category'] })}
           >
@@ -125,8 +132,14 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
             <select
               aria-label={`Ингредиент ${index + 1}`}
               required
+              disabled={!!value.stockAlcoholId}
               value={ingredient.alcoholId}
-              onChange={(e) => updateIngredient(index, { alcoholId: e.target.value })}
+              onChange={(e) =>
+                updateIngredient(index, {
+                  alcoholId: e.target.value,
+                  ml: data.alcohol.find((a) => a.id === e.target.value)?.unit === 'bottle' ? 1 : 30,
+                })
+              }
             >
               {data.alcohol
                 .filter(
@@ -143,7 +156,12 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
             </select>
             <label>
               <input
-                aria-label={`Миллилитры ингредиента ${index + 1}`}
+                aria-label={
+                  priceBasis(data, ingredient.alcoholId) === 1
+                    ? `Бутылки ингредиента ${index + 1}`
+                    : `Миллилитры ингредиента ${index + 1}`
+                }
+                disabled={!!value.stockAlcoholId}
                 type="number"
                 min="0.01"
                 max="1000000"
@@ -158,6 +176,7 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
               type="button"
               className="icon-button"
 
+              disabled={!!value.stockAlcoholId}
               aria-label={`Удалить ингредиент ${index + 1}`}
               onClick={() =>
                 setValue({ ...value, ingredients: value.ingredients.filter((_, i) => i !== index) })
@@ -170,7 +189,7 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
         <button
           className="text-link add-ingredient"
           type="button"
-          disabled={value.ingredients.length >= Math.min(30, data.alcohol.length)}
+          disabled={!!value.stockAlcoholId || value.ingredients.length >= Math.min(30, data.alcohol.length)}
           onClick={() => {
             const next = data.alcohol.find(
               (a) =>
@@ -178,7 +197,13 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
                 !value.extraCosts?.some((i) => i.alcoholId === a.id),
             );
             if (next) {
-              setValue({ ...value, ingredients: [...value.ingredients, { alcoholId: next.id, ml: 30 }] });
+              setValue({
+                ...value,
+                ingredients: [
+                  ...value.ingredients,
+                  { alcoholId: next.id, ml: next.unit === 'bottle' ? 1 : 30 },
+                ],
+              });
             }
           }}
         >
@@ -190,7 +215,7 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
         </div>
         <p className="form-help">
           Например, лимон — 50 ֏, лёд — 20 ֏. Сумма входит в себестоимость каждой порции. Количество продукта
-          со склада не списывается. Для точного остатка добавьте продукт выше в мл/г.
+          со склада не списывается. Для точного остатка добавьте продукт выше в его единицах измерения.
         </p>
         {(value.extraCosts || []).map((expense, index) => (
           <div className="ingredient-inputs" key={index}>
@@ -292,7 +317,7 @@ function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => voi
                 {data.alcohol.find((a) => a.id === i.alcoholId)?.name} ·{' '}
                 {ingredientVolume(data, i.alcoholId, i.ml)}
               </span>
-              <b>{money(round((averageCost(data, i.alcoholId) * i.ml) / 1000))}</b>
+              <b>{money(round((averageCost(data, i.alcoholId) * i.ml) / priceBasis(data, i.alcoholId)))}</b>
             </p>
           ))}
           {(value.extraCosts || []).map((i) => (
@@ -382,8 +407,8 @@ export default function Cocktails() {
         <div>
           <h3>Ваше меню уже здесь. Добавим состав?</h3>
           <p>
-            Названия и продажные цены перенесены из меню. В редакторе добавьте ингредиенты в мл или граммах —
-            себестоимость рассчитается отдельно.
+            Названия и продажные цены перенесены из меню. В редакторе добавьте ингредиенты в мл, граммах или
+            бутылках — себестоимость рассчитается отдельно.
           </p>
         </div>
         <span className="recipe-banner-number">01 / 04</span>

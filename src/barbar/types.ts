@@ -1,8 +1,12 @@
 export interface Alcohol {
   id: string;
   name: string;
-  category: 'alcohol' | 'mixer';
-  unit?: 'ml' | 'g';
+  category: 'alcohol' | 'mixer' | 'beer' | 'wine' | 'cognac';
+  unit?: 'ml' | 'g' | 'bottle';
+  bottleSizeMl?: number;
+  glassSizeMl?: number;
+  glassPrice?: number;
+  // Prices are per bottle for bottled drinks; per 1,000 units otherwise.
   costPerLiter: number;
   pricePerLiter: number;
   color: string;
@@ -12,12 +16,14 @@ export interface Ingredient {
   ml: number;
 }
 export type MenuCategory =
-  'cocktail' | 'tincture' | 'shot' | 'set' | 'beer' | 'snack' | 'hot' | 'soft' | 'wine';
+  'cocktail' | 'tincture' | 'shot' | 'set' | 'beer' | 'snack' | 'hot' | 'soft' | 'wine' | 'cognac';
 export interface PortionExpense {
   alcoholId: string;
   cost: number;
 }
 export interface Cocktail {
+  stockAlcoholId?: string;
+  serving?: 'bottle' | 'glass';
   extraCosts?: PortionExpense[];
   category?: MenuCategory;
   notes?: string;
@@ -35,6 +41,7 @@ export interface Purchase {
   costPerLiter: number;
 }
 export interface Sale {
+  unit?: 'bottle' | 'glass';
   extraCosts?: (PortionExpense & { name: string })[];
   category?: MenuCategory;
   id: string;
@@ -84,6 +91,7 @@ export type Command = Action & { id: string };
 export type Role = 'admin' | 'barbar';
 // Explicit allowlist: staff never receive financial fields or the full ledger.
 export interface StaffProduct {
+  unit?: 'bottle' | 'glass';
   id: string;
   kind: Sale['kind'];
   name: string;
@@ -94,7 +102,7 @@ export interface StaffProduct {
 }
 export type StaffSale = Pick<
   Sale,
-  'id' | 'date' | 'createdAt' | 'kind' | 'productId' | 'name' | 'quantity' | 'voided'
+  'id' | 'date' | 'createdAt' | 'kind' | 'productId' | 'name' | 'quantity' | 'voided' | 'category' | 'unit'
 >;
 export interface StaffData {
   ingredients: Pick<Alcohol, 'id' | 'name' | 'unit'>[];

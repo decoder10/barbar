@@ -1,4 +1,5 @@
 import { MongoClient, type Db, type Document, type ClientSession } from 'mongodb';
+import { migrateBottleCatalog } from '../../src/barbar/bottles';
 import { initialData, validateData } from '../../src/barbar/model';
 import type { BarData } from '../../src/barbar/types';
 import type { Repository, Snapshot } from './barbar-repository';
@@ -133,6 +134,16 @@ export function mongoRepository(
                 return row;
               }),
             });
+          }
+          const migrated = migrateBottleCatalog(data);
+          if (migrated !== data) {
+            validateData(migrated);
+            const revision = crypto.randomUUID();
+            await state.replaceOne({ _id: 'state', revision: meta.revision }, metadata(migrated, revision), {
+              session,
+            });
+            await writeChanges(session, data, migrated);
+            return { data: migrated, revision, days: {} };
           }
           return { data, revision: meta.revision, days: {} };
         }, transactionOptions);

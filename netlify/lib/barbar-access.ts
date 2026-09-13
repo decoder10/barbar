@@ -11,6 +11,7 @@ export function staffData(data: BarData): StaffData {
         name: c.name,
         category: c.category || ('cocktail' as const),
         image: c.image,
+        ...(c.stockAlcoholId ? { unit: c.serving || ('bottle' as const) } : {}),
         available: c.ingredients.length ? portions(data, c.ingredients) : null,
         ready: c.price > 0 && (c.ingredients.length > 0 || !!c.extraCosts?.length),
       })),
@@ -25,16 +26,20 @@ export function staffData(data: BarData): StaffData {
           ready: a.pricePerLiter > 0,
         })),
     ],
-    sales: data.sales.map(({ id, date, createdAt, kind, productId, name, quantity, voided }) => ({
-      id,
-      date,
-      createdAt,
-      kind,
-      productId,
-      name,
-      quantity,
-      voided,
-    })),
+    sales: data.sales.map(
+      ({ id, date, createdAt, kind, productId, name, quantity, voided, unit, category }) => ({
+        id,
+        date,
+        createdAt,
+        kind,
+        productId,
+        name,
+        quantity,
+        voided,
+        ...(unit ? { unit } : {}),
+        ...(category ? { category } : {}),
+      }),
+    ),
     ...(data.archived ? { archivedBefore: data.archived.before } : {}),
   };
 }

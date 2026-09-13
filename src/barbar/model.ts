@@ -18,16 +18,41 @@ export const categories: { id: MenuCategory; label: string }[] = [
   { id: 'set', label: 'Сеты' },
   { id: 'beer', label: 'Пиво' },
   { id: 'wine', label: 'Вино' },
+  { id: 'cognac', label: 'Коньяк' },
   { id: 'hot', label: 'Горячие напитки' },
   { id: 'soft', label: 'Безалкогольные' },
   { id: 'snack', label: 'Закуски' },
 ];
 export const categoryLabel = (category?: MenuCategory) =>
   categories.find((c) => c.id === (category || 'cocktail'))?.label || 'Коктейли';
+export const unitLabel = (unit?: Alcohol['unit']) => (unit === 'bottle' ? 'бут.' : unit === 'g' ? 'г' : 'мл');
 export const ingredientUnit = (data: BarData, id: string) =>
-  data.alcohol.find((a) => a.id === id)?.unit === 'g' ? 'г' : 'мл';
+  unitLabel(data.alcohol.find((a) => a.id === id)?.unit);
+export const priceBasis = (data: BarData, id: string) =>
+  data.alcohol.find((a) => a.id === id)?.unit === 'bottle' ? 1 : 1000;
+export const priceUnit = (unit?: Alcohol['unit']) =>
+  unit === 'bottle' ? '1 бутылку' : `1 000 ${unitLabel(unit)}`;
+const amountValid = (data: BarData, id: string, amount: unknown, positive = true) =>
+  number(amount, positive) && (priceBasis(data, id) !== 1 || Number.isInteger(amount));
 export const ingredientVolume = (data: BarData, id: string, amount: number) =>
   `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(amount)} ${ingredientUnit(data, id)}`;
+export const saleUnit = (sale: { kind: string; unit?: 'bottle' | 'glass'; category?: MenuCategory }) =>
+  sale.unit === 'bottle'
+    ? 'бут.'
+    : sale.unit === 'glass'
+      ? sale.category === 'wine'
+        ? 'бок.'
+        : 'порц.'
+      : sale.kind === 'cocktail'
+        ? 'порц.'
+        : 'мл';
+export const quantityRound = (data: BarData, id: string, n: number) =>
+  priceBasis(data, id) === 1 ? (Math.abs(n) < 1e-7 ? 0 : Math.round(n * 1e8) / 1e8) : round(n);
+const ingredientAmountValid = (data: BarData, id: string, n: unknown) =>
+  data.alcohol.find((a) => a.id === id)?.category &&
+  ['wine', 'cognac'].includes(data.alcohol.find((a) => a.id === id)!.category)
+    ? typeof n === 'number' && Number.isFinite(n) && n > 0 && n <= 1e9
+    : amountValid(data, id, n);
 const resets = (data: BarData) => data.stockResets || [];
 const retired = (data: BarData) => data.archived?.ingredients || [];
 
@@ -59,7 +84,9 @@ export const initialData = (): BarData => ({
 });
 export const activeSales = (data: BarData) => data.sales.filter((s) => !s.voided);
 export const stock = (data: BarData, id: string) =>
-  round(
+  quantityRound(
+    data,
+    id,
     data.purchases.filter((p) => p.alcoholId === id).reduce((n, p) => n + p.ml, 0) -
       activeSales(data).reduce(
         (n, s) => n + s.ingredients.filter((i) => i.alcoholId === id).reduce((sum, i) => sum + i.ml, 0),
@@ -77,7 +104,7 @@ export const averageCost = (data: BarData, id: string) => {
   }
   const bought = data.purchases
     .filter((p) => p.alcoholId === id)
-    .reduce((n, p) => n + (p.ml * p.costPerLiter) / 1000, 0);
+    .reduce((n, p) => n + (p.ml * p.costPerLiter) / priceBasis(data, id), 0);
   const used = activeSales(data).reduce(
     (n, s) => n + s.ingredients.filter((i) => i.alcoholId === id).reduce((sum, i) => sum + i.cost, 0),
     0,
@@ -88,12 +115,12 @@ export const averageCost = (data: BarData, id: string) => {
       used -
       [...retired(data), ...resets(data)].filter((i) => i.alcoholId === id).reduce((n, i) => n + i.cost, 0)) /
       remaining) *
-      1000,
+      priceBasis(data, id),
   );
 };
 export const recipeCost = (data: BarData, recipe: Ingredient[], extraCosts: PortionExpense[] = []) =>
   round(
-    recipe.reduce((n, i) => n + (averageCost(data, i.alcoholId) * i.ml) / 1000, 0) +
+    recipe.reduce((n, i) => n + (averageCost(data, i.alcoholId) * i.ml) / priceBasis(data, i.alcoholId), 0) +
       extraCosts.reduce((n, i) => n + i.cost, 0),
   );
 export const recipeReady = (data: BarData, recipe: Ingredient[], extraCosts: PortionExpense[] = []) =>
@@ -102,7 +129,7 @@ export const recipeReady = (data: BarData, recipe: Ingredient[], extraCosts: Por
   extraCosts.every((i) => i.cost > 0);
 export const portions = (data: BarData, recipe: Ingredient[]) =>
   recipe.length
-    ? Math.max(0, Math.floor(Math.min(...recipe.map((i) => stock(data, i.alcoholId) / i.ml))))
+    ? Math.max(0, Math.floor(Math.min(...recipe.map((i) => (stock(data, i.alcoholId) + 1e-7) / i.ml))))
     : 0;
 
 function ingredientsValid(value: Ingredient[], data: BarData, maximum = 30) {
@@ -111,7 +138,10 @@ function ingredientsValid(value: Ingredient[], data: BarData, maximum = 30) {
     value.length > 0 &&
     value.length <= maximum &&
     new Set(value.map((i) => i.alcoholId)).size === value.length &&
-    value.every((i) => i && data.alcohol.some((a) => a.id === i.alcoholId) && number(i.ml, true))
+    value.every(
+      (i) =>
+        i && data.alcohol.some((a) => a.id === i.alcoholId) && ingredientAmountValid(data, i.alcoholId, i.ml),
+    )
   );
 }
 function alcoholValid(a: Alcohol) {
@@ -119,9 +149,18 @@ function alcoholValid(a: Alcohol) {
     a &&
     identifier(a.id) &&
     nameValid(a.name) &&
-    ['alcohol', 'mixer'].includes(a.category) &&
-    (a.unit === undefined || ['ml', 'g'].includes(a.unit)) &&
-    (a.category !== 'alcohol' || a.unit !== 'g') &&
+    ['alcohol', 'mixer', 'beer', 'wine', 'cognac'].includes(a.category) &&
+    (a.unit === undefined || ['ml', 'g', 'bottle'].includes(a.unit)) &&
+    (a.category !== 'alcohol' || !a.unit || a.unit === 'ml') &&
+    (['beer', 'wine', 'cognac'].includes(a.category) ? a.unit === 'bottle' : a.unit !== 'bottle') &&
+    (a.bottleSizeMl === undefined ||
+      (Number.isInteger(a.bottleSizeMl) && a.bottleSizeMl > 0 && a.bottleSizeMl <= 10000)) &&
+    (a.glassSizeMl === undefined ||
+      (Number.isInteger(a.glassSizeMl) &&
+        a.glassSizeMl > 0 &&
+        !!a.bottleSizeMl &&
+        a.glassSizeMl <= a.bottleSizeMl)) &&
+    (a.glassPrice === undefined || number(a.glassPrice)) &&
     number(a.costPerLiter) &&
     number(a.pricePerLiter) &&
     /^#[a-fA-F0-9]{6}$/.test(a.color)
@@ -145,6 +184,18 @@ function cocktailValid(c: Cocktail, data: BarData) {
   return (
     c &&
     identifier(c.id) &&
+    (c.stockAlcoholId === undefined ||
+      (['beer', 'wine', 'cognac'].includes(c.category || '') &&
+        data.alcohol.some((a) => a.id === c.stockAlcoholId && a.category === c.category) &&
+        c.ingredients?.length === 1 &&
+        c.ingredients[0].alcoholId === c.stockAlcoholId &&
+        (c.serving === 'glass'
+          ? ['wine', 'cognac'].includes(c.category || '') &&
+            c.ingredients[0].ml > 0 &&
+            c.ingredients[0].ml <= 1
+          : c.ingredients[0].ml === 1) &&
+        !c.extraCosts?.length)) &&
+    (c.serving === undefined || ['bottle', 'glass'].includes(c.serving)) &&
     nameValid(c.name) &&
     number(c.price) &&
     Number.isInteger(c.image) &&
@@ -188,8 +239,8 @@ function assertLedger(data: BarData) {
   ].sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order);
   events.forEach((event) =>
     event.ingredients.forEach((i) => {
-      balances[i.alcoholId] = round((balances[i.alcoholId] || 0) + i.ml);
-      if (balances[i.alcoholId] < -0.001) {
+      balances[i.alcoholId] = quantityRound(data, i.alcoholId, (balances[i.alcoholId] || 0) + i.ml);
+      if (balances[i.alcoholId] < (priceBasis(data, i.alcoholId) === 1 ? -1e-7 : -0.001)) {
         fail(
           `Недостаточно «${data.alcohol.find((a) => a.id === i.alcoholId)?.name}» на ${event.date}. Добавьте закупку или уменьшите количество.`,
         );
@@ -222,7 +273,7 @@ export function validateData(value: unknown): BarData {
         identifier(p.id) &&
         d.alcohol.some((a) => a.id === p.alcoholId) &&
         dateValid(p.date) &&
-        number(p.ml, true) &&
+        amountValid(d, p.alcoholId, p.ml) &&
         number(p.costPerLiter, true),
     )
   ) {
@@ -242,6 +293,7 @@ export function validateData(value: unknown): BarData {
         (s.kind !== 'cocktail' || Number.isInteger(s.quantity)) &&
         number(s.revenue, true) &&
         number(s.cost) &&
+        (s.unit === undefined || ['bottle', 'glass'].includes(s.unit)) &&
         typeof s.voided === 'boolean' &&
         Array.isArray(s.ingredients) &&
         (s.ingredients.length > 0 ? ingredientsValid(s.ingredients, d) : !!s.extraCosts?.length) &&
@@ -272,7 +324,7 @@ export function validateData(value: unknown): BarData {
           dateValid(r.date) &&
           typeof r.createdAt === 'string' &&
           Number.isFinite(Date.parse(r.createdAt)) &&
-          number(r.ml, true) &&
+          ingredientAmountValid(d, r.alcoholId, r.ml) &&
           number(r.cost),
       ))
   ) {
@@ -313,7 +365,7 @@ export function applyCommand(data: BarData, command: Command): BarData {
     case 'alcohol': {
       const a = command.value;
       if (!alcoholValid(a)) {
-        return fail('Заполните название и корректные цены за 1 000 мл.');
+        return fail('Заполните название, единицу измерения и корректные цены.');
       }
       if (
         next.alcohol.some(
@@ -332,11 +384,105 @@ export function applyCommand(data: BarData, command: Command): BarData {
       ) {
         return fail('Единицы измерения используемого ингредиента менять нельзя. Создайте новый ингредиент.');
       }
+      if (
+        index >= 0 &&
+        !!next.alcohol[index].bottleSizeMl &&
+        next.alcohol[index].bottleSizeMl !== a.bottleSizeMl &&
+        next.purchases.some((p) => p.alcoholId === a.id)
+      )
+        return fail(
+          'Объём закупленной бутылки менять нельзя. Для другого объёма создайте отдельную позицию.',
+        );
+      if (
+        index >= 0 &&
+        next.cocktails.some((c) => c.stockAlcoholId === a.id && c.serving === 'glass') &&
+        (!a.glassSizeMl || !a.bottleSizeMl)
+      )
+        return fail('Укажите объём бутылки и бокала.');
+      if (
+        index >= 0 &&
+        next.alcohol[index].category !== a.category &&
+        next.cocktails.some((c) => c.stockAlcoholId === a.id)
+      )
+        return fail('Тип связанной с меню бутылки менять нельзя.');
       if (index < 0) {
         next.alcohol.push({ ...a, name: a.name.trim() });
       } else {
         next.alcohol[index] = { ...a, name: a.name.trim() };
       }
+      if (['beer', 'wine', 'cognac'].includes(a.category)) {
+        const linked = next.cocktails.find((c) => c.stockAlcoholId === a.id && c.serving !== 'glass');
+        if (linked) {
+          linked.name = a.category !== 'beer' ? `${a.name.trim()} · бутылка` : a.name.trim();
+          linked.price = a.pricePerLiter;
+        } else {
+          const menuId = `bottle-${a.id}`;
+          if (
+            !identifier(menuId) ||
+            next.cocktails.some(
+              (c) =>
+                c.id === menuId ||
+                (c.category === a.category &&
+                  c.name.trim().toLocaleLowerCase() === a.name.trim().toLocaleLowerCase()),
+            )
+          ) {
+            return fail(
+              'Такая марка уже есть в меню. Измените существующую позицию или укажите другое название.',
+            );
+          }
+          next.cocktails.push({
+            id: menuId,
+            name: a.category !== 'beer' ? `${a.name.trim()} · бутылка` : a.name.trim(),
+            category: a.category as MenuCategory,
+            stockAlcoholId: a.id,
+            ingredients: [{ alcoholId: a.id, ml: 1 }],
+            price: a.pricePerLiter,
+            image: a.category === 'wine' ? 10 : a.category === 'cognac' ? 60 : 7,
+          });
+        }
+      }
+      if (['wine', 'cognac'].includes(a.category) && a.glassSizeMl && a.bottleSizeMl) {
+        const glassName = `${a.name.trim()} · ${a.category === 'wine' ? 'бокал' : 'порция'}`;
+        let glass = next.cocktails.find((c) => c.stockAlcoholId === a.id && c.serving === 'glass');
+        glass ||= next.cocktails.find(
+          (c) =>
+            c.category === a.category &&
+            c.name === glassName &&
+            !c.ingredients.length &&
+            !c.extraCosts?.length &&
+            !next.sales.some((s) => s.productId === c.id),
+        );
+        if (!glass) {
+          const glassId = `glass-${a.id}`;
+          if (!identifier(glassId) || next.cocktails.some((c) => c.id === glassId || c.name === glassName))
+            return fail('Позиция вина в бокалах уже существует.');
+          glass = {
+            id: glassId,
+            name: glassName,
+            category: a.category as MenuCategory,
+            price: a.glassPrice || 0,
+            image: 10,
+            ingredients: [],
+          };
+          next.cocktails.push(glass);
+        }
+        Object.assign(glass, {
+          name: glassName,
+          stockAlcoholId: a.id,
+          serving: 'glass',
+          price: a.glassPrice ?? glass.price,
+          ingredients: [{ alcoholId: a.id, ml: a.glassSizeMl / a.bottleSizeMl }],
+          notes: `${a.glassSizeMl} мл из бутылки ${a.bottleSizeMl} мл.`,
+        });
+      }
+      const menuNames = next.cocktails.map(
+        (c) => `${c.category || 'cocktail'}:${c.name.trim().toLocaleLowerCase()}`,
+      );
+      if (
+        new Set(menuNames).size !== menuNames.length ||
+        !next.cocktails.every((c) => cocktailValid(c, next))
+      )
+        return fail('Проверьте название марки, объёмы и связанные позиции меню.');
       break;
     }
     case 'createCocktail': {
@@ -381,6 +527,30 @@ export function applyCommand(data: BarData, command: Command): BarData {
         return fail('Коктейль с таким названием уже есть.');
       }
       const index = next.cocktails.findIndex((item) => item.id === c.id);
+      const previous = next.cocktails[index];
+      if (previous?.stockAlcoholId && previous.stockAlcoholId !== c.stockAlcoholId)
+        return fail('Связь бутылки со складом нельзя удалить.');
+      if (
+        c.stockAlcoholId &&
+        previous &&
+        (previous.serving !== c.serving ||
+          JSON.stringify(previous.ingredients) !== JSON.stringify(c.ingredients) ||
+          previous.category !== c.category)
+      )
+        return fail('Объём и состав бутылки изменяются в разделе «Склад».');
+      if (c.stockAlcoholId) {
+        const beer = next.alcohol.find((a) => a.id === c.stockAlcoholId)!;
+        if (
+          next.alcohol.some(
+            (a) =>
+              a.id !== beer.id && a.name.trim().toLocaleLowerCase() === c.name.trim().toLocaleLowerCase(),
+          )
+        )
+          return fail('Такая марка уже есть на складе.');
+        if (c.name !== previous?.name) return fail('Измените марку бутылки в разделе «Склад».');
+        if (c.serving === 'glass') beer.glassPrice = c.price;
+        else beer.pricePerLiter = c.price;
+      }
       if (index < 0) {
         next.cocktails.push({ ...c, name: c.name.trim() });
       } else {
@@ -399,7 +569,7 @@ export function applyCommand(data: BarData, command: Command): BarData {
         next.purchases.some((item) => item.id === p.id) ||
         !next.alcohol.some((a) => a.id === p.alcoholId) ||
         !dateValid(p.date) ||
-        !number(p.ml, true) ||
+        !amountValid(next, p.alcoholId, p.ml) ||
         !number(p.costPerLiter, true)
       ) {
         return fail('Проверьте дату, объём и закупочную цену.');
@@ -413,7 +583,11 @@ export function applyCommand(data: BarData, command: Command): BarData {
     case 'correctPurchase': {
       const index = next.purchases.findIndex((p) => p.id === command.purchaseId);
       const purchase = next.purchases[index];
-      if (!purchase || !number(command.ml) || !number(command.expectedMl, true)) {
+      if (
+        !purchase ||
+        !amountValid(next, purchase.alcoholId, command.ml, false) ||
+        !number(command.expectedMl, true)
+      ) {
         return fail('Проверьте закупку и новое количество.');
       }
       if (next.archived && purchase.date < next.archived.before) {
@@ -433,7 +607,7 @@ export function applyCommand(data: BarData, command: Command): BarData {
       }
       const bought = next.purchases
         .filter((p) => p.alcoholId === purchase.alcoholId)
-        .reduce((n, p) => n + (p.ml * p.costPerLiter) / 1000, 0);
+        .reduce((n, p) => n + (p.ml * p.costPerLiter) / priceBasis(next, p.alcoholId), 0);
       const used = [...activeSales(next).flatMap((s) => s.ingredients), ...retired(next), ...resets(next)]
         .filter((i) => i.alcoholId === purchase.alcoholId)
         .reduce((n, i) => n + i.cost, 0);
@@ -462,6 +636,8 @@ export function applyCommand(data: BarData, command: Command): BarData {
       const product = (v.kind === 'cocktail' ? next.cocktails : next.alcohol).find(
         (p) => p.id === v.productId,
       );
+      if (v.kind === 'alcohol' && (product as Alcohol)?.category !== 'alcohol')
+        return fail('Выберите бутылку в разделе «Пиво», «Вино» или «Коньяк».');
       if (!product) {
         return fail('Напиток не найден. Обновите страницу.');
       }
@@ -473,7 +649,9 @@ export function applyCommand(data: BarData, command: Command): BarData {
         return fail('Добавьте состав в редакторе меню перед первой продажей.');
       }
       const price =
-        v.kind === 'cocktail' ? (product as Cocktail).price : (product as Alcohol).pricePerLiter / 1000;
+        v.kind === 'cocktail'
+          ? (product as Cocktail).price
+          : (product as Alcohol).pricePerLiter / priceBasis(next, product.id);
       if (price <= 0) {
         return fail('Сначала укажите цену продажи в карточке напитка.');
       }
@@ -481,10 +659,10 @@ export function applyCommand(data: BarData, command: Command): BarData {
         v.kind === 'cocktail' ? (product as Cocktail).ingredients : [{ alcoholId: product.id, ml: 1 }];
       const ingredients = recipe.map((i) => ({
         alcoholId: i.alcoholId,
-        ml: round(i.ml * v.quantity),
-        cost: round((averageCost(next, i.alcoholId) * i.ml * v.quantity) / 1000),
+        ml: quantityRound(next, i.alcoholId, i.ml * v.quantity),
+        cost: round((averageCost(next, i.alcoholId) * i.ml * v.quantity) / priceBasis(next, i.alcoholId)),
       }));
-      if (!ingredients.every((i) => number(i.ml, true) && number(i.cost))) {
+      if (!ingredients.every((i) => ingredientAmountValid(next, i.alcoholId, i.ml) && number(i.cost))) {
         return fail('Слишком большое количество.');
       }
       const extraCosts =
@@ -499,6 +677,9 @@ export function applyCommand(data: BarData, command: Command): BarData {
       const sale: Sale = {
         ...(extraCosts.length ? { extraCosts } : {}),
         id: command.id,
+        ...(v.kind === 'cocktail' && (product as Cocktail).stockAlcoholId
+          ? { unit: (product as Cocktail).serving || ('bottle' as const) }
+          : {}),
         ...(v.kind === 'cocktail' ? { category: (product as Cocktail).category || 'cocktail' } : {}),
         date: v.date,
         createdAt: new Date().toISOString(),
@@ -522,11 +703,15 @@ export function applyCommand(data: BarData, command: Command): BarData {
     }
     case 'resetStock': {
       const drink = next.alcohol.find((a) => a.id === command.alcoholId);
-      if (!drink || !number(command.expectedMl, true) || !number(command.expectedCost)) {
+      if (
+        !drink ||
+        !ingredientAmountValid(next, command.alcoholId, command.expectedMl) ||
+        !number(command.expectedCost)
+      ) {
         return fail('Выберите напиток с ненулевым остатком.');
       }
       const ml = stock(next, drink.id);
-      const cost = round((averageCost(next, drink.id) * ml) / 1000);
+      const cost = round((averageCost(next, drink.id) * ml) / priceBasis(next, drink.id));
       if (ml !== command.expectedMl || cost !== command.expectedCost) {
         return fail(
           'Остаток или стоимость изменились. Закройте окно, обновите склад и подтвердите сброс заново.',
@@ -569,7 +754,7 @@ export function applyCommand(data: BarData, command: Command): BarData {
         const old = used[i.alcoholId] || { alcoholId: i.alcoholId, ml: 0, cost: 0 };
         used[i.alcoholId] = {
           alcoholId: i.alcoholId,
-          ml: round(old.ml + i.ml),
+          ml: quantityRound(next, i.alcoholId, old.ml + i.ml),
           cost: round(old.cost + i.cost),
         };
       });

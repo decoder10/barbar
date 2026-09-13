@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, GlassWater, Search, ShoppingBag, Plus } from 'lucide-react';
 import { CocktailArt, Empty, Field, Metric, Modal, PageHeading, Submit } from '../components';
-import { categories, categoryLabel, today, volume } from '../model';
+import { categories, categoryLabel, saleUnit, today, volume } from '../model';
 import { menuImage } from '../images';
 import { useBar } from '../store';
 import StaffCocktailForm from '../StaffCocktailForm';
@@ -19,10 +19,25 @@ export default function StaffSales() {
   if (!staffData) return <p className="muted">Загружаем продажи…</p>;
   const day = staffData.sales.filter((sale) => sale.date === date);
   const sales = day.filter((sale) => !sale.voided);
-  const summary = new Map<string, { name: string; kind: StaffProduct['kind']; quantity: number }>();
+  const summary = new Map<
+    string,
+    {
+      name: string;
+      kind: StaffProduct['kind'];
+      unit?: StaffProduct['unit'];
+      category?: import('../types').MenuCategory;
+      quantity: number;
+    }
+  >();
   for (const sale of sales) {
     const key = `${sale.kind}:${sale.productId}`;
-    const item = summary.get(key) || { name: sale.name, kind: sale.kind, quantity: 0 };
+    const item = summary.get(key) || {
+      name: sale.name,
+      kind: sale.kind,
+      unit: sale.unit,
+      category: sale.category,
+      quantity: 0,
+    };
     item.quantity += sale.quantity;
     summary.set(key, item);
   }
@@ -33,7 +48,8 @@ export default function StaffSales() {
       (category === 'all' || p.category === category) &&
       p.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
   );
-  const label = (n: number, kind: StaffProduct['kind']) => (kind === 'cocktail' ? `${n} порц.` : volume(n));
+  const label = (n: number, item: { kind: string; unit?: StaffProduct['unit']; category?: string }) =>
+    `${n} ${saleUnit({ ...item, category: item.category === 'alcohol' ? undefined : (item.category as import('../types').MenuCategory) })}`;
   const changeDate = (offset: number) => {
     const value = new Date(`${date}T12:00:00Z`);
     value.setUTCDate(value.getUTCDate() + offset);
@@ -167,7 +183,7 @@ export default function StaffSales() {
                       ? 'Попросите администратора настроить позицию'
                       : p.available === null
                         ? 'Доступно к продаже'
-                        : `Доступно: ${label(p.available, p.kind)}`}
+                        : `Доступно: ${label(p.available, p)}`}
                   </p>
                   <div className="card-bottom">
                     <span className={`stock-pill ${p.ready && p.available !== 0 ? '' : 'low'}`}>
@@ -199,7 +215,7 @@ export default function StaffSales() {
               <div className="receipt-line" key={key}>
                 <div>
                   <strong>{item.name}</strong>
-                  <small>{label(item.quantity, item.kind)}</small>
+                  <small>{label(item.quantity, item)}</small>
                 </div>
               </div>
             ))}
@@ -214,7 +230,7 @@ export default function StaffSales() {
                 <div>
                   <strong>{sale.name}</strong>
                   <small>
-                    {label(sale.quantity, sale.kind)}
+                    {label(sale.quantity, sale)}
                     {sale.voided ? ' · отменена' : ''}
                   </small>
                 </div>
@@ -242,7 +258,17 @@ export default function StaffSales() {
                 setSelected(null);
             }}
           >
-            <Field label={selected.kind === 'cocktail' ? 'Количество порций' : 'Объём продажи, мл'}>
+            <Field
+              label={
+                selected.unit === 'bottle'
+                  ? 'Количество бутылок'
+                  : selected.unit === 'glass' && selected.category === 'wine'
+                    ? 'Количество бокалов'
+                    : selected.kind === 'cocktail'
+                      ? 'Количество порций'
+                      : 'Объём продажи, мл'
+              }
+            >
               <input
                 type="number"
                 required
@@ -269,7 +295,7 @@ export default function StaffSales() {
               <p className="form-warning">Попросите администратора настроить эту позицию.</p>
             )}
             {current?.available !== null && current && (
-              <p className="form-help">Доступно: {label(current.available, current.kind)}</p>
+              <p className="form-help">Доступно: {label(current.available, current)}</p>
             )}
             <Submit
               disabled={

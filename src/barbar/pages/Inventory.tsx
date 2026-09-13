@@ -14,6 +14,8 @@ import {
   averageCost,
   ingredientUnit,
   ingredientVolume,
+  priceBasis,
+  priceUnit,
   money,
   round,
   stock,
@@ -25,23 +27,42 @@ import { BottleArt, Empty, ExportButton, Field, Metric, Modal, PageHeading, Subm
 import { useBar } from '../store';
 import type { Alcohol, Purchase } from '../types';
 
-function AlcoholForm({ alcohol, close }: { alcohol?: Alcohol; close: () => void }) {
+function AlcoholForm({
+  alcohol,
+  initialCategory = 'alcohol',
+  close,
+}: {
+  alcohol?: Alcohol;
+  initialCategory?: Alcohol['category'];
+  close: () => void;
+}) {
   const { data, run } = useBar();
   const [value, setValue] = useState<Alcohol>(
     alcohol || {
       id: uid(),
       name: '',
-      category: 'alcohol',
-      unit: 'ml',
+      category: initialCategory,
+      unit: ['beer', 'wine', 'cognac'].includes(initialCategory) ? 'bottle' : 'ml',
       costPerLiter: 0,
       pricePerLiter: 0,
       color: '#8c775b',
     },
   );
+  const [customSize, setCustomSize] = useState(false);
+  const bottled = value.unit === 'bottle';
+  const pourable = ['wine', 'cognac'].includes(value.category);
+  const used =
+    !!alcohol &&
+    (data.purchases.some((p) => p.alcoholId === alcohol.id) ||
+      data.cocktails.some((c) => c.ingredients.some((i) => i.alcoholId === alcohol.id)));
   return (
     <Modal
       title={alcohol ? 'Настройки напитка' : 'Новый напиток'}
-      subtitle="Закупочная и продажная цены указываются за 1 000 мл."
+      subtitle={
+        bottled
+          ? 'У каждой марки свои цены и остаток в бутылках.'
+          : 'Закупочная и продажная цены указываются за 1 000 мл или граммов.'
+      }
       close={close}
     >
       <form
@@ -52,11 +73,11 @@ function AlcoholForm({ alcohol, close }: { alcohol?: Alcohol; close: () => void 
           }
         }}
       >
-        <Field label="Название">
+        <Field label={bottled ? 'Марка и название' : 'Название'}>
           <input
             required
-            maxLength={80}
-            placeholder="Например, Абсент"
+            maxLength={bottled ? 65 : 80}
+            placeholder={bottled ? 'Например, Guinness 0,5 л или Ararat 5 лет' : 'Например, Bacardi белый'}
             value={value.name}
             onChange={(e) => setValue({ ...value, name: e.target.value })}
           />
@@ -64,33 +85,42 @@ function AlcoholForm({ alcohol, close }: { alcohol?: Alcohol; close: () => void 
         <Field label="Тип">
           <select
             value={value.category}
+            disabled={used}
             onChange={(e) =>
               setValue({
                 ...value,
                 category: e.target.value as Alcohol['category'],
-                unit: e.target.value === 'alcohol' ? 'ml' : value.unit,
+                unit: ['beer', 'wine', 'cognac'].includes(e.target.value)
+                  ? 'bottle'
+                  : e.target.value === 'alcohol' || value.unit === 'bottle'
+                    ? 'ml'
+                    : value.unit,
+                bottleSizeMl: undefined,
+                glassSizeMl: undefined,
+                glassPrice: undefined,
               })
             }
           >
             <option value="alcohol">Алкоголь</option>
+            <option value="beer">Пиво</option>
+            <option value="wine">Вино</option>
+            <option value="cognac">Коньяк</option>
             <option value="mixer">Продукты и миксеры (без алкоголя)</option>
           </select>
         </Field>
         <Field label="Единица измерения">
           <select
-            disabled={
-              value.category === 'alcohol' ||
-              (!!alcohol && data.purchases.some((p) => p.alcoholId === alcohol.id))
-            }
+            disabled={value.category !== 'mixer' || used}
             value={value.unit || 'ml'}
-            onChange={(e) => setValue({ ...value, unit: e.target.value as 'ml' | 'g' })}
+            onChange={(e) => setValue({ ...value, unit: e.target.value as Alcohol['unit'] })}
           >
+            {bottled && <option value="bottle">Бутылки</option>}
             <option value="ml">Миллилитры (жидкости)</option>
             <option value="g">Граммы (фрукты, сахар, специи)</option>
           </select>
         </Field>
         <div className="form-grid">
-          <Field label={`Закупка за 1 000 ${value.unit === 'g' ? 'г' : 'мл'}, ֏`}>
+          <Field label={`Закупка за ${priceUnit(value.unit)}, ֏`}>
             <input
               type="number"
               min="0"
@@ -102,7 +132,7 @@ function AlcoholForm({ alcohol, close }: { alcohol?: Alcohol; close: () => void 
               onChange={(e) => setValue({ ...value, costPerLiter: Number(e.target.value) })}
             />
           </Field>
-          <Field label={`Продажа за 1 000 ${value.unit === 'g' ? 'г' : 'мл'}, ֏`}>
+          <Field label={`Продажа за ${priceUnit(value.unit)}, ֏`}>
             <input
               type="number"
               min="0"
@@ -115,6 +145,92 @@ function AlcoholForm({ alcohol, close }: { alcohol?: Alcohol; close: () => void 
             />
           </Field>
         </div>
+        {bottled && (
+          <Field label="Объём бутылки, мл" hint="Для другого объёма той же марки создайте отдельную позицию.">
+            <select
+              aria-label="Объём бутылки, мл"
+              required={pourable}
+              disabled={!!alcohol?.bottleSizeMl && data.purchases.some((p) => p.alcoholId === alcohol.id)}
+              value={customSize ? 'custom' : value.bottleSizeMl || ''}
+              onChange={(e) => {
+                setCustomSize(e.target.value === 'custom');
+                if (e.target.value !== 'custom')
+                  setValue({ ...value, bottleSizeMl: Number(e.target.value) || undefined });
+              }}
+            >
+              <option value="">Выберите объём</option>
+              {[
+                300,
+                330,
+                500,
+                700,
+                750,
+                1000,
+                ...(value.bottleSizeMl && ![300, 330, 500, 700, 750, 1000].includes(value.bottleSizeMl)
+                  ? [value.bottleSizeMl]
+                  : []),
+              ].map((n) => (
+                <option key={n} value={n}>
+                  {n} мл
+                </option>
+              ))}
+              <option value="custom">Другой объём</option>
+            </select>
+          </Field>
+        )}
+        {bottled && customSize && (
+          <input
+            aria-label="Другой объём бутылки, мл"
+            type="number"
+            min="1"
+            max="10000"
+            step="1"
+            required
+            value={value.bottleSizeMl || ''}
+            onChange={(e) => setValue({ ...value, bottleSizeMl: Number(e.target.value) || undefined })}
+          />
+        )}
+        {pourable && (
+          <>
+            <div className="form-grid">
+              <Field
+                label={value.category === 'wine' ? 'Объём бокала, мл' : 'Объём порции, мл'}
+                hint="Оставьте пустым, если продаёте только бутылками."
+              >
+                <input
+                  list="glass-sizes"
+                  type="number"
+                  min="1"
+                  max={value.bottleSizeMl || 10000}
+                  step="1"
+                  value={value.glassSizeMl || ''}
+                  onChange={(e) => setValue({ ...value, glassSizeMl: Number(e.target.value) || undefined })}
+                />
+              </Field>
+              <Field label={value.category === 'wine' ? 'Продажа за бокал, ֏' : 'Продажа за порцию, ֏'}>
+                <input
+                  type="number"
+                  min="0"
+                  max="1000000000"
+                  step="0.01"
+                  value={value.glassPrice || ''}
+                  onChange={(e) => setValue({ ...value, glassPrice: Number(e.target.value) })}
+                />
+              </Field>
+            </div>
+            {!!value.glassSizeMl && !!value.bottleSizeMl && (
+              <p className="form-help">
+                Одна порция: {value.glassSizeMl} мл из бутылки {value.bottleSizeMl} мл. Остаток списывается
+                автоматически.
+              </p>
+            )}
+          </>
+        )}
+        <datalist id="glass-sizes">
+          {[30, 50, 100, 125, 150, 175, 200].map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
         <Field label="Цвет бутылки">
           <input
             type="color"
@@ -136,11 +252,13 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
   const selected = data.alcohol.find((a) => a.id === alcoholId) || data.alcohol[0];
   const [id] = useState(uid);
   const [drinkId, setDrinkId] = useState(selected?.id || '');
-  const [ml, setMl] = useState('1000');
+  const [ml, setMl] = useState(selected?.unit === 'bottle' ? '1' : '1000');
   const [cost, setCost] = useState(String(selected?.costPerLiter || ''));
   const [date, setDate] = useState(today);
+  const drink = data.alcohol.find((a) => a.id === drinkId);
+  const bottled = drink?.unit === 'bottle';
   return (
-    <Modal title="Добавить закупку" subtitle="Объём прибавится к текущему остатку напитка." close={close}>
+    <Modal title="Добавить закупку" subtitle="Количество прибавится к остатку выбранной марки." close={close}>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -163,6 +281,7 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
             value={drinkId}
             onChange={(e) => {
               setDrinkId(e.target.value);
+              setMl(data.alcohol.find((a) => a.id === e.target.value)?.unit === 'bottle' ? '1' : '1000');
               setCost(String(data.alcohol.find((a) => a.id === e.target.value)?.costPerLiter || ''));
             }}
           >
@@ -178,14 +297,14 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
             <input
               required
               type="number"
-              min="0.01"
+              min={bottled ? 1 : 0.01}
               max="1000000000"
-              step="0.01"
+              step={bottled ? 1 : 0.01}
               value={ml}
               onChange={(e) => setMl(e.target.value)}
             />
           </Field>
-          <Field label={`Цена за 1 000 ${ingredientUnit(data, drinkId)}, ֏`}>
+          <Field label={`Цена за ${priceUnit(drink?.unit)}, ֏`}>
             <input
               required
               type="number"
@@ -199,7 +318,7 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
           </Field>
         </div>
         <div className="quick-values">
-          {[500, 700, 1000, 2000, 5000].map((n) => (
+          {(bottled ? [1, 6, 12, 24, 48] : [500, 700, 1000, 2000, 5000]).map((n) => (
             <button
               type="button"
               key={n}
@@ -215,7 +334,8 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
         </Field>
         <div className="form-total">
           <span>
-            Стоимость закупки<strong>{money(round((Number(ml) * Number(cost)) / 1000))}</strong>
+            Стоимость закупки
+            <strong>{money(round((Number(ml) * Number(cost)) / priceBasis(data, drinkId)))}</strong>
           </span>
           <small>
             На складе станет: {ingredientVolume(data, drinkId, stock(data, drinkId) + Number(ml))}
@@ -250,16 +370,15 @@ function CorrectPurchaseForm({ purchase, close }: { purchase: Purchase; close: (
         }}
       >
         <p className="form-help">
-          Купили 1 000 мл, а записали 10 000? Укажите правильное количество — 1 000. Лишние 9 000 мл будут
-          вычтены из склада, сумма закупки пересчитается.
+          Укажите фактически купленное количество. Остаток и сумма закупки пересчитаются.
         </p>
         <Field label={`Правильное количество, ${ingredientUnit(data, purchase.alcoholId)}`}>
           <input
             type="number"
             required
-            min="0.01"
+            min={drink?.unit === 'bottle' ? 1 : 0.01}
             max="1000000000"
-            step="0.01"
+            step={drink?.unit === 'bottle' ? 1 : 0.01}
             disabled={remove}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -281,7 +400,10 @@ function CorrectPurchaseForm({ purchase, close }: { purchase: Purchase; close: (
             На складе станет:{' '}
             {ingredientVolume(data, purchase.alcoholId, stock(data, purchase.alcoholId) + difference)}
           </small>
-          <small>Сумма закупки: {money(round((nextMl * purchase.costPerLiter) / 1000))}</small>
+          <small>
+            Сумма закупки:{' '}
+            {money(round((nextMl * purchase.costPerLiter) / priceBasis(data, purchase.alcoholId)))}
+          </small>
         </div>
         {remove && (
           <Field label="Для удаления напишите УДАЛИТЬ">
@@ -308,7 +430,9 @@ function ResetStockForm({ alcohol, close }: { alcohol: Alcohol; close: () => voi
   const { data, run, busy } = useBar();
   const [confirmation, setConfirmation] = useState('');
   const [amount] = useState(() => stock(data, alcohol.id));
-  const [cost] = useState(() => round((averageCost(data, alcohol.id) * amount) / 1000));
+  const [cost] = useState(() =>
+    round((averageCost(data, alcohol.id) * amount) / priceBasis(data, alcohol.id)),
+  );
   return (
     <Modal
       title={`Обнулить остаток «${alcohol.name}»?`}
@@ -368,6 +492,7 @@ export default function Inventory() {
   const { data } = useBar();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
+  const [newCategory, setNewCategory] = useState<Alcohol['category']>('alcohol');
   const [edit, setEdit] = useState<Alcohol | 'new' | null>(null);
   const [purchase, setPurchase] = useState<string | null>(null);
   const [correction, setCorrection] = useState<Purchase | null>(null);
@@ -377,8 +502,13 @@ export default function Inventory() {
       a.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) &&
       (category === 'all' || a.category === category),
   );
-  const totalMl = data.alcohol.filter((a) => a.unit !== 'g').reduce((n, a) => n + stock(data, a.id), 0);
-  const worth = data.alcohol.reduce((n, a) => n + (stock(data, a.id) * averageCost(data, a.id)) / 1000, 0);
+  const totalMl = data.alcohol
+    .filter((a) => !a.unit || a.unit === 'ml')
+    .reduce((n, a) => n + stock(data, a.id), 0);
+  const worth = data.alcohol.reduce(
+    (n, a) => n + (stock(data, a.id) * averageCost(data, a.id)) / priceBasis(data, a.id),
+    0,
+  );
   const shortages = new Map<string, { id: string; name: string; required: number; missing: number }[]>();
   for (const recipe of data.cocktails) {
     for (const ingredient of recipe.ingredients) {
@@ -397,9 +527,28 @@ export default function Inventory() {
         title="Склад напитков"
         description="Закупки складываются. Продажи списываются. Остатки всегда перед глазами."
       >
-        <button className="button secondary" onClick={() => setEdit('new')}>
+        <button
+          className="button secondary"
+          onClick={() => {
+            setNewCategory('alcohol');
+            setEdit('new');
+          }}
+        >
           <Plus size={17} /> Новый напиток
         </button>
+        {(['beer', 'wine', 'cognac'] as const).map((type) => (
+          <button
+            key={type}
+            className="button secondary"
+            onClick={() => {
+              setNewCategory(type);
+              setEdit('new');
+            }}
+          >
+            <Plus size={17} />
+            {type === 'beer' ? 'Новое пиво' : type === 'wine' ? 'Новое вино' : 'Новый коньяк'}
+          </button>
+        ))}
         <button className="button primary" onClick={() => setPurchase('')}>
           <PackagePlus size={17} /> Добавить закупку
         </button>
@@ -415,7 +564,7 @@ export default function Inventory() {
         <Metric
           label="Общий остаток"
           value={volume(totalMl)}
-          hint="Остатки жидкостей · твёрдые в граммах"
+          hint={`Отдельно в бутылках: ${round(data.alcohol.filter((a) => a.unit === 'bottle').reduce((sum, a) => sum + stock(data, a.id), 0))} бут.`}
           icon={<ArrowDownToLine size={18} />}
         />
         <Metric
@@ -440,10 +589,13 @@ export default function Inventory() {
           <ExportButton name="alcohol.json" value={data.alcohol} />
         </div>
         <div className="catalog-tools">
-          <div className="segmented">
+          <div className="segmented inventory-categories">
             {[
               ['all', 'Все'],
-              ['alcohol', 'Алкоголь'],
+              ['alcohol', 'Алкоголь в розлив'],
+              ['beer', 'Пиво'],
+              ['wine', 'Вино'],
+              ['cognac', 'Коньяк'],
               ['mixer', 'Продукты и миксеры'],
             ].map(([id, label]) => (
               <button
@@ -475,8 +627,8 @@ export default function Inventory() {
               <tr>
                 <th>Напиток</th>
                 <th>Остаток</th>
-                <th>Ср. закупка / л или кг</th>
-                <th>Продажа / л или кг</th>
+                <th>Ср. закупочная цена</th>
+                <th>Продажная цена</th>
                 <th>Действия</th>
               </tr>
             </thead>
@@ -488,7 +640,18 @@ export default function Inventory() {
                       <BottleArt drink={a} />
                       <span>
                         <strong>{a.name}</strong>
-                        <small>{a.category === 'mixer' ? 'Продукт / миксер' : 'Алкоголь'}</small>
+                        <small>
+                          {a.category === 'beer'
+                            ? 'Пиво'
+                            : a.category === 'wine'
+                              ? 'Вино'
+                              : a.category === 'cognac'
+                                ? 'Коньяк'
+                                : a.category === 'mixer'
+                                  ? 'Продукт / миксер'
+                                  : 'Алкоголь'}
+                          {a.bottleSizeMl ? ` · ${a.bottleSizeMl} мл/бут.` : ''}
+                        </small>
                       </span>
                     </div>
                   </td>
@@ -516,9 +679,13 @@ export default function Inventory() {
                       </details>
                     )}
                   </td>
-                  <td>{money(round(averageCost(data, a.id)))}</td>
+                  <td>
+                    {money(round(averageCost(data, a.id)))}
+                    <small className="muted"> / {priceUnit(a.unit)}</small>
+                  </td>
                   <td>
                     {a.pricePerLiter ? money(a.pricePerLiter) : <span className="muted">Не задана</span>}
+                    <small className="muted"> / {priceUnit(a.unit)}</small>
                   </td>
                   <td>
                     <div className="row-actions">
@@ -566,8 +733,8 @@ export default function Inventory() {
                 <tr>
                   <th>Дата</th>
                   <th>Напиток</th>
-                  <th>Объём</th>
-                  <th>Цена / л или кг</th>
+                  <th>Количество</th>
+                  <th>Закупочная цена</th>
                   <th>Сумма</th>
                   <th>Действия</th>
                 </tr>
@@ -580,9 +747,14 @@ export default function Inventory() {
                       <td>{new Date(`${p.date}T12:00:00`).toLocaleDateString('ru-RU')}</td>
                       <td>{data.alcohol.find((a) => a.id === p.alcoholId)?.name}</td>
                       <td>{ingredientVolume(data, p.alcoholId, p.ml)}</td>
-                      <td>{money(p.costPerLiter)}</td>
                       <td>
-                        <strong>{money(round((p.ml * p.costPerLiter) / 1000))}</strong>
+                        {money(p.costPerLiter)} /{' '}
+                        {priceUnit(data.alcohol.find((a) => a.id === p.alcoholId)?.unit)}
+                      </td>
+                      <td>
+                        <strong>
+                          {money(round((p.ml * p.costPerLiter) / priceBasis(data, p.alcoholId)))}
+                        </strong>
                       </td>
                       <td>
                         <button
@@ -601,7 +773,7 @@ export default function Inventory() {
         ) : (
           <Empty
             title="Начните с первой закупки"
-            text="Купили 1 000 мл, потом ещё 1 000 мл — на складе будет 2 000 мл."
+            text="Выберите марку, укажите купленное количество и закупочную цену."
           />
         )}
       </section>
@@ -640,7 +812,13 @@ export default function Inventory() {
       )}
       {correction && <CorrectPurchaseForm purchase={correction} close={() => setCorrection(null)} />}
       {reset && <ResetStockForm alcohol={reset} close={() => setReset(null)} />}
-      {edit && <AlcoholForm alcohol={edit === 'new' ? undefined : edit} close={() => setEdit(null)} />}
+      {edit && (
+        <AlcoholForm
+          initialCategory={newCategory}
+          alcohol={edit === 'new' ? undefined : edit}
+          close={() => setEdit(null)}
+        />
+      )}
       {purchase !== null && (
         <PurchaseForm alcoholId={purchase || undefined} close={() => setPurchase(null)} />
       )}

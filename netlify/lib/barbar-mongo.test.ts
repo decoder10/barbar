@@ -1,3 +1,4 @@
+import { migrateBottleCatalog } from '../../src/barbar/bottles';
 import { MongoClient } from 'mongodb';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { mongoRepository } from './barbar-mongo';
@@ -50,7 +51,7 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
     const loader = vi.fn(async () => data);
     const { db, repo } = create(loader);
     const migrated = await repo.read();
-    expect(migrated.data).toEqual({ ...data, stockResets: [] });
+    expect(migrated.data).toEqual({ ...migrateBottleCatalog(data), stockResets: [] });
     expect(stock(migrated.data, 'vodka')).toBe(80);
     expect(averageCost(migrated.data, 'vodka')).toBe(4000);
     const neverImport = vi.fn(async () => {
