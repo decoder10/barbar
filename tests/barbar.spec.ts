@@ -259,7 +259,7 @@ test('products have their own inventory filter and can be costed per cocktail in
   await expect(page.getByRole('row').filter({ hasText: 'Gin tonic Beefeater' })).toContainText('1 290');
 });
 
-test('barbar sees quantities, can record sales, and cannot open admin pages', async ({ page }) => {
+test('barbar sees quantities and read-only stock but cannot open admin pages', async ({ page }) => {
   let data = fixtureData();
   const product = data.cocktails[0];
   await page.route('**/api/barbar/auth', (route) =>
@@ -275,7 +275,7 @@ test('barbar sees quantities, can record sales, and cannot open admin pages', as
   });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true })).toBeVisible();
-  await expect(page.getByRole('navigation').getByRole('link')).toHaveCount(1);
+  await expect(page.getByRole('navigation').getByRole('link')).toHaveCount(2);
   await expect(page.locator('body')).not.toContainText(
     /֏|Выручка|Валовая прибыль|Себестоимость|закупочные цены/,
   );
@@ -294,7 +294,7 @@ test('barbar sees quantities, can record sales, and cannot open admin pages', as
   await expect(page.locator('.receipt-lines').first()).toContainText('Продаж пока нет');
   await page.getByLabel('Дата продаж').fill(today());
   await expect(page.locator('.receipt-lines').first()).toContainText('3 порц.');
-  for (const path of ['/reports', '/inventory', '/cocktails', '/files']) {
+  for (const path of ['/reports', '/cocktails', '/files']) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true })).toBeVisible();

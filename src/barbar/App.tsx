@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Brand, Field, Submit } from './components';
 import { useBar } from './store';
+const StaffInventory = lazy(() => import('./pages/StaffInventory'));
 const StaffSales = lazy(() => import('./pages/StaffSales'));
 const Sales = lazy(() => import('./pages/Sales'));
 const Inventory = lazy(() => import('./pages/Inventory'));
@@ -154,7 +155,7 @@ export default function App() {
         </div>
         <nav aria-label="Основная навигация">
           {navigation
-            .filter((item) => role === 'admin' || item.path === '/')
+            .filter((item) => role === 'admin' || ['/', '/inventory'].includes(item.path))
             .map(({ path, label, icon: Icon, caption }) => (
               <NavLink
                 key={path}
@@ -166,7 +167,7 @@ export default function App() {
                 <Icon size={20} />
                 <span>
                   {label}
-                  <small>{caption}</small>
+                  <small>{role === 'barbar' && path === '/inventory' ? 'Наличие и остатки' : caption}</small>
                 </span>
                 <ChevronRight size={14} className="nav-arrow" />
               </NavLink>
@@ -254,10 +255,7 @@ export default function App() {
           >
             <Routes>
               <Route path="/" element={role === 'admin' ? <Sales /> : <StaffSales />} />
-              <Route
-                path="/inventory"
-                element={role === 'admin' ? <Inventory /> : <Navigate to="/" replace />}
-              />
+              <Route path="/inventory" element={role === 'admin' ? <Inventory /> : <StaffInventory />} />
               <Route
                 path="/cocktails"
                 element={role === 'admin' ? <Cocktails /> : <Navigate to="/" replace />}

@@ -72,7 +72,28 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   await expect(page.getByRole('dialog')).toBeHidden();
   expect(stock(data, data.alcohol.find((a) => a.name === 'Test wine')!.id)).toBe(0);
   await expect(page.locator('.day-receipt')).toContainText('6 бок.');
+  await page.getByRole('link', { name: 'Склад Наличие и остатки' }).click();
+  await expect(page.getByRole('heading', { name: 'Остатки на складе' })).toBeVisible();
+  const staffTable = page.locator('.staff-inventory-table');
+  await page.getByLabel('Поиск на складе').fill('Test lager');
+  await expect(staffTable.getByRole('row').filter({ hasText: 'Test lager' })).toContainText('10 бут.');
+  await page.getByRole('button', { name: 'Нет в наличии', exact: true }).click();
+  await expect(staffTable.getByRole('row').filter({ hasText: 'Test lager' })).toHaveCount(0);
+  await page.getByLabel('Поиск на складе').fill('Test wine');
+  await expect(staffTable.getByRole('row').filter({ hasText: 'Test wine' })).toContainText('0 бут.');
+  await expect(
+    page.getByRole('button', { name: /Закупка|Добавить|Новый|Новое|Изменить|Сброс|Скачать|Исправить/ }),
+  ).toHaveCount(0);
+  await expect(page.locator('body')).not.toContainText(/֏|Себестоимость|Закупочная|Продажная/);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Остатки на складе' })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(async () => {
+    const box = await page.locator('.sidebar').boundingBox();
+    expect(box!.x + box!.width).toBeLessThanOrEqual(1);
+  }).toPass();
+  await page.screenshot({ path: '/private/tmp/barbar-staff-stock-mobile.png' });
   role = 'admin';
   await page.goto('/inventory');
   await page.reload();

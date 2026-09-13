@@ -45,6 +45,7 @@ function noFinancialData(value: unknown) {
       'costPerLiter',
       'price',
       'pricePerLiter',
+      'glassPrice',
       'revenue',
       'purchases',
       'extraCosts',
@@ -122,6 +123,11 @@ describe('role isolation', () => {
       expect(body.data).toBeUndefined();
       expect(body.role).toBe('barbar');
       noFinancialData(body);
+      expect(body.staffData.ingredients.find((a: { id: string }) => a.id === 'vodka')).toMatchObject({
+        name: 'Vodka',
+        available: 2000,
+        unit: 'ml',
+      });
     }
     expect(repo.commit).toHaveBeenCalledTimes(1);
     expect((await repo.read()).data.sales).toHaveLength(2);

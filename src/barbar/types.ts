@@ -105,7 +105,9 @@ export type StaffSale = Pick<
   'id' | 'date' | 'createdAt' | 'kind' | 'productId' | 'name' | 'quantity' | 'voided' | 'category' | 'unit'
 >;
 export interface StaffData {
-  ingredients: Pick<Alcohol, 'id' | 'name' | 'unit'>[];
+  ingredients: (Pick<Alcohol, 'id' | 'name' | 'unit' | 'category' | 'bottleSizeMl'> & {
+    available: number;
+  })[];
   products: StaffProduct[];
   sales: StaffSale[];
   archivedBefore?: string;
