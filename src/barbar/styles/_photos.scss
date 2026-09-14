@@ -96,3 +96,8 @@
     gap: 10px;
   }
 }
+
+// The existing image box owns layout, including absolute tincture garnishes.
+.catalog-picture {
+  display: contents;
+}

@@ -1,3 +1,4 @@
+import { CatalogImage } from './media/CatalogImage';
 import type { Alcohol } from '../../domain/types';
 import { t } from '../../presentation/i18n/runtime';
 import {
@@ -28,7 +29,7 @@ export function RealPhoto({
     >
       {t(
         photo ? (
-          <img src={photo.file} alt={t(name)} loading="lazy" decoding="async" />
+          <CatalogImage photo={photo} alt={t(name)} />
         ) : (
           <svg
             className="labelled-bottle"
@@ -37,7 +38,7 @@ export function RealPhoto({
             aria-label={t(`${name} — условное изображение`)}
           >
             <image
-              href={`/barbar/photos/generated-${choice.template || 'wine'}.webp`}
+              href={photos[`generated-${choice.template || 'wine'}`].webp.split(', ').at(-1)?.split(' ')[0]}
               x="0"
               y="0"
               width="1024"
@@ -89,13 +90,7 @@ export function CocktailArt({
     return (
       <div className="cocktail-art tincture-composition">
         <RealPhoto choice={{ key: shotPhoto(name) }} name={name} className="tincture-glass" />
-        <img
-          className="tincture-fruit"
-          src={photos[ingredient].file}
-          alt={t(`Вкус: ${name}`)}
-          loading="lazy"
-          decoding="async"
-        />
+        <CatalogImage className="tincture-fruit" photo={photos[ingredient]} alt={t(`Вкус: ${name}`)} />
       </div>
     );
   return (

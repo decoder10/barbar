@@ -23,7 +23,8 @@
     "db:verify": "BARBAR_BACKUP_ENV_FILE=.env.backup node scripts/db/backup.mjs verify",
     "db:restore": "BARBAR_BACKUP_ENV_FILE=.env.backup node scripts/db/backup.mjs restore",
     "test:backup": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" node scripts/db/backup-test.mjs",
-    "test:load": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" node scripts/db/load-test.mjs"
+    "test:load": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" node scripts/db/load-test.mjs",
+    "photos:optimize": "node scripts/photo-optimize.mjs && npm run photos:manifest"
   },
   "dependencies": {
     "@fontsource/manrope": "^5.2.6",
@@ -48,6 +49,7 @@
     "globals": "^17.12.0",
     "prettier": "^3.9.6",
     "sass": "^1.104.1",
+    "sharp": "^0.35.4",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.70.0",
     "vite": "^7.1.5",

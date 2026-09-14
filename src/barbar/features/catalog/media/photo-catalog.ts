@@ -1,7 +1,11 @@
 import sources from './photo-manifest.json';
-interface Photo {
+export interface Photo {
   file: string;
   author: string;
+  width: number;
+  height: number;
+  webp: string;
+  avif: string;
 }
 export const photos: Record<string, Photo> = sources;
 export interface PhotoChoice {

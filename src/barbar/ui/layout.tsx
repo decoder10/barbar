@@ -1,3 +1,5 @@
+import { CatalogImage } from '../features/catalog/media/CatalogImage';
+import { photos } from '../features/catalog/media/photo-catalog';
 import { GlassWater } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { t } from '../presentation/i18n/runtime';
@@ -5,7 +7,7 @@ import { t } from '../presentation/i18n/runtime';
 export function Brand() {
   return (
     <div className="brand">
-      <img src="/barbar/logo.png" alt="BAR BAR · ART GALLERY" />
+      <CatalogImage photo={photos['brand-logo']} alt="BAR BAR · ART GALLERY" eager />
       <small>CAFE & BAR MANAGEMENT</small>
     </div>
   );

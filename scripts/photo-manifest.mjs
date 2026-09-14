@@ -1,20 +1,33 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-const root = new URL('../public/barbar/photos/', import.meta.url);
-const sources = JSON.parse(readFileSync(new URL('sources.json', root), 'utf8'));
+import { sources, imageInputs, inputUrl, photoRoot as root } from './photo-sources.mjs';
+const variants = JSON.parse(readFileSync(new URL('optimized/variants.json', root), 'utf8'));
 const escape = (value) =>
   String(value || '').replace(
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   );
 const manifest = Object.fromEntries(
-  Object.entries(sources).map(([key, value]) => {
-    const bytes = readFileSync(new URL(value.file.split('/').pop(), root));
+  Object.entries(imageInputs).map(([key, value]) => {
+    const bytes = readFileSync(inputUrl(value.file));
+    const optimized = variants[key];
+    if (!optimized || optimized.inputHash !== createHash('sha256').update(bytes).digest('hex')) {
+      throw new Error(`Run npm run photos:optimize for changed image: ${key}`);
+    }
+    const srcSet = (format) =>
+      optimized.variants
+        .filter((v) => v.format === format)
+        .map((v) => `/barbar/photos/optimized/${v.file} ${v.width}w`)
+        .join(', ');
     return [
       key,
       {
         file: value.file + '?v=' + createHash('sha256').update(bytes).digest('hex').slice(0, 12),
         author: value.author,
+        width: optimized.width,
+        height: optimized.height,
+        webp: srcSet('webp'),
+        avif: optimized.preferAvif ? srcSet('avif') : '',
       },
     ];
   }),
