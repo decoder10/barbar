@@ -226,6 +226,7 @@ export function menuPhoto(name: string, image: number, category?: string, servin
     };
   if (category === 'cognac' || (glass && /ararat/.test(n))) return { key: 'brandy-glass', example: true };
   if (category === 'shot' || category === 'tincture') return { key: shotPhoto(name), example: true };
+  if (category === 'snack') return { key: snackPhoto(name), example: true };
   if (category === 'hot') {
     const key = /green/.test(n)
       ? 'tea-green'
@@ -288,6 +289,33 @@ export function menuPhoto(name: string, image: number, category?: string, servin
     key: photos[key] ? key : key === 'shot-set' ? 'shot' : key === 'lemonade' ? 'water-glass' : 'gin-tonic',
     example: true,
   };
+}
+
+const snackPhotos: [RegExp, string][] = [
+  [/mikayelyan.*large|микаел.*больш/i, 'snack-cheese-large'],
+  [/mikayelyan|микаел/i, 'snack-cheese-small'],
+  [/cheese|сыр/i, 'snack-cheese-honey'],
+  [/sandwich.*suj|сэндвич.*судж|сандвич.*судж/i, 'snack-sujuck-sandwich'],
+  [/barbar.*sandwich|барбар.*(?:сэндвич|сандвич)/i, 'snack-barbar-sandwich'],
+  [/sandwich|сэндвич|сандвич/i, 'snack-sandwich'],
+  [/brtuch|бруч|бртуч/i, 'snack-brtuch'],
+  [/mini.*sausage|сосиск|колбаск/i, 'snack-sausages-pickles'],
+  [/beer.*set|пивн.*(?:сет|набор)/i, 'snack-beer-set'],
+  [/snack.*set|(?:сет|набор).*закус/i, 'snack-assortment'],
+  [/sujuck|sujuk|судж/i, 'snack-sujuck'],
+  [/anchov|анчоус/i, 'snack-anchovy'],
+  [/jerky|джерки|вялен.*мяс/i, 'snack-jerky'],
+  [/pistachio|фисташ/i, 'snack-pistachios'],
+  [/nuts|орех/i, 'snack-nuts'],
+  [/chips|чипс/i, 'snack-chips'],
+  [/cracker|сухар|крекер/i, 'snack-crackers'],
+  [/oliv|олив|маслин/i, 'snack-olives'],
+  [/lemon|лимон/i, 'snack-lemon'],
+  [/honey|м[её]д/i, 'snack-honey'],
+];
+
+export function snackPhoto(name: string): string {
+  return snackPhotos.find(([pattern]) => pattern.test(name))?.[1] || 'snack-assortment';
 }
 
 export function tinctureIngredient(name: string): string | undefined {

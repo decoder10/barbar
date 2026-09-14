@@ -1454,5 +1454,205 @@
     "license": "Product photograph — rights retained by brand / source",
     "kind": "bottle",
     "file": "/barbar/photos/water-bottle.webp"
+  },
+  "snack-chips": {
+    "file": "/barbar/photos/snack-chips.webp",
+    "title": "Chips — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-nuts": {
+    "file": "/barbar/photos/snack-nuts.webp",
+    "title": "Nuts — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-jerky": {
+    "file": "/barbar/photos/snack-jerky.webp",
+    "title": "Jerky — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-crackers": {
+    "file": "/barbar/photos/snack-crackers.webp",
+    "title": "Crackers — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-sujuck": {
+    "file": "/barbar/photos/snack-sujuck.webp",
+    "title": "Sujuck — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-anchovy": {
+    "file": "/barbar/photos/snack-anchovy.webp",
+    "title": "Anchovy — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-pistachios": {
+    "file": "/barbar/photos/snack-pistachios.webp",
+    "title": "Pistachios — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-lemon": {
+    "file": "/barbar/photos/snack-lemon.webp",
+    "title": "Lemon — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-honey": {
+    "file": "/barbar/photos/snack-honey.webp",
+    "title": "Honey — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-olives": {
+    "file": "/barbar/photos/snack-olives.webp",
+    "title": "Olives green/black — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-sausages-pickles": {
+    "file": "/barbar/photos/snack-sausages-pickles.webp",
+    "title": "Mini sausages and pickles — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-brtuch": {
+    "file": "/barbar/photos/snack-brtuch.webp",
+    "title": "Brtuch — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-assortment": {
+    "file": "/barbar/photos/snack-assortment.webp",
+    "title": "Snack set — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-beer-set": {
+    "file": "/barbar/photos/snack-beer-set.webp",
+    "title": "Beer set — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-sandwich": {
+    "file": "/barbar/photos/snack-sandwich.webp",
+    "title": "Sandwich — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-sujuck-sandwich": {
+    "file": "/barbar/photos/snack-sujuck-sandwich.webp",
+    "title": "Sandwich with sujuck — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-barbar-sandwich": {
+    "file": "/barbar/photos/snack-barbar-sandwich.webp",
+    "title": "BarBar sandwich — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-cheese-honey": {
+    "file": "/barbar/photos/snack-cheese-honey.webp",
+    "title": "Cheese set with honey — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-cheese-small": {
+    "file": "/barbar/photos/snack-cheese-small.webp",
+    "title": "Mikayelyan cheese with honey small set — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "snack-cheese-large": {
+    "file": "/barbar/photos/snack-cheese-large.webp",
+    "title": "Mikayelyan cheese with honey large set — serving illustration",
+    "author": "Barbar Cafe · AI-generated",
+    "source": "https://openai.com/index/image-generation-api/",
+    "url": "https://openai.com/index/image-generation-api/",
+    "license": "AI-generated illustration",
+    "kind": "food",
+    "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
   }
 }
