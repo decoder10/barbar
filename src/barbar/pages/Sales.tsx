@@ -16,16 +16,19 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlcoholCard, CocktailCard, Empty, ExportButton, Metric, Modal } from '../components';
-import { formatMoney as money } from '../display-money';
+import { AlcoholCard, CocktailCard } from '../features/catalog/cards';
+import { Empty, Metric } from '../ui/layout';
+import { ExportButton } from '../ui/export';
+import { Modal } from '../ui/modal';
+import { formatMoney as money } from '../presentation/currency/format-money';
 import { businessDayHint, businessToday } from '../domain/business-day';
 import { activeSales, categories, round, saleUnit, volume } from '../domain/model';
 import type { Alcohol, Cocktail, Sale } from '../domain/types';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
 import { SaleForm } from '../features/sales/SaleForm';
-import { locale, t } from '../i18n/runtime';
-import { useBar } from '../store';
-import { useBusinessDate } from '../use-business-date';
+import { locale, t } from '../presentation/i18n/runtime';
+import { useBar } from '../app/providers/BarProvider';
+import { useBusinessDate } from '../features/sales/use-business-date';
 export default function Sales() {
   const { data, run, busy } = useBar();
   const inventory = useInventoryCalculations(data);

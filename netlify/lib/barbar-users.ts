@@ -1,7 +1,7 @@
 import type { Db } from 'mongodb';
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
-import { defaultPreferences, type Preferences } from '../../src/barbar/preferences';
-import type { UserInput, UserProfile } from '../../src/barbar/users';
+import { defaultPreferences, type Preferences } from '../../src/barbar/domain/identity/preferences';
+import type { UserInput, UserProfile } from '../../src/barbar/domain/identity/user';
 
 const derive = (
   password: string,

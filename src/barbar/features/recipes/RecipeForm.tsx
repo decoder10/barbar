@@ -1,13 +1,15 @@
 import { useInventoryCalculations } from '../inventory/use-inventory-calculations';
 import { Calculator, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { CocktailArt, Field, Modal, Submit } from '../../components';
-import { formatMoney as money } from '../../display-money';
+import { CocktailArt } from '../catalog/art';
+import { Field } from '../../ui/fields';
+import { Modal, Submit } from '../../ui/modal';
+import { formatMoney as money } from '../../presentation/currency/format-money';
 import { categories, ingredientUnit, ingredientVolume, priceBasis, round, uid } from '../../domain/model';
 import type { Cocktail } from '../../domain/types';
-import { t } from '../../i18n/runtime';
-import { menuImage, menuPhotos, photoGroups } from '../../images';
-import { useBar } from '../../store';
+import { t } from '../../presentation/i18n/runtime';
+import { menuImage, menuPhotos, photoGroups } from '../../domain/catalog/legacy-images';
+import { useBar } from '../../app/providers/BarProvider';
 
 export function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: () => void }) {
   const { data, run } = useBar();

@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
-import { initialData } from './domain/model';
-import { reportAnalytics } from './domain/reports/analytics';
-import { priceAdvice, salesPerformance, type ProductPerformance } from './domain/reports/pricing';
-import { compareCatalog } from './features/catalog/sort';
+import { initialData } from '../../model';
+import { reportAnalytics } from '../analytics';
+import { priceAdvice, salesPerformance, type ProductPerformance } from '../pricing';
+import { compareCatalog } from '../../../features/catalog/sort';
 test('reports exclude voids, flag incomplete costs and keep glass volumes separate', () => {
   const data = initialData();
   data.sales = [100, 150].map((servingMl, index) => ({

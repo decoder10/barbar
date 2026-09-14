@@ -1,5 +1,5 @@
 import { MongoClient, type ClientSession, type Db, type Document } from 'mongodb';
-import { migrateBottleCatalog } from '../../src/barbar/bottles';
+import { migrateBottleCatalog } from '../../src/barbar/domain/catalog/bottles';
 import { initialData, validateData } from '../../src/barbar/domain/model';
 import type { BarData } from '../../src/barbar/domain/types';
 import type { Repository, Snapshot } from './barbar-repository';

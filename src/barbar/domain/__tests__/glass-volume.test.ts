@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
-import { staffData } from '../../netlify/lib/barbar-access';
-import { migrateBottleCatalog } from './bottles';
-import { applyCommand, initialData, stock, stockTotals, today, validateData } from './domain/model';
-import { bottlePhoto, menuPhoto } from './photo-catalog';
+import { staffData } from '../../../../netlify/lib/barbar-access';
+import { migrateBottleCatalog } from '../catalog/bottles';
+import { applyCommand, initialData, stock, stockTotals, today, validateData } from '../model';
+import { bottlePhoto, menuPhoto } from '../../features/catalog/media/photo-catalog';
 
 function wine() {
   let d = applyCommand(initialData(), {

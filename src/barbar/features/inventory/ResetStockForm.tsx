@@ -1,11 +1,12 @@
 import { useInventoryCalculations } from './use-inventory-calculations';
 import { useState } from 'react';
-import { Field, Modal } from '../../components';
-import { formatMoney as money } from '../../display-money';
+import { Field } from '../../ui/fields';
+import { Modal } from '../../ui/modal';
+import { formatMoney as money } from '../../presentation/currency/format-money';
 import { ingredientVolume, priceBasis, round } from '../../domain/model';
 import type { Alcohol } from '../../domain/types';
-import { locale, t } from '../../i18n/runtime';
-import { useBar } from '../../store';
+import { locale, t } from '../../presentation/i18n/runtime';
+import { useBar } from '../../app/providers/BarProvider';
 
 export function ResetStockForm({ alcohol, close }: { alcohol: Alcohol; close: () => void }) {
   const { data, run, busy } = useBar();

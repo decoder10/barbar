@@ -1,11 +1,13 @@
 import { Archive, ArrowDownToLine, FileJson, FolderArchive, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { download, ExportButton, Modal, PageHeading } from '../components';
-import { formatMoney as money } from '../display-money';
+import { download, ExportButton } from '../ui/export';
+import { Modal } from '../ui/modal';
+import { PageHeading } from '../ui/layout';
+import { formatMoney as money } from '../presentation/currency/format-money';
 import { today, validateData } from '../domain/model';
 import type { BarData } from '../domain/types';
-import { t } from '../i18n/runtime';
-import { useBar } from '../store';
+import { t } from '../presentation/i18n/runtime';
+import { useBar } from '../app/providers/BarProvider';
 
 export default function Backups() {
   const { data, run, notify, busy } = useBar();

@@ -1,7 +1,8 @@
 import { useInventoryCalculations } from './use-inventory-calculations';
 import { useState } from 'react';
-import { Field, Modal, Submit } from '../../components';
-import { formatMoney as money } from '../../display-money';
+import { Field } from '../../ui/fields';
+import { Modal, Submit } from '../../ui/modal';
+import { formatMoney as money } from '../../presentation/currency/format-money';
 import { businessDayHint } from '../../domain/business-day';
 import {
   ingredientUnit,
@@ -12,9 +13,9 @@ import {
   today,
   uid,
 } from '../../domain/model';
-import { t } from '../../i18n/runtime';
-import { useBar } from '../../store';
-import { useBusinessDate } from '../../use-business-date';
+import { t } from '../../presentation/i18n/runtime';
+import { useBar } from '../../app/providers/BarProvider';
+import { useBusinessDate } from '../sales/use-business-date';
 
 export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: () => void }) {
   const { data, run } = useBar();

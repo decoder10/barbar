@@ -2,14 +2,16 @@ import { useInventoryCalculations } from '../features/inventory/use-inventory-ca
 import { Calculator, Plus, Search } from 'lucide-react';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CocktailCard, Empty, ExportButton, PageHeading } from '../components';
-import { formatMoney as money } from '../display-money';
+import { CocktailCard } from '../features/catalog/cards';
+import { Empty, PageHeading } from '../ui/layout';
+import { ExportButton } from '../ui/export';
+import { formatMoney as money } from '../presentation/currency/format-money';
 import { categories, categoryLabel, ingredientVolume } from '../domain/model';
 import type { Cocktail } from '../domain/types';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
 import { RecipeForm } from '../features/recipes/RecipeForm';
-import { t } from '../i18n/runtime';
-import { useBar } from '../store';
+import { t } from '../presentation/i18n/runtime';
+import { useBar } from '../app/providers/BarProvider';
 export default function Cocktails() {
   const { data } = useBar();
   const inventory = useInventoryCalculations(data);

@@ -1,10 +1,10 @@
 import { ArrowUpRight, Plus } from 'lucide-react';
 import { type ReactNode } from 'react';
-import { formatMoney as money } from '../../display-money';
+import { formatMoney as money } from '../../presentation/currency/format-money';
 import { categoryLabel, volume } from '../../domain/model';
 import type { Alcohol, Cocktail } from '../../domain/types';
-import { t } from '../../i18n/runtime';
-import { menuImage } from '../../images';
+import { t } from '../../presentation/i18n/runtime';
+import { menuImage } from '../../domain/catalog/legacy-images';
 import { BottleArt, CocktailArt } from './art';
 export function CocktailCard({
   cocktail,

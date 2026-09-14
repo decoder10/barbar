@@ -1,6 +1,6 @@
 import { applyCommand } from '../../src/barbar/domain/model';
 import type { BarData, Command } from '../../src/barbar/domain/types';
-import type { UserProfile } from '../../src/barbar/users';
+import type { UserProfile } from '../../src/barbar/domain/identity/user';
 import { publicSnapshot } from './barbar-access';
 import { authenticated, json, roleFor, sameOrigin } from './barbar-auth';
 import type { Repository } from './barbar-repository';

@@ -2,7 +2,7 @@ import { handleBarApi as handle } from '../netlify/lib/barbar-handler';
 import type { Repository } from '../netlify/lib/barbar-repository';
 import { handleAuth } from '../netlify/lib/barbar-user-handler';
 import type { IdentityStore } from '../netlify/lib/barbar-users';
-import type { UserProfile } from '../src/barbar/users';
+import type { UserProfile } from '../src/barbar/domain/identity/user';
 const user = (role: 'admin' | 'barbar'): UserProfile => ({
   id: role,
   username: role,

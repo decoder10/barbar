@@ -1,7 +1,7 @@
 import { Check, X } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { t } from '../i18n/runtime';
-import { useBar } from '../store';
+import { t } from '../presentation/i18n/runtime';
+import { useBar } from '../app/providers/BarProvider';
 
 export function Modal({
   title,

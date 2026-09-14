@@ -1,13 +1,14 @@
 import { Plus, Search, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
-import { CocktailArt, Empty, PageHeading } from '../components';
+import { CocktailArt } from '../features/catalog/art';
+import { Empty, PageHeading } from '../ui/layout';
 import { categories, categoryLabel, unitLabel } from '../domain/model';
 import type { StaffRecipe } from '../domain/types';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
 import StaffCocktailForm from '../features/recipes/StaffCocktailForm';
-import { locale, t } from '../i18n/runtime';
-import { menuImage } from '../images';
-import { useBar } from '../store';
+import { locale, t } from '../presentation/i18n/runtime';
+import { menuImage } from '../domain/catalog/legacy-images';
+import { useBar } from '../app/providers/BarProvider';
 
 export default function StaffRecipes() {
   const { staffData } = useBar();

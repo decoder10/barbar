@@ -16,20 +16,20 @@ import {
 } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
-import { Brand } from './components';
-import { Login } from './features/auth/Login';
-import { t } from './i18n/runtime';
-import { PreferenceControls } from './settings';
-import { useBar } from './store';
-const Users = lazy(() => import('./pages/Users'));
-const StaffRecipes = lazy(() => import('./pages/StaffRecipes'));
-const StaffInventory = lazy(() => import('./pages/StaffInventory'));
-const StaffSales = lazy(() => import('./pages/StaffSales'));
-const Sales = lazy(() => import('./pages/Sales'));
-const Inventory = lazy(() => import('./pages/Inventory'));
-const Cocktails = lazy(() => import('./pages/Cocktails'));
-const Reports = lazy(() => import('./pages/Reports'));
-const Backups = lazy(() => import('./pages/Backups'));
+import { Brand } from '../ui/layout';
+import { Login } from '../features/auth/Login';
+import { t } from '../presentation/i18n/runtime';
+import { PreferenceControls } from '../presentation/PreferenceControls';
+import { useBar } from './providers/BarProvider';
+const Users = lazy(() => import('../pages/Users'));
+const StaffRecipes = lazy(() => import('../pages/StaffRecipes'));
+const StaffInventory = lazy(() => import('../pages/StaffInventory'));
+const StaffSales = lazy(() => import('../pages/StaffSales'));
+const Sales = lazy(() => import('../pages/Sales'));
+const Inventory = lazy(() => import('../pages/Inventory'));
+const Cocktails = lazy(() => import('../pages/Cocktails'));
+const Reports = lazy(() => import('../pages/Reports'));
+const Backups = lazy(() => import('../pages/Backups'));
 const navigation = [
   { path: '/', label: 'Продажи', icon: ShoppingBag, caption: 'Каждый день' },
   { path: '/inventory', label: 'Склад', icon: Boxes, caption: 'Напитки и закупки' },

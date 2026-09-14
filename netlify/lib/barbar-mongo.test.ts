@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { migrateBottleCatalog } from '../../src/barbar/bottles';
+import { migrateBottleCatalog } from '../../src/barbar/domain/catalog/bottles';
 import { applyCommand, averageCost, initialData, stock } from '../../src/barbar/domain/model';
 import type { Command } from '../../src/barbar/domain/types';
 import { handleBarApi } from '../../tests/identity-fixture';

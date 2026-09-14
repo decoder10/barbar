@@ -1,10 +1,12 @@
 import { Plus, ShieldCheck, UserRound, Users as UsersIcon } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Field, Modal, PageHeading } from '../components';
-import { t } from '../i18n/runtime';
+import { Field } from '../ui/fields';
+import { Modal } from '../ui/modal';
+import { PageHeading } from '../ui/layout';
+import { t } from '../presentation/i18n/runtime';
 import { api } from '../services/api-client';
-import { useBar } from '../store';
-import type { UserInput, UserProfile } from '../users';
+import { useBar } from '../app/providers/BarProvider';
+import type { UserInput, UserProfile } from '../domain/identity/user';
 const blank: UserInput = { username: '', fullName: '', email: '', phone: '', password: '', role: 'worker' };
 export default function Users() {
   const { user: me, notify } = useBar();

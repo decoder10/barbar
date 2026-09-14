@@ -1,4 +1,4 @@
-import type { UserProfile } from '../../src/barbar/users';
+import type { UserProfile } from '../../src/barbar/domain/identity/user';
 import type { IdentityStore } from './barbar-users';
 export type Role = 'admin' | 'barbar';
 const COOKIE = 'barbar_session';

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fixtureData } from '../../tests/fixtures';
-import { businessToday } from './domain/business-day';
-import { applyCommand } from './domain/model';
+import { fixtureData } from '../../../../tests/fixtures';
+import { businessToday } from '../business-day';
+import { applyCommand } from '../model';
 afterEach(() => vi.useRealTimers());
 describe('Yerevan business date starts at 06:00', () => {
   it.each([

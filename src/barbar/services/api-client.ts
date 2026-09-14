@@ -1,5 +1,5 @@
 import type { BarData, Role, StaffData } from '../domain/types';
-import type { UserProfile } from '../users';
+import type { UserProfile } from '../domain/identity/user';
 interface ApiResponses {
   '/api/barbar/auth': { authenticated: boolean; user: UserProfile | null; role: Role | null };
   '/api/barbar/users': { users: UserProfile[]; user: UserProfile };

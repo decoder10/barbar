@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { formatMoney as money } from '../../display-money';
+import { formatMoney as money } from '../../presentation/currency/format-money';
 import type { ReportPeriod } from '../../domain/reports/period';
 import { priceAdvice, salesPerformance } from '../../domain/reports/pricing';
-import { t } from '../../i18n/runtime';
-import { useBar } from '../../store';
+import { t } from '../../presentation/i18n/runtime';
+import { useBar } from '../../app/providers/BarProvider';
 export function ReportPerformance({ period }: { period: ReportPeriod }) {
   const { data } = useBar();
   const [ranking, setRanking] = useState('revenue');

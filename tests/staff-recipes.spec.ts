@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { staffData } from '../netlify/lib/barbar-access';
-import { migrateBottleCatalog } from '../src/barbar/bottles';
+import { migrateBottleCatalog } from '../src/barbar/domain/catalog/bottles';
 import { applyCommand } from '../src/barbar/domain/model';
 import { fixtureData } from './fixtures';
 

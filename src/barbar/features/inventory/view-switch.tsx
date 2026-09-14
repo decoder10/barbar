@@ -1,6 +1,6 @@
 import { LayoutGrid, List } from 'lucide-react';
 import { useState } from 'react';
-import { t } from '../../i18n/runtime';
+import { t } from '../../presentation/i18n/runtime';
 
 export function useInventoryView() {
   const [view, setView] = useState<'list' | 'grid'>(() => {

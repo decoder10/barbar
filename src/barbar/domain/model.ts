@@ -1,7 +1,7 @@
 import alcoholDefaults from '../data/alcohol.json' with { type: 'json' };
 import cocktailDefaults from '../data/cocktails.json' with { type: 'json' };
 import salesDefaults from '../data/sales/initial.json' with { type: 'json' };
-import { maxMenuImage } from '../images';
+import { maxMenuImage } from './catalog/legacy-images';
 import { businessToday } from './business-day';
 import { isGlassServing } from './serving';
 import { Alcohol, BarData, Cocktail, Command, Ingredient, MenuCategory, PortionExpense, Sale } from './types';

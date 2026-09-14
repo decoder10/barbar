@@ -1,4 +1,4 @@
-import type { ExchangeRates } from '../../src/barbar/preferences';
+import type { ExchangeRates } from '../../src/barbar/domain/identity/preferences';
 import { json } from './barbar-auth';
 let cached: ExchangeRates | undefined;
 let pending: Promise<ExchangeRates> | undefined;

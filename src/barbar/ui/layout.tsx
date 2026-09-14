@@ -1,6 +1,6 @@
 import { GlassWater } from 'lucide-react';
 import { type ReactNode } from 'react';
-import { t } from '../i18n/runtime';
+import { t } from '../presentation/i18n/runtime';
 
 export function Brand() {
   return (

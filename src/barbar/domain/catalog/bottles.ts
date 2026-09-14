@@ -1,4 +1,4 @@
-import type { BarData } from './domain/types';
+import type { BarData } from '../types';
 
 // Only unconfigured, unsold catalogue entries are eligible. Never reinterpret a
 // millilitre ledger as bottle counts or invent a brand for historical stock.

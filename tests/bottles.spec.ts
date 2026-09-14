@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { staffData } from '../netlify/lib/barbar-access';
-import { migrateBottleCatalog } from '../src/barbar/bottles';
+import { migrateBottleCatalog } from '../src/barbar/domain/catalog/bottles';
 import { applyCommand, initialData, stock } from '../src/barbar/domain/model';
 
 test('stock brands, bottle sizes, purchases, staff sales and wine servings', async ({ page }) => {

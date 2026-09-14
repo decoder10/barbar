@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest';
-import { api } from './services/api-client';
+import { api } from '../api-client';
 test('concurrent session checks share one request, while later reads and writes stay fresh', async () => {
   const fetchMock = vi.fn(
     async () =>

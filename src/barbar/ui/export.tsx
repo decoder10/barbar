@@ -1,6 +1,6 @@
 import { ArrowDownToLine } from 'lucide-react';
 import { type ReactNode } from 'react';
-import { t } from '../i18n/runtime';
+import { t } from '../presentation/i18n/runtime';
 
 export function download(name: string, value: unknown, csv = false) {
   const blob = new Blob([csv ? `\uFEFF${value}` : JSON.stringify(value, null, 2)], {

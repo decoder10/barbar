@@ -1,11 +1,13 @@
 import { Plus, Trash2, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
-import { CocktailArt, Field, Modal, Submit } from '../../components';
+import { CocktailArt } from '../catalog/art';
+import { Field } from '../../ui/fields';
+import { Modal, Submit } from '../../ui/modal';
 import { categories } from '../../domain/model';
 import type { Ingredient, MenuCategory, StaffRecipe } from '../../domain/types';
-import { t } from '../../i18n/runtime';
-import { menuImage, menuPhotos, photoGroups } from '../../images';
-import { useBar } from '../../store';
+import { t } from '../../presentation/i18n/runtime';
+import { menuImage, menuPhotos, photoGroups } from '../../domain/catalog/legacy-images';
+import { useBar } from '../../app/providers/BarProvider';
 
 export default function StaffCocktailForm({ close, recipe }: { close: () => void; recipe?: StaffRecipe }) {
   const { staffData, run } = useBar();

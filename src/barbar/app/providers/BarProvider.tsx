@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { initialData, uid } from './domain/model';
-import type { Action, BarData, Command, Role, StaffData } from './domain/types';
-import type { Preferences } from './preferences';
-import { PresentationContext } from './presentation-context';
-import { api, ApiError } from './services/api-client';
-import type { UserProfile } from './users';
+import { initialData, uid } from '../../domain/model';
+import type { Action, BarData, Command, Role, StaffData } from '../../domain/types';
+import type { Preferences } from '../../domain/identity/preferences';
+import { PresentationContext } from '../../presentation/presentation-context';
+import { api, ApiError } from '../../services/api-client';
+import type { UserProfile } from '../../domain/identity/user';
 
 type Mode = 'loading' | 'login' | 'cloud';
 type Notice = { text: string; error: boolean } | null;

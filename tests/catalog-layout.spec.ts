@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { migrateBottleCatalog } from '../src/barbar/bottles';
+import { migrateBottleCatalog } from '../src/barbar/domain/catalog/bottles';
 import { fixtureData } from './fixtures';
 
 test('fluid warehouse grid, readable filters, stable product art and scroll-locked dialogs', async ({

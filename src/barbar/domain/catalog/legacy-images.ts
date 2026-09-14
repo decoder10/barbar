@@ -1,4 +1,4 @@
-import type { Cocktail } from './domain/types';
+import type { Cocktail } from '../types';
 
 export const photoGroups = [
   {

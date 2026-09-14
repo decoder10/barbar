@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { expect, test } from 'vitest';
-import sources from '../../public/barbar/photos/sources.json';
-import { bottlePhoto, menuPhoto, photos } from './photo-catalog';
+import sources from '../../../../../../public/barbar/photos/sources.json';
+import { bottlePhoto, menuPhoto, photos } from '../photo-catalog';
 
 test('beer flavours cannot resolve to fruit ingredients and unknown brands get named bottle templates', () => {
   expect(bottlePhoto('379 — Вишня', 'beer')).toMatchObject({ key: '', template: 'beer' });

@@ -12,16 +12,11 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  BottleArt,
-  Empty,
-  ExportButton,
-  InventoryViewSwitch,
-  Metric,
-  PageHeading,
-  useInventoryView,
-} from '../components';
-import { formatMoney as money } from '../display-money';
+import { BottleArt } from '../features/catalog/art';
+import { Empty, Metric, PageHeading } from '../ui/layout';
+import { ExportButton } from '../ui/export';
+import { InventoryViewSwitch, useInventoryView } from '../features/inventory/view-switch';
+import { formatMoney as money } from '../presentation/currency/format-money';
 import { ingredientVolume, priceBasis, priceUnit, round, stockTotals, volume } from '../domain/model';
 import type { Alcohol, Purchase } from '../domain/types';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
@@ -29,8 +24,8 @@ import { AlcoholForm } from '../features/inventory/AlcoholForm';
 import { CorrectPurchaseForm } from '../features/inventory/CorrectPurchaseForm';
 import { PurchaseForm } from '../features/inventory/PurchaseForm';
 import { ResetStockForm } from '../features/inventory/ResetStockForm';
-import { locale, t } from '../i18n/runtime';
-import { useBar } from '../store';
+import { locale, t } from '../presentation/i18n/runtime';
+import { useBar } from '../app/providers/BarProvider';
 export default function Inventory() {
   const [params] = useSearchParams();
   const { data } = useBar();

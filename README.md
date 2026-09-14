@@ -90,9 +90,14 @@ src/barbar/
   data/cocktails.json            # исходное меню и продажные цены
   data/sales/initial.json        # пустая начальная история
   domain/                       # типы, команды, учёт и аналитика
-  store.tsx                     # обмен с Node API, обновление устройств
+  app/                          # App, маршрутизация, провайдер состояния
+  features/                     # формы, каталог и рабочие сценарии
+  presentation/                 # языки, валюты, темы и переключатели
+  services/                     # HTTP-клиент
+  ui/                           # общие элементы интерфейса
   pages/                        # продажи, склад, меню, отчёты, файлы
   styles/                       # SCSS, токены, темы и миксины
+  **/__tests__/                 # модульные тесты рядом со своей областью
 netlify/functions/              # серверные маршруты входа и API
 netlify/lib/                    # роли, операции, MongoDB, чтение старых файлов
 server/local-api.ts             # локальный Node API и перенос JSON → MongoDB

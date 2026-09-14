@@ -7,9 +7,9 @@ import '@fontsource/playfair-display/500.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './barbar/App';
-import { SettingsProvider } from './barbar/settings';
-import { BarProvider } from './barbar/store';
+import App from './barbar/app/App';
+import { SettingsProvider } from './barbar/presentation/SettingsProvider';
+import { BarProvider } from './barbar/app/providers/BarProvider';
 import './barbar/styles/index.scss';
 
 createRoot(document.getElementById('root')!).render(

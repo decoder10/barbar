@@ -1,4 +1,4 @@
-import type { Currency, ExchangeRates, Language } from './preferences';
+import type { Currency, ExchangeRates, Language } from '../../domain/identity/preferences';
 let currency: Currency = 'AMD';
 let formatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
 let divisor = 1;

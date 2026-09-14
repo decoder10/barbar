@@ -1,5 +1,5 @@
 import type { Alcohol } from '../../domain/types';
-import { t } from '../../i18n/runtime';
+import { t } from '../../presentation/i18n/runtime';
 import {
   bottlePhoto,
   menuPhoto,
@@ -7,7 +7,7 @@ import {
   shotPhoto,
   tinctureIngredient,
   type PhotoChoice,
-} from '../../photo-catalog';
+} from './media/photo-catalog';
 
 export function RealPhoto({
   choice,

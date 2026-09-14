@@ -1,8 +1,8 @@
 import { expect, test, vi } from 'vitest';
-import { configureMoney, displayCurrency, formatMoney } from './display-money';
-import en from './i18n/en.json';
-import hy from './i18n/hy.json';
-import { setTranslations, t } from './i18n/runtime';
+import { configureMoney, displayCurrency, formatMoney } from '../currency/format-money';
+import en from '../i18n/en.json';
+import hy from '../i18n/hy.json';
+import { setTranslations, t } from '../i18n/runtime';
 test('translates controls and dynamic units while preserving names and confirmation tokens', () => {
   vi.stubGlobal('document', { documentElement: { lang: 'ru' } });
   try {

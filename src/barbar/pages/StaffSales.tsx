@@ -12,26 +12,20 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 import { useState } from 'react';
-import {
-  CocktailArt,
-  Empty,
-  Field,
-  GlassVolumeField,
-  Metric,
-  Modal,
-  PageHeading,
-  Submit,
-} from '../components';
+import { CocktailArt } from '../features/catalog/art';
+import { Empty, Metric, PageHeading } from '../ui/layout';
+import { Field, GlassVolumeField } from '../ui/fields';
+import { Modal, Submit } from '../ui/modal';
 import { businessDayHint, businessToday } from '../domain/business-day';
 import { categories, categoryLabel, saleUnit, volume } from '../domain/model';
 import { isGlassServing } from '../domain/serving';
 import type { StaffProduct } from '../domain/types';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
 import StaffCocktailForm from '../features/recipes/StaffCocktailForm';
-import { locale, t } from '../i18n/runtime';
-import { menuImage } from '../images';
-import { useBar } from '../store';
-import { useBusinessDate } from '../use-business-date';
+import { locale, t } from '../presentation/i18n/runtime';
+import { menuImage } from '../domain/catalog/legacy-images';
+import { useBar } from '../app/providers/BarProvider';
+import { useBusinessDate } from '../features/sales/use-business-date';
 
 export default function StaffSales() {
   const { staffData, run } = useBar();

@@ -2,17 +2,18 @@ import { menuQuantitySummary } from '../domain/quantity-summary';
 import { ArrowDownToLine, ArrowUpRight, Banknote, CalendarDays, GlassWater, ReceiptText } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { download, Empty, ExportButton, Metric, PageHeading } from '../components';
-import { displayCurrency, formatMoney as money } from '../display-money';
+import { download, ExportButton } from '../ui/export';
+import { Empty, Metric, PageHeading } from '../ui/layout';
+import { displayCurrency, formatMoney as money } from '../presentation/currency/format-money';
 import { businessDayHint, businessToday } from '../domain/business-day';
 import { activeSales, categoryLabel, ingredientVolume, priceBasis, round, saleUnit } from '../domain/model';
 import { reportAnalytics } from '../domain/reports/analytics';
 import { inReportPeriod, revenueSeries, type ReportPeriod } from '../domain/reports/period';
 import type { MenuCategory } from '../domain/types';
 import { ReportPerformance } from '../features/reports/ReportPerformance';
-import { locale, t } from '../i18n/runtime';
-import { useBar } from '../store';
-import { useBusinessDate } from '../use-business-date';
+import { locale, t } from '../presentation/i18n/runtime';
+import { useBar } from '../app/providers/BarProvider';
+import { useBusinessDate } from '../features/sales/use-business-date';
 
 export default function Reports() {
   const { data } = useBar();

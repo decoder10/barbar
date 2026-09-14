@@ -1,8 +1,10 @@
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
-import { Brand, Field, Submit } from '../../components';
-import { t } from '../../i18n/runtime';
-import { useBar } from '../../store';
+import { Brand } from '../../ui/layout';
+import { Field } from '../../ui/fields';
+import { Submit } from '../../ui/modal';
+import { t } from '../../presentation/i18n/runtime';
+import { useBar } from '../../app/providers/BarProvider';
 
 export function Login() {
   const { login, notice } = useBar();

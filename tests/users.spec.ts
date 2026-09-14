@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { staffData } from '../netlify/lib/barbar-access';
-import type { UserProfile } from '../src/barbar/users';
+import type { UserProfile } from '../src/barbar/domain/identity/user';
 import { fixtureData } from './fixtures';
 
 test('owner creates a named worker and owner, table persists after refresh', async ({ page }) => {

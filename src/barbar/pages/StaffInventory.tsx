@@ -1,10 +1,12 @@
 import { Boxes, Search, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
-import { BottleArt, Empty, InventoryViewSwitch, Metric, PageHeading, useInventoryView } from '../components';
+import { BottleArt } from '../features/catalog/art';
+import { Empty, Metric, PageHeading } from '../ui/layout';
+import { InventoryViewSwitch, useInventoryView } from '../features/inventory/view-switch';
 import { unitLabel } from '../domain/model';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
-import { locale, t } from '../i18n/runtime';
-import { useBar } from '../store';
+import { locale, t } from '../presentation/i18n/runtime';
+import { useBar } from '../app/providers/BarProvider';
 
 const categories = [
   ['all', 'Все'],

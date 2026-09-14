@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, useId, type ReactElement, type ReactNode } from 'react';
-import { t } from '../i18n/runtime';
+import { t } from '../presentation/i18n/runtime';
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   const id = useId();

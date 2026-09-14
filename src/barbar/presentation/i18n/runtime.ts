@@ -1,4 +1,4 @@
-import type { Language } from '../preferences';
+import type { Language } from '../../domain/identity/preferences';
 let language: Language = 'ru';
 let dictionary: Record<string, string> = {};
 let fragments: RegExp | undefined;

@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest';
-import { fixtureData } from '../../../tests/fixtures';
-import { inventoryCalculations } from './inventory-calculations';
-import { applyCommand, averageCost, stock, recipeCost, portions } from './model';
-import { businessToday } from './business-day';
-import { revenueSeries } from './reports/period';
+import { fixtureData } from '../../../../tests/fixtures';
+import { inventoryCalculations } from '../inventory-calculations';
+import { applyCommand, averageCost, stock, recipeCost, portions } from '../model';
+import { businessToday } from '../business-day';
+import { revenueSeries } from '../reports/period';
 
 test('indexed inventory matches ledger accounting after a sale', () => {
   let data = fixtureData();

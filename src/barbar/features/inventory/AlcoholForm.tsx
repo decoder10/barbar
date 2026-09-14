@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Field, Modal, Submit } from '../../components';
+import { Field } from '../../ui/fields';
+import { Modal, Submit } from '../../ui/modal';
 import { priceUnit, uid } from '../../domain/model';
 import type { Alcohol } from '../../domain/types';
-import { t } from '../../i18n/runtime';
-import { useBar } from '../../store';
+import { t } from '../../presentation/i18n/runtime';
+import { useBar } from '../../app/providers/BarProvider';
 
 export function AlcoholForm({
   alcohol,

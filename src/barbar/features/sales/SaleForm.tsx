@@ -1,13 +1,14 @@
 import { useInventoryCalculations } from '../inventory/use-inventory-calculations';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Field, GlassVolumeField, Modal, Submit } from '../../components';
-import { formatMoney as money } from '../../display-money';
+import { Field, GlassVolumeField } from '../../ui/fields';
+import { Modal, Submit } from '../../ui/modal';
+import { formatMoney as money } from '../../presentation/currency/format-money';
 import { ingredientVolume, round, saleUnit, volume } from '../../domain/model';
 import { bottleName, isGlassServing } from '../../domain/serving';
 import type { Alcohol, Cocktail, Sale } from '../../domain/types';
-import { locale, t } from '../../i18n/runtime';
-import { useBar } from '../../store';
+import { locale, t } from '../../presentation/i18n/runtime';
+import { useBar } from '../../app/providers/BarProvider';
 
 export function SaleForm({
   kind,
