@@ -1,0 +1,72 @@
+.sidebar-toggle {
+  flex-shrink: 0;
+}
+
+// Mobile keeps its full-size drawer, independently of the desktop preference.
+@media (max-width: 760px) {
+  .sidebar-toggle {
+    display: none;
+  }
+}
+
+@media (min-width: 761px) {
+  .app-shell.sidebar-collapsed {
+    --sidebar-width: 76px;
+
+    .sidebar {
+      padding-inline: 12px;
+    }
+
+    .sidebar-brand {
+      padding: 2px 0 18px;
+    }
+
+    .brand img {
+      width: 48px;
+      height: 34px;
+    }
+
+    .brand small,
+    .workspace-label,
+    .nav-arrow,
+    .sidebar-tip,
+    .sidebar-footer > div,
+    .photo-credits-link {
+      display: none;
+    }
+
+    .sidebar nav {
+      margin-top: 18px;
+    }
+
+    .nav-item {
+      justify-content: center;
+      min-height: 48px;
+      padding: 12px;
+    }
+
+    .nav-item > svg {
+      flex-shrink: 0;
+    }
+
+    // Keep link names available to assistive technology while title supplies the tooltip.
+    .nav-item > span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .sidebar-footer {
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 0;
+    }
+
+    .sidebar-footer .icon-button {
+      margin-left: 0;
+    }
+  }
+}

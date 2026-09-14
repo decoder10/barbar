@@ -166,7 +166,9 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
     expect(second.rows).toHaveLength(5);
     expect(new Set([...page.rows, ...second.rows].map((r) => r.id)).size).toBe(55);
     const worker = await (await handleHistory(get(path, 'barbar'), db, identity)).json();
-    expect(JSON.stringify(worker)).not.toMatch(/revenue|cost|price|ingredientIds/i);
+    expect(worker.groups[0].revenue).toBe(page.groups[0].revenue);
+    expect(worker.rows[0].revenue).toBe(page.rows[0].revenue);
+    expect(JSON.stringify(worker)).not.toMatch(/cost|ingredientIds/i);
     const report = await (
       await handleReport(
         get(`/api/barbar/report?from=${businessToday()}&to=${businessToday()}`),

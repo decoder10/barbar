@@ -100,7 +100,7 @@ describe('working-state synchronization', () => {
     expect(result.stock).toHaveLength(data.alcohol.length);
     expect(mock.mock.calls.filter(([path]) => path.startsWith('/api/barbar/catalog/'))).toHaveLength(2);
   });
-  it('reprojects worker availability identically, including selected glass volumes, with no finance', async () => {
+  it('reprojects worker availability identically, including selected glass volumes, with no private costs', async () => {
     const wineData: BarData = {
       ...data,
       alcohol: [
@@ -149,7 +149,7 @@ describe('working-state synchronization', () => {
     expect(result.staffData!.products).toEqual(expected.products);
     expect(result.staffData!.ingredients).toEqual(expected.ingredients);
     expect(result.staffData!.products.find((p) => p.id === 'test-glass')!.availableMl).toBe(1125);
-    expect(JSON.stringify(result.staffData)).not.toMatch(/"(?:price|cost|revenue|operations)"/);
+    expect(JSON.stringify(result.staffData)).not.toMatch(/"(?:cost|operations)"/);
   });
   it('does not reuse owner catalog after a role change', async () => {
     queueCatalog(catalog);

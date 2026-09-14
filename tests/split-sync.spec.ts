@@ -60,7 +60,8 @@ for (const role of ['admin', 'barbar'] as const) {
         const payload = { ...current, stock: changed, partial: true, baseRevision, sale: saved };
         expect(changed).toHaveLength(2);
         expect(JSON.stringify(payload).length).toBeLessThan(3000);
-        if (role === 'barbar') expect(JSON.stringify(payload)).not.toMatch(/"(?:cost|revenue|price)"/);
+        if (role === 'barbar')
+          expect(JSON.stringify(payload)).not.toMatch(/"(?:cost|extraCosts|costPerLiter)"/);
         return r.fulfill({ json: payload });
       }
       return r.fulfill({
@@ -95,7 +96,7 @@ for (const role of ['admin', 'barbar'] as const) {
     await expect(page.getByText('Updated catalog cocktail', { exact: true }).first()).toBeVisible();
     expect(historyCalls).toBe(historyBefore);
     expect(reportCalls).toBe(0);
-    if (role === 'barbar') await expect(page.locator('#content')).not.toContainText(/֏|Себестоимость/);
+    if (role === 'barbar') await expect(page.locator('#content')).not.toContainText(/Себестоимость|Прибыль/);
   });
 }
 

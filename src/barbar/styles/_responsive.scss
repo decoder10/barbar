@@ -25,12 +25,11 @@
 }
 
 @include below(1250px) {
-  .sidebar {
-    width: 205px;
-    padding-inline: 13px;
+  .app-shell {
+    --sidebar-width: 205px;
   }
-  .workspace {
-    margin-left: 205px;
+  .sidebar {
+    padding-inline: 13px;
   }
   .page-content {
     padding: 25px 25px 0;

@@ -112,8 +112,10 @@ export type Action =
 export type Command = Action & { id: string };
 
 export type Role = 'admin' | 'barbar';
-// Explicit allowlist: staff never receive financial fields or the full ledger.
+// Explicit allowlist: staff can read selling prices/revenue, never costs or the full ledger.
 export interface StaffProduct {
+  /** Selling price in AMD per menu portion, or per ml for poured alcohol. */
+  price?: number;
   stockAlcoholId?: string;
   glassSizeMl?: number;
   bottleSizeMl?: number;
@@ -140,6 +142,7 @@ export type StaffSale = Pick<
   | 'category'
   | 'unit'
   | 'servingMl'
+  | 'revenue'
 >;
 export interface StaffRecipe extends Pick<
   Cocktail,

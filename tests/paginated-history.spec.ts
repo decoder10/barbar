@@ -24,7 +24,8 @@ for (const worker of [false, true])
         name: 'Vodka',
         quantity: 550,
         operations: 55,
-        ...(!worker ? { revenue: 6930, cost: 2310, knownCost: true } : {}),
+        revenue: 6930,
+        ...(!worker ? { cost: 2310, knownCost: true } : {}),
       },
     ];
     await page.route('**/api/barbar/auth', (r) => r.fulfill({ json: { authenticated: true, role } }));
@@ -58,7 +59,7 @@ for (const worker of [false, true])
     await expect(receipt).toContainText('55');
     await expect(receipt).toContainText('550');
     if (worker) {
-      await expect(receipt).not.toContainText(/֏|Себестоимость|Выручка/);
+      await expect(receipt).not.toContainText(/Себестоимость|Прибыль/);
       await page.goto('/operations');
       await expect(page).toHaveURL(/\/$/);
       await page.goto('/audit');

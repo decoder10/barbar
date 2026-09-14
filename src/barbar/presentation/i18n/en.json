@@ -859,5 +859,8 @@
   "Разрешите уведомления в настройках браузера.": "Allow notifications in browser settings.",
   "Не удалось включить уведомления.": "Could not enable notifications.",
   "Не удалось сохранить настройку уведомлений.": "Could not save notification settings.",
-  "Лимит устройств: 10.": "Device limit: 10."
+  "Лимит устройств: 10.": "Device limit: 10.",
+  "Свернуть меню": "Collapse sidebar",
+  "Развернуть меню": "Expand sidebar",
+  "Цена не задана": "Price not set"
 }

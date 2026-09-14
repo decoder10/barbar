@@ -110,7 +110,7 @@ describe.skipIf(!uri)('split catalog and stock API in isolated MongoDB', () => {
         expect(finds).toEqual(['state']);
         expect(worker).not.toHaveProperty('alcohol');
         expect(worker).not.toHaveProperty('cocktails');
-        expect(JSON.stringify(worker)).not.toMatch(/"(?:price|cost|costPerLiter|pricePerLiter|extraCosts)"/);
+        expect(JSON.stringify(worker)).not.toMatch(/"(?:cost|costPerLiter|pricePerLiter|extraCosts)"/);
         expect(
           worker.products.every(
             (p: { kind: string }) => p.kind === (resource === 'alcohol' ? 'alcohol' : 'cocktail'),
@@ -203,7 +203,7 @@ describe.skipIf(!uri)('split catalog and stock API in isolated MongoDB', () => {
     expect(historical.sale.id).toBe('historical-sale');
     expect(historical.catalogRevision).toBe(catalog.catalogRevision);
   });
-  it('worker catalog, stocks and sale allowlist exclude all finance, also across role changes', async () => {
+  it('worker catalog, stocks and sale allowlist exclude private costs, also across role changes', async () => {
     const owner = await call();
     const stock = await call('/api/barbar', 'barbar', undefined, owner.revision, 'admin');
     expect(stock.unchanged).not.toBe(true);
@@ -211,7 +211,7 @@ describe.skipIf(!uri)('split catalog and stock API in isolated MongoDB', () => {
     const result = await call('/api/barbar', 'barbar', sale('worker-sale'), stock.revision);
     for (const response of [stock, catalog, result])
       expect(JSON.stringify(response)).not.toMatch(
-        /"(?:cost|price|costPerLiter|pricePerLiter|revenue|operations|extraCosts)"/,
+        /"(?:cost|costPerLiter|pricePerLiter|operations|extraCosts)"/,
       );
     expect(result.sale.id).toBe('worker-sale');
     expect(result.sale).not.toHaveProperty('ingredients');

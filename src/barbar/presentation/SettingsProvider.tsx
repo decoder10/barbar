@@ -12,7 +12,7 @@ import {
 import { PresentationContext } from './presentation-context';
 import { useBar } from '../app/providers/BarProvider';
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const { user, role, updatePreferences, notify } = useBar();
+  const { user, updatePreferences, notify } = useBar();
   const preferences = user?.preferences || defaultPreferences;
   const theme = preferences.theme || 'light';
   useEffect(() => {
@@ -41,7 +41,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     };
   }, [preferences.language, notify]);
   useEffect(() => {
-    if (role !== 'admin' || preferences.currency === 'AMD') return;
+    if (preferences.currency === 'AMD') return;
     let active = true;
     const controller = new AbortController();
     async function load() {
@@ -79,7 +79,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       controller.abort();
       window.clearInterval(timer);
     };
-  }, [preferences.currency, role]);
+  }, [preferences.currency]);
   configureMoney(preferences.currency, language, rates);
   const update = async (nextLanguage: Language, currency: Currency, nextTheme?: Theme) => {
     setPending(true);

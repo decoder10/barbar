@@ -24,7 +24,13 @@ test('worker preferences persist across screens and refresh without exposing fin
   );
   await page.route('**/api/barbar/rates', (r) => {
     rates++;
-    return r.fulfill({ status: 500 });
+    return r.fulfill({
+      json: {
+        date: '2026-09-14',
+        fetchedAt: '2026-09-14T12:00:00Z',
+        amdPerUnit: { AMD: 1, EUR: 450, USD: 400, RUB: 4 },
+      },
+    });
   });
   await page.goto('/inventory');
   await page.getByLabel('Валюта отображения', { exact: true }).selectOption('EUR');
@@ -45,9 +51,11 @@ test('worker preferences persist across screens and refresh without exposing fin
       await page.setViewportSize({ width, height: 900 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     }
-    await expect(page.locator('main')).not.toContainText(/֏|\$|€|₽/);
+    await expect(page.locator('main')).not.toContainText(/Себестоимость|Прибыль|Закупочная/);
+    if (path === '/') await expect(page.locator('.drink-card').first()).toContainText('€');
+    else await expect(page.locator('main')).not.toContainText(/֏|\$|€|₽/);
   }
-  expect(rates).toBe(0);
+  expect(rates).toBeGreaterThan(0);
   await page.locator('.preference-controls select').first().selectOption('ru');
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'История операций' })).toHaveCount(0);

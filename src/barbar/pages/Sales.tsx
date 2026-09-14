@@ -108,7 +108,16 @@ export default function Sales() {
   return (
     <>
       <h1 className="visually-hidden">{t('Продажи за день')}</h1>
-      <SalesDayToolbar date={date} onChange={setDate} />
+      <SalesDayToolbar
+        date={date}
+        onChange={setDate}
+        action={
+          <Link className="button secondary" to="/cocktails">
+            <Plus size={15} />
+            {t(' Коктейль')}
+          </Link>
+        }
+      />
       <p className="business-day-hint">{t(businessDayHint)}</p>
       <section className="metrics">
         <Metric
@@ -144,10 +153,6 @@ export default function Sales() {
               <h2>{t('Что наливаем?')}</h2>
               <p>{t('Выберите напиток, чтобы записать продажу')}</p>
             </div>
-            <Link className="text-link" to="/cocktails">
-              <Plus size={15} />
-              {t(' Коктейль')}
-            </Link>
           </div>
           <div className="catalog-tools sales-catalog-tools">
             <div className="menu-categories">

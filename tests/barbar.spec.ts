@@ -83,6 +83,7 @@ test('purchase, recipe costing, sale, report, cancellation and persistence', asy
 test('preloaded tinctures can be edited with grams and an independent selling price', async ({ page }) => {
   await workspace(page);
   await page.getByRole('link', { name: /Меню и рецепты/ }).click();
+  await expect(page.getByRole('heading', { name: 'Меню и рецепты', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Настойки', exact: true }).click();
   await page
     .locator('.drink-card')
@@ -119,6 +120,7 @@ test('mobile navigation and layouts have no horizontal overflow', async ({ page 
 test('all menu categories and backup tools are accessible', async ({ page }) => {
   await workspace(page);
   await page.getByRole('link', { name: /Меню и рецепты/ }).click();
+  await expect(page.getByRole('heading', { name: 'Меню и рецепты', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Вино', exact: true }).click();
   await expect(page.getByRole('button', { name: /Volcani red dry Haghtanak · бокал/ })).toContainText(
     '1 500',
@@ -285,11 +287,9 @@ test('barbar sees quantities and read-only stock but cannot open admin pages', a
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true, level: 1 })).toBeVisible();
   await expect(page.getByRole('navigation').getByRole('link')).toHaveCount(3);
-  await expect(page.locator('body')).not.toContainText(
-    /֏|Выручка|Валовая прибыль|Себестоимость|закупочные цены/,
-  );
+  await expect(page.locator('body')).not.toContainText(/Валовая прибыль|Себестоимость|закупочные цены/);
   await page.getByRole('button', { name: new RegExp(product.name) }).click();
-  await expect(page.getByRole('dialog')).not.toContainText(/֏|Себестоимость|К оплате/);
+  await expect(page.getByRole('dialog')).not.toContainText(/Себестоимость|Прибыль/);
   await page.getByLabel('Количество порций').fill('2');
   await page.getByRole('button', { name: 'Записать продажу', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
@@ -309,7 +309,7 @@ test('barbar sees quantities and read-only stock but cannot open admin pages', a
     await page.goto(path);
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true, level: 1 })).toBeVisible();
-    await expect(page.locator('body')).not.toContainText(/֏|Выручка|Себестоимость/);
+    await expect(page.locator('body')).not.toContainText(/Себестоимость|Прибыль/);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -351,7 +351,7 @@ test('barbar can create a cocktail with a gram recipe without seeing or setting 
     });
   });
   await page.goto('/');
-  const createButton = page.locator('.section-title').getByRole('button', { name: 'Коктейль', exact: true });
+  const createButton = page.locator('.sales-mode-toolbar').getByRole('button', { name: 'Коктейль', exact: true });
   await expect(createButton).toBeInViewport();
   await createButton.click();
   await expect(page.getByRole('dialog')).not.toContainText(/֏|Себестоимость|Цена|Выручка/);

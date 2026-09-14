@@ -1,3 +1,4 @@
+import { formatMoney as money } from '../presentation/currency/format-money';
 import { LoadingStatus } from '../ui/loading';
 import { SalesDayToolbar } from '../features/sales/SalesDayToolbar';
 import { AutoReveal } from '../ui/auto-reveal';
@@ -36,6 +37,7 @@ export default function StaffSales() {
   if (!staffData) return <p className="muted">{t('Загружаем продажи…')}</p>;
   const day = history.enabled ? history.rows : staffData.sales.filter((sale) => sale.date === date);
   const sales = history.enabled ? history.groups : day.filter((sale) => !sale.voided);
+  const revenue = sales.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
   const operationCount = history.enabled
     ? history.groups.reduce((n, g) => n + g.operations, 0)
     : sales.length;
@@ -48,6 +50,7 @@ export default function StaffSales() {
       unit?: StaffProduct['unit'];
       category?: import('../domain/types').MenuCategory;
       quantity: number;
+      revenue: number;
       servingMl?: number;
     }
   >();
@@ -60,9 +63,11 @@ export default function StaffSales() {
       unit: sale.unit,
       category: sale.category,
       quantity: 0,
+      revenue: 0,
       servingMl: sale.servingMl,
     };
     item.quantity += sale.quantity;
+    item.revenue += sale.revenue || 0;
     summary.set(key, item);
   }
   const prettyDate = new Intl.DateTimeFormat(locale(), {
@@ -117,10 +122,20 @@ export default function StaffSales() {
     variableGlass && current?.availableMl !== undefined
       ? Math.floor((current.availableMl + 1e-6) / servingMl)
       : current?.available;
+  const totalPrice = (current?.price || 0) * amount * (variableGlass ? servingMl / current.glassSizeMl! : 1);
   return (
     <>
       <h1 className="visually-hidden">{t('Продажи за день')}</h1>
-      <SalesDayToolbar date={date} onChange={setDate} />
+      <SalesDayToolbar
+        date={date}
+        onChange={setDate}
+        action={
+          <button className="button secondary" onClick={() => setCreating(true)}>
+            <Plus size={16} />
+            {t('Коктейль')}
+          </button>
+        }
+      />
       <p className="business-day-hint">{t(businessDayHint)}</p>
       <section className="metrics staff-metrics">
         <Metric
@@ -149,10 +164,6 @@ export default function StaffSales() {
               <h2>{t('Что наливаем?')}</h2>
               <p>{t('Выберите напиток, чтобы записать продажу')}</p>
             </div>
-            <button className="text-link" onClick={() => setCreating(true)}>
-              <Plus size={16} />
-              {t('Коктейль')}
-            </button>
           </div>
           <div className="catalog-tools sales-catalog-tools">
             <div className="menu-categories">
@@ -233,9 +244,15 @@ export default function StaffSales() {
                         : `Доступно: ${label(p.available, p)}`
                   }
                   footer={
-                    <span className={`stock-pill ${p.ready && p.available !== 0 ? '' : 'low'}`}>
-                      {t(p.ready && p.available !== 0 ? 'Записать продажу' : 'Недоступно')}
-                    </span>
+                    <>
+                      <strong>
+                        {t(p.price ? money(p.price * (p.kind === 'alcohol' ? 50 : 1)) : 'Цена не задана')}
+                      </strong>
+                      <span className={`stock-pill ${p.ready && p.available !== 0 ? '' : 'low'}`}>
+                        {t(p.ready && p.available !== 0 ? 'Записать продажу' : 'Недоступно')}
+                      </span>
+                      {p.kind === 'alcohol' && <small>{t('за 50 мл')}</small>}
+                    </>
                   }
                 />
               )),
@@ -274,7 +291,9 @@ export default function StaffSales() {
               <>
                 <div className="staff-summary-label">
                   <span>{t('Позиция')}</span>
-                  <span>{t('Количество')}</span>
+                  <span>
+                    {t('Количество')} · {t('Сумма')}
+                  </span>
                 </div>
                 <div className="receipt-lines staff-summary-lines">
                   {t(
@@ -312,14 +331,21 @@ export default function StaffSales() {
                               ) : null,
                             )}
                           </strong>
-                          <span className="staff-summary-quantity">{t(label(item.quantity, item))}</span>
+                          <span className="staff-summary-quantity">
+                            {t(label(item.quantity, item))}
+                            <strong className="staff-sale-amount">{t(money(item.revenue))}</strong>
+                          </span>
                         </div>
                       );
                     }),
                   )}
                 </div>
-                <div className="staff-receipt-total">
+                <div className="receipt-total">
                   <span>{t('Итого за день')}</span>
+                  <strong>{t(money(revenue))}</strong>
+                </div>
+                <div className="staff-receipt-total">
+                  <span>{t('Количество')}</span>
                   <div>
                     {t(
                       [...totalUnits].map(([unit, quantity]) => (
@@ -440,6 +466,12 @@ export default function StaffSales() {
                   </p>
                 ),
               )}
+              <div className="form-total">
+                <span>
+                  {t('К оплате')}
+                  <strong>{t(money(Number.isFinite(totalPrice) ? totalPrice : 0))}</strong>
+                </span>
+              </div>
               <Submit
                 disabled={
                   !current?.ready ||

@@ -8,7 +8,7 @@ import { useBar } from '../app/providers/BarProvider';
 import { SettingsContext } from './settings-context';
 export function PreferenceControls() {
   const settings = useContext(SettingsContext);
-  const { role, busy } = useBar();
+  const { busy } = useBar();
   if (!settings) return null;
   return (
     <div className="preference-controls" aria-busy={settings.pending}>
@@ -62,7 +62,7 @@ export function PreferenceControls() {
         </label>,
       )}
       {t(
-        role === 'admin' && settings.currency !== 'AMD' && (
+        settings.currency !== 'AMD' && (
           <small className="rate-note">
             {t(
               settings.rates && !settings.rateError ? (

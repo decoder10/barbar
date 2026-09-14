@@ -65,7 +65,7 @@ it('reconstructs safe worker glass metadata without fetching the alcohol collect
   expect(alcohol).not.toHaveProperty('recipes');
   expect(cocktails).not.toHaveProperty('ingredients');
   expect(JSON.stringify([alcohol, cocktails])).not.toMatch(
-    /"(?:price|cost|costPerLiter|pricePerLiter|extraCosts)"/,
+    /"(?:cost|costPerLiter|pricePerLiter|extraCosts)"/,
   );
   expect(assembleCatalog(alcohol, cocktails)).toEqual(publicCatalog(value, 'barbar'));
   expect(() => assembleCatalog({ ...alcohol, role: 'admin' }, cocktails)).toThrow();

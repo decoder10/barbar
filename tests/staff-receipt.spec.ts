@@ -3,7 +3,9 @@ import { staffData } from '../netlify/lib/barbar-access';
 import { businessToday } from '../src/barbar/domain/business-day';
 import { applyCommand } from '../src/barbar/domain/model';
 import { fixtureData } from './fixtures';
-test('worker sees one grouped summary, no operation history and no money', async ({ page }) => {
+test('worker sees one grouped summary, selling amounts but no operation history or private costs', async ({
+  page,
+}) => {
   let data = fixtureData();
   for (let i = 0; i < 2; i++)
     data = applyCommand(data, {
@@ -21,7 +23,8 @@ test('worker sees one grouped summary, no operation history and no money', async
   const receipt = page.getByRole('complementary', { name: 'Сводка продаж за день' });
   await expect(receipt.getByText(data.cocktails[0].name, { exact: true })).toHaveCount(1);
   await expect(receipt.getByRole('button', { name: 'История операций' })).toHaveCount(0);
-  await expect(receipt).not.toContainText(/֏|AMD|цена|выручка|стоимость/i);
+  await expect(receipt.locator('.receipt-total')).toContainText('4 400');
+  await expect(receipt).not.toContainText(/себестоимость|прибыль|закуп/i);
   await expect(page.getByText('День смены: 06:00–05:59 · Ереван')).toBeVisible();
   await page.screenshot({ path: '/tmp/barbar-staff-receipt.png', fullPage: false });
   await page.setViewportSize({ width: 390, height: 844 });

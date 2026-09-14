@@ -47,10 +47,10 @@ export const salesGrouping = (financial: boolean): Document[] => [
       category: { $last: '$category' },
       quantity: { $sum: '$quantity' },
       operations: { $sum: 1 },
+      revenue: { $sum: '$revenue' },
       ...(financial
         ? {
             ingredientIds: { $addToSet: '$ingredients.alcoholId' },
-            revenue: { $sum: '$revenue' },
             cost: { $sum: '$cost' },
             knownCost: { $min: '$_costKnown' },
             knownOperations: { $sum: { $cond: ['$_costKnown', 1, 0] } },
@@ -71,9 +71,9 @@ export const salesGrouping = (financial: boolean): Document[] => [
       category: 1,
       quantity: 1,
       operations: 1,
+      revenue: 1,
       ...(financial
         ? {
-            revenue: 1,
             cost: 1,
             knownCost: 1,
             knownOperations: 1,

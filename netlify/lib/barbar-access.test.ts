@@ -36,22 +36,20 @@ function repository() {
   };
   return repo;
 }
-function noFinancialData(value: unknown) {
+function noPrivateFinancialData(value: unknown) {
   if (!value || typeof value !== 'object') return;
   for (const [key, item] of Object.entries(value)) {
     expect([
       'cost',
       'costPerLiter',
-      'price',
       'pricePerLiter',
       'glassPrice',
-      'revenue',
       'purchases',
       'extraCosts',
       'stockResets',
       'operations',
     ]).not.toContain(key);
-    noFinancialData(item);
+    noPrivateFinancialData(item);
   }
 }
 beforeEach(() => {
@@ -91,7 +89,12 @@ describe('role isolation', () => {
       const body = await result.json();
       expect(body.data).toBeUndefined();
       expect(body.role).toBe('barbar');
-      noFinancialData(body);
+      noPrivateFinancialData(body);
+      const saved = (await repo.read()).data;
+      expect(body.staffData.products.find((p: { id: string }) => p.id === saved.cocktails[0].id).price).toBe(
+        saved.cocktails[0].price,
+      );
+      expect(body.staffData.sales.at(-1).revenue).toBe(saved.sales.at(-1)!.revenue);
       expect(body.staffData.ingredients.find((a: { id: string }) => a.id === 'vodka')).toMatchObject({
         name: 'Vodka',
         available: 2000,
@@ -143,7 +146,7 @@ describe('role isolation', () => {
       const result = await handleBarApi(request('barbar', command), repo);
       expect(result.status).toBe(200);
       const body = await result.json();
-      noFinancialData(body);
+      noPrivateFinancialData(body);
       expect(body.staffData.products.find((p: { id: string }) => p.id === command.id).ready).toBe(false);
     }
     expect(repo.commit).toHaveBeenCalledTimes(1);
@@ -186,7 +189,7 @@ describe('role isolation', () => {
       const response = await handleBarApi(request('barbar', command), repo);
       expect(response.status).toBe(200);
       const body = await response.json();
-      noFinancialData(body);
+      noPrivateFinancialData(body);
       expect(body.staffData.recipes.find((c: { id: string }) => c.id === recipe.id)).toMatchObject({
         editable: true,
         name: recipe.name,
@@ -279,6 +282,6 @@ it('unchanged revisions skip full ledger reads, but a role change forces a fresh
   const body = await (await handleBarApi(req, repo)).json();
   expect(body.staffData).toBeDefined();
   expect(body.data).toBeUndefined();
-  noFinancialData(body);
+  noPrivateFinancialData(body);
   expect(read).toHaveBeenCalledTimes(1);
 });

@@ -53,7 +53,8 @@ test('custom glass size scales stock, price and cost, snapshots ml, and cancels 
   expect(d.cocktails).toEqual(before.cocktails);
   expect(validateData(JSON.parse(JSON.stringify(d)))).toEqual(d);
   expect(staffData(d).sales.at(-1)).toMatchObject({ servingMl: 100, quantity: 2 });
-  expect(staffData(d).sales.at(-1)).not.toHaveProperty('revenue');
+  expect(staffData(d).sales.at(-1)?.revenue).toBe(d.sales.at(-1)?.revenue);
+  expect(staffData(d).sales.at(-1)).not.toHaveProperty('cost');
   expect(applyCommand(d, sell(100))).toBe(d);
   const undone = applyCommand(d, { id: 'undo', type: 'void', saleId: d.sales.at(-1)!.id });
   expect(stock(undone, 'custom-wine')).toBe(2);

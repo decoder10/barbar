@@ -12,4 +12,4 @@ Read `docs/architecture.md` for the current feature and style boundaries.
 - Use indexed inventory calculations for repeated card rendering; avoid rescanning sale history in every card.
 - Distinguish actual product packaging from illustrative serving images. Named bottle placeholders are acceptable when a verified product image is unavailable. Never represent an AI illustration as a photo of the bar's actual serving.
 - Store photos locally and record source/attribution in `public/barbar/photos/sources.json`. Run `npm run photos:manifest` after asset changes to update versioned URLs and credits.
-- Check modal scroll locking, worker views without money, unavailable stock highlighting, and grid/list layouts when changing shared styles.
+- Check modal scroll locking, worker Sales prices and daily amounts while keeping costs/profit and stock prices hidden, unavailable stock highlighting, and grid/list layouts when changing shared styles.

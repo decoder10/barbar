@@ -52,7 +52,7 @@ test('one auth request, user language persists, currency converts display only',
   await page.screenshot({ path: '/tmp/barbar-dark-final.png' });
 });
 
-test('worker has workflow sorting and shared preferences without prices', async ({ page }) => {
+test('worker has workflow sorting and shared preferences without cost controls', async ({ page }) => {
   const data = fixtureData();
   await page.route('**/api/barbar/auth', (r) =>
     r.fulfill({

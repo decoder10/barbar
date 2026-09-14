@@ -1,5 +1,6 @@
 import { StockNotifications } from '../features/notifications/StockNotifications';
 import { useRouteScroll } from './use-route-scroll';
+import { useSessionFilter } from '../presentation/use-session-filter';
 import { LoadingStatus } from '../ui/loading';
 import {
   History,
@@ -12,6 +13,8 @@ import {
   GlassWater,
   LogOut,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   RefreshCw,
   ShoppingBag,
   Sparkles,
@@ -47,10 +50,7 @@ const navigation = [
   { path: '/files', label: 'Данные и копии', icon: Files, caption: 'Ваши данные' },
 ];
 export default function App() {
-  const { mode, role, user, notice, logout, refresh, connected, busy, activity, syncing, hasData } = useBar();
-  const { pathname } = useLocation();
-  useRouteScroll(pathname);
-  const [menu, setMenu] = useState(false);
+  const { mode, user, role } = useBar();
   if (mode === 'loading') {
     return (
       <div className="app-loading">
@@ -63,8 +63,22 @@ export default function App() {
   if (mode === 'login') {
     return <Login />;
   }
+  return <Workspace key={`${user?.id || 'session'}:${role}`} />;
+}
+
+function Workspace() {
+  const { mode, role, user, notice, logout, refresh, connected, busy, activity, syncing, hasData } = useBar();
+  const { pathname } = useLocation();
+  useRouteScroll(pathname);
+  const [menu, setMenu] = useState(false);
+  const [collapsed, setCollapsed] = useSessionFilter<boolean>(
+    'sidebar-collapsed',
+    false,
+    undefined,
+    'workspace',
+  );
   return (
-    <div className="app-shell">
+    <div className={`app-shell${collapsed ? ' sidebar-collapsed' : ''}`}>
       <a className="skip-link" href="#content">
         {t('Перейти к содержимому')}
       </a>
@@ -73,7 +87,7 @@ export default function App() {
           <button className="sidebar-scrim" aria-label={t('Закрыть меню')} onClick={() => setMenu(false)} />
         ),
       )}
-      <aside className={`sidebar ${menu ? 'open' : ''}`} inert={busy}>
+      <aside id="workspace-sidebar" className={`sidebar ${menu ? 'open' : ''}`} inert={busy}>
         <div className="sidebar-brand">
           <Brand onNavigate={() => setMenu(false)} />
           <button
@@ -97,6 +111,7 @@ export default function App() {
                   key={path}
                   to={path}
                   end={path === '/'}
+                  title={t(label)}
                   onClick={() => setMenu(false)}
                   className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 >
@@ -161,6 +176,22 @@ export default function App() {
       <div className="workspace">
         <header className="topbar">
           <div className="breadcrumb">
+            <button
+              type="button"
+              className="sidebar-toggle icon-button"
+              aria-label={t(collapsed ? 'Развернуть меню' : 'Свернуть меню')}
+              title={t(collapsed ? 'Развернуть меню' : 'Свернуть меню')}
+              aria-expanded={!collapsed}
+              aria-controls="workspace-sidebar"
+              disabled={busy}
+              onClick={() => setCollapsed((value) => !value)}
+            >
+              {collapsed ? (
+                <PanelLeftOpen size={20} aria-hidden="true" />
+              ) : (
+                <PanelLeftClose size={20} aria-hidden="true" />
+              )}
+            </button>
             <button
               className="mobile-menu icon-button"
               aria-label={t('Открыть меню')}

@@ -32,6 +32,7 @@ export function staffData(data: BarData): StaffData {
       ...data.cocktails.map((c) => ({
         id: c.id,
         kind: 'cocktail' as const,
+        price: c.price,
         ...(c.stockAlcoholId ? { stockAlcoholId: c.stockAlcoholId } : {}),
         name: c.name,
         category: c.category || ('cocktail' as const),
@@ -64,6 +65,7 @@ export function staffData(data: BarData): StaffData {
         .map((a) => ({
           id: a.id,
           kind: 'alcohol' as const,
+          price: a.pricePerLiter / 1000,
           name: a.name,
           category: 'alcohol' as const,
           available: remaining(a.id),
@@ -71,7 +73,7 @@ export function staffData(data: BarData): StaffData {
         })),
     ],
     sales: data.sales.map(
-      ({ id, date, createdAt, kind, productId, name, quantity, voided, unit, category, servingMl }) => ({
+      ({
         id,
         date,
         createdAt,
@@ -79,6 +81,20 @@ export function staffData(data: BarData): StaffData {
         productId,
         name,
         quantity,
+        voided,
+        unit,
+        category,
+        servingMl,
+        revenue,
+      }) => ({
+        id,
+        date,
+        createdAt,
+        kind,
+        productId,
+        name,
+        quantity,
+        revenue,
         voided,
         ...(unit ? { unit } : {}),
         ...(category ? { category } : {}),

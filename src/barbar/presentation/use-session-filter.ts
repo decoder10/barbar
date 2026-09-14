@@ -13,10 +13,11 @@ export function useSessionFilter<T extends FilterValue>(
   name: string,
   initial: T | (() => T),
   validate?: (value: unknown) => value is T,
+  scope?: string,
 ): readonly [T, Dispatch<SetStateAction<T>>] {
   const { user, role } = useBar();
   const { pathname } = useLocation();
-  const key = filterSessionKey(user?.id || role || 'guest', role || 'guest', pathname, name);
+  const key = filterSessionKey(user?.id || role || 'guest', role || 'guest', scope ?? pathname, name);
   const fallback = typeof initial === 'function' ? initial() : initial;
   const [state, setState] = useState(() => ({ key, value: readSessionFilter(key, fallback, validate) }));
   const value = state.key === key ? state.value : readSessionFilter(key, fallback, validate);

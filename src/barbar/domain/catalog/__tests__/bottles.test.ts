@@ -160,7 +160,7 @@ describe('bottle stock and brand pricing', () => {
     backup.purchases[0].ml = 1.5;
     expect(() => validateData(backup)).toThrow();
   });
-  it('exposes bottle and glass quantities to staff without exposing prices or costs', () => {
+  it('exposes bottle and glass quantities to staff with selling prices but without costs', () => {
     let data = add(initialData(), beer);
     data = purchase(data, beer.id, 2, 500);
     data = sell(data, 'bottle-test-beer');
@@ -170,8 +170,6 @@ describe('bottle stock and brand pricing', () => {
       available: 1,
     });
     expect(staff.sales[0]).toMatchObject({ quantity: 1, unit: 'bottle' });
-    expect(JSON.stringify(staff)).not.toMatch(
-      /"(?:price|cost|costPerLiter|pricePerLiter|glassPrice|revenue|purchases)"/,
-    );
+    expect(JSON.stringify(staff)).not.toMatch(/"(?:cost|costPerLiter|pricePerLiter|glassPrice|purchases)"/);
   });
 });
