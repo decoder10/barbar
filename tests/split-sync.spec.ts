@@ -1,0 +1,94 @@
+import { test, expect } from '@playwright/test';
+import { fixtureData } from './fixtures';
+import { compactData } from '../netlify/lib/barbar-working';
+import { publicCatalog, publicStock } from '../netlify/lib/barbar-sync';
+import { staffData } from '../netlify/lib/barbar-access';
+import { applyCommand } from '../src/barbar/domain/model';
+import type { Command } from '../src/barbar/domain/types';
+for (const role of ['admin', 'barbar'] as const) {
+  test(`${role}: catalog cached across sales, stock refresh and navigation; edited catalog reloaded`, async ({
+    page,
+  }) => {
+    let data = fixtureData(),
+      revision = 's1',
+      catalogRevision = 'c1';
+    let catalogCalls = 0,
+      historyCalls = 0,
+      reportCalls = 0,
+      writes = 0;
+    const state = () =>
+      publicStock({ revision, catalogRevision, stock: compactData(data).opening!.ingredients }, role);
+    await page.route('**/api/barbar/auth', (r) => r.fulfill({ json: { authenticated: true, role } }));
+    await page.route('**/api/barbar/catalog', (r) => {
+      catalogCalls++;
+      return r.fulfill({ json: publicCatalog({ catalogRevision, data }, role) });
+    });
+    await page.route('**/api/barbar/report?*', (r) => {
+      reportCalls++;
+      return r.fulfill({ status: 500, json: { error: 'Should not load here' } });
+    });
+    await page.route('**/api/barbar/history?*', (r) => {
+      historyCalls++;
+      return r.fulfill({
+        json: {
+          rows: role === 'admin' ? data.sales : staffData(data).sales,
+          total: data.sales.length,
+          groups: [],
+          nextCursor: null,
+        },
+      });
+    });
+    await page.route('**/api/barbar', (r) => {
+      expect(r.request().headers()['x-barbar-protocol']).toBe('2');
+      if (r.request().method() === 'POST') {
+        const { command } = r.request().postDataJSON() as { command: Command };
+        const before = compactData(data).opening!.ingredients;
+        const baseRevision = revision;
+        data = applyCommand(data, command);
+        revision = `s${++writes + 1}`;
+        const current = state();
+        const changed = current.stock!.filter(
+          (b) => b.ml !== before.find((p) => p.alcoholId === b.alcoholId)!.ml,
+        );
+        const saved = role === 'admin' ? data.sales.at(-1) : staffData(data).sales.at(-1);
+        const payload = { ...current, stock: changed, partial: true, baseRevision, sale: saved };
+        expect(changed).toHaveLength(2);
+        expect(JSON.stringify(payload).length).toBeLessThan(3000);
+        if (role === 'barbar') expect(JSON.stringify(payload)).not.toMatch(/"(?:cost|revenue|price)"/);
+        return r.fulfill({ json: payload });
+      }
+      return r.fulfill({
+        json:
+          r.request().headers()['x-barbar-revision'] === revision
+            ? { role, revision, catalogRevision, unchanged: true }
+            : state(),
+      });
+    });
+    await page.goto('/');
+    await page.getByPlaceholder('Найти напиток…').fill('Gin tonic Beefeater');
+    await expect.poll(() => historyCalls).toBe(1);
+    expect(catalogCalls).toBe(1);
+    await page.locator('.drink-card').first().click();
+    await page.getByRole('button', { name: 'Записать продажу', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect.poll(() => historyCalls).toBe(2);
+    expect(catalogCalls).toBe(1);
+    await page.getByRole('button', { name: 'Обновить данные', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Обновить данные', exact: true })).toBeEnabled();
+    expect(catalogCalls).toBe(1);
+    expect(historyCalls).toBe(2);
+    await page.getByRole('link', { name: /Меню и рецепты/ }).click();
+    await expect(page).toHaveURL(/cocktails/);
+    await expect(page.locator('.day-receipt')).toHaveCount(0);
+    const historyBefore = historyCalls;
+    data.cocktails[0].name = 'Updated catalog cocktail';
+    catalogRevision = 'c2';
+    revision = 's3';
+    await page.getByRole('button', { name: 'Обновить данные', exact: true }).click();
+    await expect.poll(() => catalogCalls).toBe(2);
+    await expect(page.getByText('Updated catalog cocktail', { exact: true }).first()).toBeVisible();
+    expect(historyCalls).toBe(historyBefore);
+    expect(reportCalls).toBe(0);
+    if (role === 'barbar') await expect(page.locator('#content')).not.toContainText(/֏|Себестоимость/);
+  });
+}

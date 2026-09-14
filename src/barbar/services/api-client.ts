@@ -1,6 +1,8 @@
+import type { CatalogResponse, StockResponse } from '../domain/sync/contracts';
 import type { BarData, Role, StaffData } from '../domain/types';
 import type { UserProfile } from '../domain/identity/user';
 interface ApiResponses {
+  '/api/barbar/catalog': CatalogResponse;
   '/api/barbar/push': { publicKey: string | null; ok?: boolean };
   [path: `/api/barbar/report${string}`]: import('../domain/reports/server-types').ServerReport;
   '/api/barbar?view=full': { data: BarData; revision: string };
@@ -11,7 +13,7 @@ interface ApiResponses {
   };
   '/api/barbar/auth': { authenticated: boolean; user: UserProfile | null; role: Role | null };
   '/api/barbar/users': { users: UserProfile[]; user: UserProfile };
-  '/api/barbar': {
+  '/api/barbar': Partial<StockResponse> & {
     role: Role;
     data: BarData;
     staffData: StaffData;

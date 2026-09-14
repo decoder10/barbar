@@ -31,6 +31,7 @@ export function staffData(data: BarData): StaffData {
       ...data.cocktails.map((c) => ({
         id: c.id,
         kind: 'cocktail' as const,
+        ...(c.stockAlcoholId ? { stockAlcoholId: c.stockAlcoholId } : {}),
         name: c.name,
         category: c.category || ('cocktail' as const),
         image: c.image,
@@ -89,4 +90,6 @@ export function staffData(data: BarData): StaffData {
   };
 }
 export const publicSnapshot = (data: BarData, revision: string | null | undefined, role: Role) =>
-  role === 'admin' ? { data, revision, role } : { staffData: staffData(data), revision, role };
+  role === 'admin'
+    ? { data: { ...data, operations: [] }, revision, role }
+    : { staffData: staffData(data), revision, role };

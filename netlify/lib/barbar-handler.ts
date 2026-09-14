@@ -1,3 +1,4 @@
+import { publicStock, publicCatalog, mutationResponse } from './barbar-sync';
 import { commandAudit } from './audit/store';
 import { applyCommand } from '../../src/barbar/domain/model';
 import type { BarData, Command } from '../../src/barbar/domain/types';
@@ -25,6 +26,16 @@ export const handleBarApi = async (
     return json({ error: 'Недопустимый источник запроса.' }, 403);
   }
   try {
+    const split = request.headers.get('X-Barbar-Protocol') === '2' && !!repository.readStock;
+    if (new URL(request.url).pathname.endsWith('/catalog')) {
+      if (request.method !== 'GET' || !repository.readCatalog)
+        return json({ error: 'Метод не поддерживается.' }, 405);
+      const known =
+        request.headers.get('X-Barbar-Role') === role
+          ? request.headers.get('X-Barbar-Catalog-Revision') || undefined
+          : undefined;
+      return json(publicCatalog(await repository.readCatalog(known), role));
+    }
     if (request.method === 'GET') {
       if (new URL(request.url).searchParams.get('view') === 'full') {
         if (role !== 'admin') return json({ error: 'Полная копия доступна только владельцу.' }, 403);
@@ -40,6 +51,15 @@ export const handleBarApi = async (
         return json(publicSnapshot(full.data, full.revision, role));
       }
       const previous = request.headers.get('X-Barbar-Revision');
+      if (split)
+        return json(
+          publicStock(
+            await repository.readStock!(
+              request.headers.get('X-Barbar-Role') === role ? previous || undefined : undefined,
+            ),
+            role,
+          ),
+        );
       if (previous && request.headers.get('X-Barbar-Role') === role && repository.readRevision) {
         const revision = await repository.readRevision();
         if (revision && previous === revision) return json({ unchanged: true, revision, role });
@@ -63,7 +83,12 @@ export const handleBarApi = async (
     }
     if (repository.execute) {
       const result = await repository.execute(input.command, user);
-      if (result) return json(publicSnapshot(result.data, result.revision, role));
+      if (result)
+        return json(
+          split
+            ? await mutationResponse(result, role, input.command, input.revision, repository)
+            : publicSnapshot(result.data, result.revision, role),
+        );
     }
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const current = await repository.read();
@@ -87,7 +112,11 @@ export const handleBarApi = async (
       }
       if (next === current.data) {
         const snapshot = repository.readWorking ? await repository.readWorking() : current;
-        return json(publicSnapshot(snapshot.data, snapshot.revision, role));
+        return json(
+          split
+            ? await mutationResponse(snapshot, role, input.command, input.revision, repository)
+            : publicSnapshot(snapshot.data, snapshot.revision, role),
+        );
       }
       if (!repository.execute && JSON.stringify(next).length > 3_000_000) {
         return json(
@@ -102,9 +131,11 @@ export const handleBarApi = async (
       if (result.modified) {
         const snapshot = repository.readWorking
           ? await repository.readWorking()
-          : { data: next, revision: result.revision };
+          : { data: next, revision: result.revision || null, days: {} };
         return json({
-          ...publicSnapshot(snapshot.data, snapshot.revision, role),
+          ...(split
+            ? await mutationResponse(snapshot, role, input.command, input.revision, repository)
+            : publicSnapshot(snapshot.data, snapshot.revision, role)),
           warning: result.cleanupPending
             ? 'Операция сохранена, но часть устаревших файлов пока не удалена из хранилища. Обратитесь к владельцу сайта.'
             : undefined,

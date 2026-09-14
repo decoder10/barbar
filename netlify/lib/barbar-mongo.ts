@@ -3,7 +3,7 @@ import { recordStockAlerts } from './notifications/events';
 import { MongoClient, type ClientSession, type Db, type Document } from 'mongodb';
 import { migrateBottleCatalog } from '../../src/barbar/domain/catalog/bottles';
 import { applyCommand, initialData, validateData } from '../../src/barbar/domain/model';
-import type { BarData } from '../../src/barbar/domain/types';
+import type { BarData, Sale } from '../../src/barbar/domain/types';
 import { businessToday } from '../../src/barbar/domain/business-day';
 import { compactData, saveBalances, workingData } from './barbar-working';
 import { commandAudit, appendAudit } from './audit/store';
@@ -16,6 +16,7 @@ type Row = Document & { _id: string; _order: number; id: string };
 type Metadata = {
   _id: 'state';
   revision: string;
+  catalogRevision?: string;
   version: 1;
   operations: string[];
   readModelVersion?: number;
@@ -59,7 +60,8 @@ export function mongoRepository(
       if (changes.length) await collection.bulkWrite(changes, { session });
     }
   }
-  const metadata = (data: BarData, revision: string): Metadata => ({
+  const metadata = (data: BarData, revision: string, catalogRevision = revision): Metadata => ({
+    catalogRevision,
     _id: 'state',
     revision,
     version: data.version,
@@ -146,6 +148,65 @@ export function mongoRepository(
     await ready;
   }
   return {
+    async readStock(known) {
+      await ensureReady();
+      return client.withSession((session) =>
+        session.withTransaction(async () => {
+          const meta = await state.findOne(
+            { _id: 'state' },
+            { session, projection: { revision: 1, catalogRevision: 1, archived: 1 } },
+          );
+          const common = {
+            revision: meta!.revision,
+            catalogRevision: meta!.catalogRevision || meta!.revision,
+          };
+          if (known === meta!.revision) return { ...common, unchanged: true };
+          const balances = await db
+            .collection<import('./barbar-working').Balance>('stockBalances')
+            .find({}, { session })
+            .toArray();
+          return {
+            ...common,
+            stock: balances.map((b) => ({ alcoholId: b._id, ml: b.ml, cost: b.cost })),
+            ...(meta?.archived ? { historyBefore: meta.archived.before } : {}),
+          };
+        }, transactionOptions),
+      );
+    },
+    async readCatalog(known) {
+      await ensureReady();
+      return client.withSession((session) =>
+        session.withTransaction(async () => {
+          const meta = await state.findOne(
+            { _id: 'state' },
+            { session, projection: { revision: 1, catalogRevision: 1 } },
+          );
+          const catalogRevision = meta!.catalogRevision || meta!.revision;
+          if (known === catalogRevision) return { catalogRevision, unchanged: true };
+          const alcohol = await db
+            .collection('alcohol')
+            .find({}, { session, projection: { _id: 0, _order: 0 } })
+            .sort({ _order: 1 })
+            .toArray();
+          const cocktails = await db
+            .collection('cocktails')
+            .find({}, { session, projection: { _id: 0, _order: 0 } })
+            .sort({ _order: 1 })
+            .toArray();
+          return {
+            catalogRevision,
+            data: { alcohol, cocktails } as unknown as Pick<BarData, 'alcohol' | 'cocktails'>,
+          };
+        }, transactionOptions),
+      );
+    },
+    async readSale(id) {
+      await ensureReady();
+      return ((await db
+        .collection('sales')
+        .findOne({ _id: id as never }, { projection: { _id: 0, _order: 0 } })) || undefined) as
+        Sale | undefined;
+    },
     async readWorking() {
       await ensureReady();
       return client.withSession((session) =>
@@ -157,6 +218,7 @@ export function mongoRepository(
               ...(meta?.archived ? { historyBefore: meta.archived.before } : {}),
             },
             revision: meta!.revision,
+            catalogRevision: meta!.catalogRevision || meta!.revision,
             days: {},
           };
         }, transactionOptions),
@@ -175,13 +237,18 @@ export function mongoRepository(
         session.withTransaction(async () => {
           const meta = await state.findOne({ _id: 'state' }, { session });
           const current = await workingData(db, session, meta!.operations);
+          current.historyBefore = meta?.archived?.before;
           if (
             await db
               .collection('auditEvents')
               .findOne({ _id: command.id as never }, { session, projection: { _id: 1 } })
           )
-            return { data: current, revision: meta!.revision, days: {} };
-          current.historyBefore = meta?.archived?.before;
+            return {
+              data: current,
+              revision: meta!.revision,
+              catalogRevision: meta!.catalogRevision || meta!.revision,
+              days: {},
+            };
           const previousBalances = current.opening!.ingredients.map((b) => ({
             _id: b.alcoholId,
             ml: b.ml,
@@ -201,7 +268,12 @@ export function mongoRepository(
               .collection(duplicateCollection)
               .findOne({ _id: command.id as never }, { session, projection: { _id: 1 } }))
           )
-            return { data: current, revision: meta!.revision, days: {} };
+            return {
+              data: current,
+              revision: meta!.revision,
+              catalogRevision: meta!.catalogRevision || meta!.revision,
+              days: {},
+            };
           if (
             command.type === 'purchase' &&
             command.value?.id &&
@@ -210,7 +282,12 @@ export function mongoRepository(
               .findOne({ _id: command.value.id as never }, { session, projection: { _id: 1 } }))
           ) {
             if (meta!.operations.includes(command.id))
-              return { data: current, revision: meta!.revision, days: {} };
+              return {
+                data: current,
+                revision: meta!.revision,
+                catalogRevision: meta!.catalogRevision || meta!.revision,
+                days: {},
+              };
             throw Object.assign(new Error('Закупка с таким идентификатором уже существует.'), {
               status: 400,
             });
@@ -250,13 +327,19 @@ export function mongoRepository(
                 ...(meta?.archived ? { historyBefore: meta.archived.before } : {}),
               },
               revision: meta!.revision,
+              catalogRevision: meta!.catalogRevision || meta!.revision,
               days: {},
             };
           const revision = crypto.randomUUID();
+          const catalogRevision =
+            JSON.stringify([current.alcohol, current.cocktails]) !==
+            JSON.stringify([next.alcohol, next.cocktails])
+              ? revision
+              : meta!.catalogRevision || meta!.revision;
           // One ledger-wide write serializes balances and guards concurrent consumption.
           const saved = await state.updateOne(
             { _id: 'state', revision: meta!.revision },
-            { $set: { revision, operations: next.operations } },
+            { $set: { revision, catalogRevision, operations: next.operations } },
             { session },
           );
           if (!saved.matchedCount) throw new Error('Concurrent ledger revision');
@@ -278,7 +361,19 @@ export function mongoRepository(
           await saveBalances(db, session, next, previousBalances);
           await appendAudit(db, session, commandAudit(command, next, actor));
           if (command.type === 'sale') await recordStockAlerts(db, session, command.id, current, next);
-          return { data: compactData(next), revision, days: {} };
+          const compact = compactData(next);
+          return {
+            data: compact,
+            revision,
+            catalogRevision,
+            baseRevision: meta!.revision,
+            changedStock: compact.opening!.ingredients.filter((b) => {
+              const previous = previousBalances.find((p) => p._id === b.alcoholId);
+              return !previous || previous.ml !== b.ml || previous.cost !== b.cost;
+            }),
+            sale: command.type === 'sale' ? next.sales.find((s) => s.id === command.id) : undefined,
+            days: {},
+          };
         }, transactionOptions),
       );
     },
@@ -328,7 +423,12 @@ export function mongoRepository(
             await saveBalances(db, session, migrated);
             return { data: migrated, revision, days: {} };
           }
-          return { data, revision: meta.revision, days: {} };
+          return {
+            data,
+            revision: meta.revision,
+            catalogRevision: meta.catalogRevision || meta.revision,
+            days: {},
+          };
         }, transactionOptions);
       } finally {
         await session.endSession();
@@ -342,7 +442,14 @@ export function mongoRepository(
           const revision = crypto.randomUUID();
           const result = await state.replaceOne(
             { _id: 'state', revision: current.revision || '' },
-            metadata(next, revision),
+            metadata(
+              next,
+              revision,
+              JSON.stringify([current.data.alcohol, current.data.cocktails]) ===
+                JSON.stringify([next.alcohol, next.cocktails])
+                ? current.catalogRevision || current.revision || revision
+                : revision,
+            ),
             { session },
           );
           if (!result.matchedCount) return { modified: false };

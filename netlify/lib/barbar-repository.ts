@@ -21,6 +21,17 @@ export interface Snapshot {
   data: BarData;
   revision: string | null;
   days: Record<string, string>;
+  catalogRevision?: string;
+  baseRevision?: string;
+  changedStock?: NonNullable<BarData['opening']>['ingredients'];
+  sale?: Sale;
+}
+export interface StockSnapshot {
+  revision: string;
+  catalogRevision: string;
+  stock?: NonNullable<BarData['opening']>['ingredients'];
+  unchanged?: boolean;
+  historyBefore?: string;
 }
 const INDEX = 'data.json';
 export async function readSnapshot(storage: Storage): Promise<Snapshot> {
@@ -110,6 +121,13 @@ export async function commitSnapshot(storage: Storage, current: Snapshot, next: 
 
 // Legacy file storage is retained only for migration and compatibility tests.
 export interface Repository {
+  readStock?: (known?: string) => Promise<StockSnapshot>;
+  readCatalog?: (known?: string) => Promise<{
+    catalogRevision: string;
+    data?: Pick<BarData, 'alcohol' | 'cocktails'>;
+    unchanged?: boolean;
+  }>;
+  readSale?: (id: string) => Promise<Sale | undefined>;
   readWorking?: () => Promise<Snapshot>;
   execute?: (command: Command, actor: UserProfile) => Promise<Snapshot | null>;
   readRevision?: () => Promise<string | null>;

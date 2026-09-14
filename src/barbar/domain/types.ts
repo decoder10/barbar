@@ -114,6 +114,7 @@ export type Command = Action & { id: string };
 export type Role = 'admin' | 'barbar';
 // Explicit allowlist: staff never receive financial fields or the full ledger.
 export interface StaffProduct {
+  stockAlcoholId?: string;
   glassSizeMl?: number;
   bottleSizeMl?: number;
   availableMl?: number;

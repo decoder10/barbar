@@ -53,6 +53,7 @@ export function localApi(): Plugin {
         if (
           ![
             '/api/barbar',
+            '/api/barbar/catalog',
             '/api/barbar/auth',
             '/api/barbar/users',
             '/api/barbar/rates',

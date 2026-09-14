@@ -1,3 +1,4 @@
+import { loadWorking, type WorkingState } from '../../services/working-state';
 import { useAsyncTask, type AsyncTaskRunner } from '../../ui/use-async-task';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { initialData, uid } from '../../domain/model';
@@ -42,10 +43,10 @@ export function BarProvider({ children }: { children: ReactNode }) {
   const [hasData, setHasData] = useState(false);
   const [connected, setConnected] = useState(true);
   const [notice, setNotice] = useState<Notice>(null);
+  const working = useRef<WorkingState | null>(null);
   const revision = useRef<string | null>(null);
   const sequence = useRef(0);
   const refreshing = useRef(false);
-  const latestRole = useRef<Role | null>(null);
   const pending = useRef<{ key: string; command: Command } | null>(null);
   const notify = useCallback((text: string, error = false) => setNotice({ text, error }), []);
   const refresh = useCallback(async () => {
@@ -56,21 +57,14 @@ export function BarProvider({ children }: { children: ReactNode }) {
     setSyncing(true);
     const current = ++sequence.current;
     try {
-      const result = await api('/api/barbar', {
-        headers:
-          revision.current && latestRole.current
-            ? { 'X-Barbar-Revision': revision.current, 'X-Barbar-Role': latestRole.current }
-            : {},
-      });
-      if (current !== sequence.current) {
-        return;
-      }
-      if (!result.unchanged) {
-        setData(result.role === 'admin' ? result.data : initialData());
-        setStaffData(result.role === 'barbar' ? result.staffData : null);
+      const result = await loadWorking(working.current);
+      if (current !== sequence.current) return;
+      if (result !== working.current) {
+        working.current = result;
+        setData(result.data);
+        setStaffData(result.staffData);
         setRole(result.role);
         revision.current = result.revision;
-        latestRole.current = result.role;
       }
       setConnected(true);
       setHasData(true);
@@ -84,6 +78,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
         setStaffData(null);
         setUser(null);
         setRole(null);
+        working.current = null;
         setMode('login');
       }
       notify(error instanceof Error ? error.message : 'Не удалось обновить данные.', true);
@@ -108,6 +103,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
           setStaffData(null);
           setUser(null);
           setRole(null);
+          working.current = null;
           setMode('login');
           notify(error instanceof Error ? error.message : 'Не удалось открыть данные.', true);
         }
@@ -158,13 +154,15 @@ export function BarProvider({ children }: { children: ReactNode }) {
         try {
           const result = await api('/api/barbar', {
             method: 'POST',
+            headers: { 'X-Barbar-Protocol': '2' },
             body: JSON.stringify({ command: pending.current.command, revision: revision.current }),
           });
-          setData(result.role === 'admin' ? result.data : initialData());
-          setStaffData(result.role === 'barbar' ? result.staffData : null);
-          setRole(result.role);
-          revision.current = result.revision;
-          latestRole.current = result.role;
+          const next = await loadWorking(working.current, result);
+          working.current = next;
+          setData(next.data);
+          setStaffData(next.staffData);
+          setRole(next.role);
+          revision.current = next.revision;
           setConnected(true);
           warning = result.warning;
           pending.current = null;
@@ -176,6 +174,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
             setStaffData(null);
             setUser(null);
             setRole(null);
+            working.current = null;
             setMode('login');
           }
           if (error instanceof ApiError && [400, 403, 413].includes(error.status)) {
@@ -206,6 +205,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
       setUser(auth.user || null);
       setRole(auth.role);
       revision.current = null;
+      working.current = null;
       pending.current = null;
       setNotice(null);
       setMode('cloud');
@@ -229,6 +229,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setRole(null);
         revision.current = null;
+        working.current = null;
         setMode('login');
         setHasData(false);
         setNotice(null);
