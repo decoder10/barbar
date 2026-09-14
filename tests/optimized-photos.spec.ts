@@ -36,7 +36,7 @@ test('catalog serves AVIF, renders WebP fallback and retains contained image lay
     .toBe(true);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-  await page.getByRole('button', { name: 'Закрыть меню', exact: true }).last().click();
+  await expect(page.locator('.sidebar')).not.toBeInViewport();
   await photo.scrollIntoViewIfNeeded();
   await page.screenshot({ path: '/tmp/barbar-avif-mobile.png' });
   expect(errors).toEqual([]);
