@@ -36,7 +36,10 @@ export function mongoRepository(
 ): Repository {
   const state = db.collection<Metadata>('state');
   let ready: Promise<void> | undefined;
-  let catalogCache: { catalogRevision: string; data: Pick<BarData, 'alcohol' | 'cocktails'> } | undefined;
+  const catalogCaches = new Map<
+    string,
+    { catalogRevision: string; data: Pick<BarData, 'alcohol' | 'cocktails'> }
+  >();
   const rows = (data: BarData, name: CollectionName) => data[name] || [];
   async function writeChanges(session: ClientSession, previous: BarData, next: BarData) {
     for (const name of collections) {
@@ -186,8 +189,10 @@ export function mongoRepository(
         }, transactionOptions),
       );
     },
-    async readCatalog(known) {
+    async readCatalog(known, resource) {
       await ensureReady();
+      const cacheKey = resource || 'all';
+      const catalogCache = catalogCaches.get(cacheKey);
       if (known || catalogCache) {
         // Validate the live revision even on a cache hit. Never cache permissions.
         const meta = await state.findOne(
@@ -197,7 +202,7 @@ export function mongoRepository(
         const catalogRevision = meta!.catalogRevision || meta!.revision;
         if (known === catalogRevision) return { catalogRevision, unchanged: true };
         if (catalogCache?.catalogRevision === catalogRevision) return structuredClone(catalogCache);
-        catalogCache = undefined;
+        catalogCaches.delete(cacheKey);
       }
       const result = await client.withSession((session) =>
         session.withTransaction(async () => {
@@ -207,25 +212,34 @@ export function mongoRepository(
           );
           const catalogRevision = meta!.catalogRevision || meta!.revision;
           if (known === catalogRevision) return { catalogRevision, unchanged: true };
-          const alcohol = await db
-            .collection('alcohol')
-            .find({}, { session, projection: { _id: 0, _order: 0 } })
-            .sort({ _order: 1 })
-            .toArray();
-          const cocktails = await db
-            .collection('cocktails')
-            .find({}, { session, projection: { _id: 0, _order: 0 } })
-            .sort({ _order: 1 })
-            .toArray();
+          const alcohol =
+            resource === 'cocktails'
+              ? []
+              : await db
+                  .collection('alcohol')
+                  .find({}, { session, projection: { _id: 0, _order: 0 } })
+                  .sort({ _order: 1 })
+                  .toArray();
+          const cocktails =
+            resource === 'alcohol'
+              ? []
+              : await db
+                  .collection('cocktails')
+                  .find({}, { session, projection: { _id: 0, _order: 0 } })
+                  .sort({ _order: 1 })
+                  .toArray();
           return {
             catalogRevision,
             data: { alcohol, cocktails } as unknown as Pick<BarData, 'alcohol' | 'cocktails'>,
           };
         }, transactionOptions),
       );
-      // One bounded, versioned snapshot per repository; clients receive independent objects.
-      if (result.data && JSON.stringify(result.data).length <= 1_000_000) {
-        catalogCache = structuredClone({ catalogRevision: result.catalogRevision, data: result.data });
+      // Bounded snapshots per resource; the combined route remains for older clients.
+      if (result.data && JSON.stringify(result.data).length <= (resource ? 500_000 : 1_000_000)) {
+        catalogCaches.set(
+          cacheKey,
+          structuredClone({ catalogRevision: result.catalogRevision, data: result.data }),
+        );
       }
       return result;
     },

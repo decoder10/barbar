@@ -2,6 +2,7 @@ import { initialData } from '../domain/model';
 import type { BarData, Role, StaffData } from '../domain/types';
 import type { CatalogResponse, StockResponse, StockEntry } from '../domain/sync/contracts';
 import { api } from './api-client';
+import { readCatalog } from './catalog-client';
 export interface WorkingState {
   role: Role;
   revision: string;
@@ -86,7 +87,7 @@ export async function loadWorking(
   const stockRead = supplied ? undefined : readWorking(previous);
   const catalogRead =
     !previous && !supplied
-      ? api('/api/barbar/catalog').then(
+      ? readCatalog().then(
           (value) => ({ value }),
           (error) => ({ error }),
         )
@@ -120,7 +121,7 @@ export async function loadWorking(
       response = await readWorking(null);
     }
     if (!catalog || catalog.role !== response.role || catalog.catalogRevision !== response.catalogRevision) {
-      catalog = await api('/api/barbar/catalog');
+      catalog = await readCatalog();
     }
     if (
       catalog.role === response.role &&

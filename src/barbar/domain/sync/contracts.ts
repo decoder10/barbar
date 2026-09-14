@@ -23,3 +23,16 @@ export interface CatalogResponse {
   staffData?: StaffData;
   unchanged?: boolean;
 }
+
+export type CatalogResource = 'alcohol' | 'cocktails';
+export interface CatalogPartResponse {
+  resource: CatalogResource;
+  role: Role;
+  catalogRevision: string;
+  unchanged?: boolean;
+  alcohol?: BarData['alcohol'];
+  cocktails?: BarData['cocktails'];
+  ingredients?: StaffData['ingredients'];
+  recipes?: StaffData['recipes'];
+  products?: StaffData['products'];
+}

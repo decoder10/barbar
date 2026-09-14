@@ -90,6 +90,49 @@ describe.skipIf(!uri)('split catalog and stock API in isolated MongoDB', () => {
       client.off('commandStarted', listen);
     }
   });
+  it('reads and caches alcohol and cocktails separately, with safe worker responses', async () => {
+    const finds: string[] = [];
+    const listen = (e: CommandStartedEvent) => {
+      if (e.commandName === 'find') finds.push(e.command.find);
+    };
+    client.on('commandStarted', listen);
+    try {
+      for (const resource of ['alcohol', 'cocktails'] as const) {
+        finds.length = 0;
+        const response = await call(`/api/barbar/catalog/${resource}`);
+        expect(finds).toEqual(['state', resource]);
+        expect(response[resource]).toEqual(fixture[resource]);
+        expect(Object.keys(response).sort()).toEqual(
+          ['catalogRevision', 'resource', 'role', resource].sort(),
+        );
+        finds.length = 0;
+        const worker = await call(`/api/barbar/catalog/${resource}`, 'barbar');
+        expect(finds).toEqual(['state']);
+        expect(worker).not.toHaveProperty('alcohol');
+        expect(worker).not.toHaveProperty('cocktails');
+        expect(JSON.stringify(worker)).not.toMatch(/"(?:price|cost|costPerLiter|pricePerLiter|extraCosts)"/);
+        expect(
+          worker.products.every(
+            (p: { kind: string }) => p.kind === (resource === 'alcohol' ? 'alcohol' : 'cocktail'),
+          ),
+        ).toBe(true);
+        expect(
+          (await call(`/api/barbar/catalog/${resource}`, 'admin', undefined, response.catalogRevision))
+            .unchanged,
+        ).toBe(true);
+        expect(
+          (await handleBarApi(request(`/api/barbar/catalog/${resource}`, 'admin', sale('forbidden')), repo))
+            .status,
+        ).toBe(405);
+        expect(
+          (await handleBarApi(new Request(`https://barbar.test/api/barbar/catalog/${resource}`), repo))
+            .status,
+        ).toBe(401);
+      }
+    } finally {
+      client.off('commandStarted', listen);
+    }
+  });
   it('returns only changed balances and saved sale; preserves catalog version after a sale', async () => {
     const before = await call();
     const catalog = await call('/api/barbar/catalog');
@@ -147,6 +190,11 @@ describe.skipIf(!uri)('split catalog and stock API in isolated MongoDB', () => {
     const catalog = await call('/api/barbar/catalog', 'admin', undefined, before.catalogRevision);
     expect(catalog.unchanged).not.toBe(true);
     expect(catalog.catalogRevision).not.toBe(before.catalogRevision);
+    const cocktails = await call('/api/barbar/catalog/cocktails');
+    const alcohol = await call('/api/barbar/catalog/alcohol');
+    expect(cocktails.catalogRevision).toBe(catalog.catalogRevision);
+    expect(alcohol.catalogRevision).toBe(catalog.catalogRevision);
+    expect(cocktails.cocktails.find((c: { id: string }) => c.id === cocktail.id).notes).toBe('Updated');
     const now = await call();
     const past = sale('historical-sale');
     if (past.type === 'sale') past.value.date = '2026-01-01';

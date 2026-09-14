@@ -151,7 +151,10 @@ export interface StaffRecipe extends Pick<
 export interface StaffData {
   paged?: boolean;
   recipes: StaffRecipe[];
-  ingredients: (Pick<Alcohol, 'id' | 'name' | 'unit' | 'category' | 'bottleSizeMl' | 'color'> & {
+  ingredients: (Pick<
+    Alcohol,
+    'id' | 'name' | 'unit' | 'category' | 'bottleSizeMl' | 'glassSizeMl' | 'color'
+  > & {
     available: number;
   })[];
   products: StaffProduct[];

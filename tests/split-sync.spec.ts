@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { fixtureData } from './fixtures';
 import { compactData } from '../netlify/lib/barbar-working';
-import { publicCatalog, publicStock } from '../netlify/lib/barbar-sync';
+import { publicCatalogPart, publicStock } from '../netlify/lib/barbar-sync';
 import { staffData } from '../netlify/lib/barbar-access';
 import { applyCommand } from '../src/barbar/domain/model';
 import type { Command } from '../src/barbar/domain/types';
@@ -19,9 +19,15 @@ for (const role of ['admin', 'barbar'] as const) {
     const state = () =>
       publicStock({ revision, catalogRevision, stock: compactData(data).opening!.ingredients }, role);
     await page.route('**/api/barbar/auth', (r) => r.fulfill({ json: { authenticated: true, role } }));
-    await page.route('**/api/barbar/catalog', (r) => {
+    await page.route('**/api/barbar/catalog/*', (r) => {
       catalogCalls++;
-      return r.fulfill({ json: publicCatalog({ catalogRevision, data }, role) });
+      return r.fulfill({
+        json: publicCatalogPart(
+          { catalogRevision, data },
+          role,
+          r.request().url().endsWith('/alcohol') ? 'alcohol' : 'cocktails',
+        ),
+      });
     });
     await page.route('**/api/barbar/report?*', (r) => {
       reportCalls++;
@@ -67,15 +73,15 @@ for (const role of ['admin', 'barbar'] as const) {
     await page.goto('/');
     await page.getByPlaceholder('Найти напиток…').fill('Gin tonic Beefeater');
     await expect.poll(() => historyCalls).toBe(1);
-    expect(catalogCalls).toBe(1);
+    expect(catalogCalls).toBe(2);
     await page.locator('.drink-card').first().click();
     await page.getByRole('button', { name: 'Записать продажу', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect.poll(() => historyCalls).toBe(2);
-    expect(catalogCalls).toBe(1);
+    expect(catalogCalls).toBe(2);
     await page.getByRole('button', { name: 'Обновить данные', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Обновить данные', exact: true })).toBeEnabled();
-    expect(catalogCalls).toBe(1);
+    expect(catalogCalls).toBe(2);
     expect(historyCalls).toBe(2);
     await page.getByRole('link', { name: /Меню и рецепты/ }).click();
     await expect(page).toHaveURL(/cocktails/);
@@ -85,7 +91,7 @@ for (const role of ['admin', 'barbar'] as const) {
     catalogRevision = 'c2';
     revision = 's3';
     await page.getByRole('button', { name: 'Обновить данные', exact: true }).click();
-    await expect.poll(() => catalogCalls).toBe(2);
+    await expect.poll(() => catalogCalls).toBe(4);
     await expect(page.getByText('Updated catalog cocktail', { exact: true }).first()).toBeVisible();
     expect(historyCalls).toBe(historyBefore);
     expect(reportCalls).toBe(0);
@@ -97,8 +103,14 @@ test('warehouse histories wait until their section approaches the viewport', asy
   const data = fixtureData();
   const collections: string[] = [];
   await page.route('**/api/barbar/auth', (r) => r.fulfill({ json: { authenticated: true, role: 'admin' } }));
-  await page.route('**/api/barbar/catalog', (r) =>
-    r.fulfill({ json: publicCatalog({ catalogRevision: 'c1', data }, 'admin') }),
+  await page.route('**/api/barbar/catalog/*', (r) =>
+    r.fulfill({
+      json: publicCatalogPart(
+        { catalogRevision: 'c1', data },
+        'admin',
+        r.request().url().endsWith('/alcohol') ? 'alcohol' : 'cocktails',
+      ),
+    }),
   );
   await page.route('**/api/barbar', (r) =>
     r.fulfill({

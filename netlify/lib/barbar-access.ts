@@ -18,7 +18,7 @@ export function staffData(data: BarData): StaffData {
       editable: !c.stockAlcoholId,
       managedIngredientIds: (c.extraCosts || []).map((i) => i.alcoholId),
     })),
-    ingredients: data.alcohol.map(({ id, name, unit, category, bottleSizeMl, color }) => ({
+    ingredients: data.alcohol.map(({ id, name, unit, category, bottleSizeMl, glassSizeMl, color }) => ({
       id,
       name,
       unit: unit || 'ml',
@@ -26,6 +26,7 @@ export function staffData(data: BarData): StaffData {
       color,
       available: remaining(id),
       ...(bottleSizeMl ? { bottleSizeMl } : {}),
+      ...(glassSizeMl ? { glassSizeMl } : {}),
     })),
     products: [
       ...data.cocktails.map((c) => ({

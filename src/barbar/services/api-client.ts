@@ -1,8 +1,10 @@
-import type { CatalogResponse, StockResponse } from '../domain/sync/contracts';
+import type { CatalogResponse, StockResponse, CatalogPartResponse } from '../domain/sync/contracts';
 import type { BarData, Role, StaffData } from '../domain/types';
 import type { UserProfile } from '../domain/identity/user';
 interface ApiResponses {
   '/api/barbar/catalog': CatalogResponse;
+  '/api/barbar/catalog/alcohol': CatalogPartResponse;
+  '/api/barbar/catalog/cocktails': CatalogPartResponse;
   '/api/barbar/push': { publicKey: string | null; ok?: boolean };
   [path: `/api/barbar/report${string}`]: import('../domain/reports/server-types').ServerReport;
   '/api/barbar?view=full': { data: BarData; revision: string };

@@ -54,6 +54,8 @@ export function localApi(): Plugin {
           ![
             '/api/barbar',
             '/api/barbar/catalog',
+            '/api/barbar/catalog/alcohol',
+            '/api/barbar/catalog/cocktails',
             '/api/barbar/auth',
             '/api/barbar/users',
             '/api/barbar/rates',

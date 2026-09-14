@@ -122,7 +122,10 @@ export async function commitSnapshot(storage: Storage, current: Snapshot, next: 
 // Legacy file storage is retained only for migration and compatibility tests.
 export interface Repository {
   readStock?: (known?: string) => Promise<StockSnapshot>;
-  readCatalog?: (known?: string) => Promise<{
+  readCatalog?: (
+    known?: string,
+    resource?: 'alcohol' | 'cocktails',
+  ) => Promise<{
     catalogRevision: string;
     data?: Pick<BarData, 'alcohol' | 'cocktails'>;
     unchanged?: boolean;

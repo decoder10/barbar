@@ -1,4 +1,4 @@
-import { publicStock, publicCatalog, mutationResponse } from './barbar-sync';
+import { publicStock, publicCatalog, publicCatalogPart, mutationResponse } from './barbar-sync';
 import { commandAudit } from './audit/store';
 import { applyCommand } from '../../src/barbar/domain/model';
 import type { BarData, Command } from '../../src/barbar/domain/types';
@@ -27,14 +27,19 @@ export const handleBarApi = async (
   }
   try {
     const split = request.headers.get('X-Barbar-Protocol') === '2' && !!repository.readStock;
-    if (new URL(request.url).pathname.endsWith('/catalog')) {
+    const catalogRoute = new URL(request.url).pathname.match(
+      /^\/api\/barbar\/catalog(?:\/(alcohol|cocktails))?$/,
+    );
+    if (catalogRoute) {
       if (request.method !== 'GET' || !repository.readCatalog)
         return json({ error: 'Метод не поддерживается.' }, 405);
       const known =
         request.headers.get('X-Barbar-Role') === role
           ? request.headers.get('X-Barbar-Catalog-Revision') || undefined
           : undefined;
-      return json(publicCatalog(await repository.readCatalog(known), role));
+      const resource = catalogRoute[1] as 'alcohol' | 'cocktails' | undefined;
+      const snapshot = await repository.readCatalog(known, resource);
+      return json(resource ? publicCatalogPart(snapshot, role, resource) : publicCatalog(snapshot, role));
     }
     if (request.method === 'GET') {
       if (new URL(request.url).searchParams.get('view') === 'full') {

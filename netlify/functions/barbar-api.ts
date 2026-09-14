@@ -57,4 +57,11 @@ export default async (request: Request, context: { deploy: DeployInfo }) => {
     );
   }
 };
-export const config = { path: ['/api/barbar', '/api/barbar/catalog'] };
+export const config = {
+  path: [
+    '/api/barbar',
+    '/api/barbar/catalog',
+    '/api/barbar/catalog/alcohol',
+    '/api/barbar/catalog/cocktails',
+  ],
+};

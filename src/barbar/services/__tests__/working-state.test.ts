@@ -5,7 +5,7 @@ import { publicCatalog } from '../../../../netlify/lib/barbar-sync';
 import { staffData } from '../../../../netlify/lib/barbar-access';
 import { api } from '../api-client';
 import { loadWorking } from '../working-state';
-import type { CatalogResponse, StockResponse } from '../../domain/sync/contracts';
+import type { CatalogResponse, StockResponse, CatalogPartResponse } from '../../domain/sync/contracts';
 import type { BarData } from '../../domain/types';
 vi.mock('../api-client', () => ({ api: vi.fn() }));
 const mock = vi.mocked(api);
@@ -22,12 +22,35 @@ const stock: StockResponse = {
   stock: data.opening!.ingredients,
 };
 const supply = (value: StockResponse) => value as Awaited<ReturnType<typeof api<'/api/barbar'>>>;
-beforeEach(() => mock.mockReset());
+const parts = (value: CatalogResponse): CatalogPartResponse[] =>
+  (['alcohol', 'cocktails'] as const).map((resource) => ({
+    role: value.role,
+    catalogRevision: value.catalogRevision,
+    resource,
+    ...(value.data
+      ? { [resource]: value.data[resource] }
+      : resource === 'alcohol'
+        ? {
+            ingredients: value.staffData!.ingredients,
+            products: value.staffData!.products.filter((p) => p.kind === 'alcohol'),
+          }
+        : {
+            recipes: value.staffData!.recipes,
+            products: value.staffData!.products.filter((p) => p.kind === 'cocktail'),
+          }),
+  }));
+const queueCatalog = (value: CatalogResponse) => {
+  const [alcohol, cocktails] = parts(value);
+  return mock.mockResolvedValueOnce(alcohol).mockResolvedValueOnce(cocktails);
+};
+beforeEach(() => {
+  mock.mockReset();
+});
 describe('working-state synchronization', () => {
   it('loads catalog once, reuses its arrays after sales and performs no reads for a valid delta', async () => {
-    mock.mockResolvedValueOnce(catalog);
+    queueCatalog(catalog);
     const first = await loadWorking(null, supply(stock));
-    expect(mock).toHaveBeenCalledTimes(1);
+    expect(mock).toHaveBeenCalledTimes(2);
     const next = await loadWorking(
       first,
       supply({
@@ -38,7 +61,7 @@ describe('working-state synchronization', () => {
         stock: [{ alcoholId: 'gin', ml: 1950, cost: 17940 }],
       }),
     );
-    expect(mock).toHaveBeenCalledTimes(1);
+    expect(mock).toHaveBeenCalledTimes(2);
     expect(next.data.alcohol).toBe(first.data.alcohol);
     expect(next.data.cocktails).toBe(first.data.cocktails);
     expect(next.stock!.find((b) => b.alcoholId === 'gin')!.ml).toBe(1950);
@@ -53,16 +76,20 @@ describe('working-state synchronization', () => {
     ).toBe(next);
   });
   it('recovers a crossed catalog edit without mixing versions', async () => {
-    mock
-      .mockResolvedValueOnce({ ...catalog, catalogRevision: 'catalog-2' })
-      .mockResolvedValueOnce(supply({ ...stock, revision: 'stock-2', catalogRevision: 'catalog-2' }));
+    queueCatalog({ ...catalog, catalogRevision: 'catalog-2' }).mockResolvedValueOnce(
+      supply({ ...stock, revision: 'stock-2', catalogRevision: 'catalog-2' }),
+    );
     const result = await loadWorking(null, supply(stock));
     expect(result.catalog!.catalogRevision).toBe('catalog-2');
     expect(result.revision).toBe('stock-2');
-    expect(mock.mock.calls.map(([path]) => path)).toEqual(['/api/barbar/catalog', '/api/barbar']);
+    expect(mock.mock.calls.map(([path]) => path)).toEqual([
+      '/api/barbar/catalog/alcohol',
+      '/api/barbar/catalog/cocktails',
+      '/api/barbar',
+    ]);
   });
   it('rejects stale delta baseline and fetches complete stock without reloading the catalog', async () => {
-    mock.mockResolvedValueOnce(catalog);
+    queueCatalog(catalog);
     const first = await loadWorking(null, supply(stock));
     mock.mockResolvedValueOnce(supply({ ...stock, revision: 'stock-current' }));
     const result = await loadWorking(
@@ -71,7 +98,7 @@ describe('working-state synchronization', () => {
     );
     expect(result.revision).toBe('stock-current');
     expect(result.stock).toHaveLength(data.alcohol.length);
-    expect(mock.mock.calls.filter(([path]) => path === '/api/barbar/catalog')).toHaveLength(1);
+    expect(mock.mock.calls.filter(([path]) => path.startsWith('/api/barbar/catalog/'))).toHaveLength(2);
   });
   it('reprojects worker availability identically, including selected glass volumes, with no finance', async () => {
     const wineData: BarData = {
@@ -109,7 +136,7 @@ describe('working-state synchronization', () => {
       },
     };
     const workerCatalog = publicCatalog({ catalogRevision: 'catalog-1', data: wineData }, 'barbar');
-    mock.mockResolvedValueOnce(workerCatalog);
+    queueCatalog(workerCatalog);
     const result = await loadWorking(
       null,
       supply({
@@ -125,9 +152,9 @@ describe('working-state synchronization', () => {
     expect(JSON.stringify(result.staffData)).not.toMatch(/"(?:price|cost|revenue|operations)"/);
   });
   it('does not reuse owner catalog after a role change', async () => {
-    mock.mockResolvedValueOnce(catalog);
+    queueCatalog(catalog);
     const owner = await loadWorking(null, supply(stock));
-    mock.mockResolvedValueOnce(publicCatalog({ catalogRevision: 'catalog-1', data }, 'barbar'));
+    queueCatalog(publicCatalog({ catalogRevision: 'catalog-1', data }, 'barbar'));
     const worker = await loadWorking(
       owner,
       supply({
@@ -138,7 +165,7 @@ describe('working-state synchronization', () => {
     );
     expect(worker.catalog!.data).toBeUndefined();
     expect(worker.staffData).not.toBeNull();
-    expect(mock).toHaveBeenCalledTimes(2);
+    expect(mock).toHaveBeenCalledTimes(4);
   });
   it('starts the first stock and catalog reads together, without waiting for stock', async () => {
     let release!: (value: ReturnType<typeof supply>) => void;
@@ -147,10 +174,14 @@ describe('working-state synchronization', () => {
         ? new Promise((resolve) => {
             release = resolve as typeof release;
           })
-        : (Promise.resolve(catalog) as ReturnType<typeof api>),
+        : (Promise.resolve(parts(catalog)[path.endsWith('/alcohol') ? 0 : 1]) as ReturnType<typeof api>),
     );
     const pending = loadWorking(null);
-    expect(mock.mock.calls.map(([path]) => path)).toEqual(['/api/barbar', '/api/barbar/catalog']);
+    expect(mock.mock.calls.map(([path]) => path)).toEqual([
+      '/api/barbar',
+      '/api/barbar/catalog/alcohol',
+      '/api/barbar/catalog/cocktails',
+    ]);
     release(supply(stock));
     expect((await pending).revision).toBe('stock-1');
   });
