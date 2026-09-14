@@ -1,0 +1,39 @@
+.sales-mode-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.sales-fullscreen {
+  .sidebar,
+  .sidebar-scrim,
+  .topbar,
+  .page-footer,
+  .page-content > .metrics,
+  .page-content > .page-heading,
+  .page-content > .sales-date-bar,
+  .page-content > .business-day-hint,
+  .sales-layout > .catalog > .section-title {
+    display: none;
+  }
+
+  .workspace {
+    margin-left: 0;
+  }
+
+  .page-content {
+    padding-top: 12px;
+  }
+
+  .sales-mode-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding-block: 8px;
+    background: var(--surface);
+  }
+
+  .day-receipt {
+    top: 76px;
+  }
+}

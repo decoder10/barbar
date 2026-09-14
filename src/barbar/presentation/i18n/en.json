@@ -843,5 +843,7 @@
   "Входим…": "Signing in…",
   "Выходим…": "Signing out…",
   "Обновляем…": "Refreshing…",
-  "Проверяем файл…": "Checking file…"
+  "Проверяем файл…": "Checking file…",
+  "На весь экран": "Full screen",
+  "Выйти из полного экрана": "Exit full screen"
 }
