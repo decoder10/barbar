@@ -1,3 +1,4 @@
+import { BusyButton } from '../../ui/loading';
 import { useInventoryCalculations } from './use-inventory-calculations';
 import { useState } from 'react';
 import { Field } from '../../ui/fields';
@@ -81,13 +82,14 @@ export function CorrectPurchaseForm({ purchase, close }: { purchase: Purchase; c
           <button type="button" className="button secondary" disabled={busy} onClick={close}>
             {t('Отмена')}
           </button>
-          <button
+          <BusyButton
+            busy={busy}
             className="button danger-button"
             type="submit"
             disabled={busy || difference === 0 || (remove && confirm.trim().toUpperCase() !== 'УДАЛИТЬ')}
           >
             {t(remove ? 'Удалить закупку' : 'Сохранить правильное количество')}
-          </button>
+          </BusyButton>
         </div>
       </form>
     </Modal>

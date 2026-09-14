@@ -1,3 +1,4 @@
+import { BusyButton, LoadingStatus } from './loading';
 import { Check, X } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { t } from '../presentation/i18n/runtime';
@@ -15,7 +16,7 @@ export function Modal({
   close: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const { busy, notice } = useBar();
+  const { busy, activity, notice } = useBar();
   useEffect(() => {
     const dialog = ref.current;
     const root = document.documentElement;
@@ -34,6 +35,7 @@ export function Modal({
     <dialog
       ref={ref}
       className="modal"
+      aria-busy={busy}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) {
@@ -58,7 +60,10 @@ export function Modal({
           </div>
         ),
       )}
-      {t(children)}
+      {busy && <LoadingStatus label={activity || 'Сохраняем…'} className="modal-progress" />}
+      <fieldset className="action-lock" disabled={busy}>
+        {t(children)}
+      </fieldset>
     </dialog>
   );
 }
@@ -70,10 +75,16 @@ export function Submit({
   children?: ReactNode;
   disabled?: boolean;
 }) {
-  const { busy } = useBar();
+  const { busy, activity } = useBar();
   return (
-    <button type="submit" className="button primary full" disabled={busy || disabled}>
-      {t(busy ? <span className="spinner" /> : <Check size={18} />)} {t(busy ? 'Сохраняем…' : children)}
-    </button>
+    <BusyButton
+      type="submit"
+      className="button primary full"
+      busy={busy}
+      busyLabel={activity || 'Сохраняем…'}
+      disabled={disabled}
+    >
+      <Check size={18} /> {t(children)}
+    </BusyButton>
   );
 }

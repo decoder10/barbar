@@ -839,5 +839,9 @@
   "Рассчитываем отчёт…": "Calculating report…",
   "Загружаем полную копию…": "Loading full backup…",
   "Учётный остаток": "Recorded stock",
-  "Стоимость излишка за": "Surplus cost per"
+  "Стоимость излишка за": "Surplus cost per",
+  "Входим…": "Signing in…",
+  "Выходим…": "Signing out…",
+  "Обновляем…": "Refreshing…",
+  "Проверяем файл…": "Checking file…"
 }

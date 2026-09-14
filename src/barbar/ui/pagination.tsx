@@ -1,3 +1,4 @@
+import { LoadingStatus } from './loading';
 import { t } from '../presentation/i18n/runtime';
 export function Pagination({
   page,
@@ -18,7 +19,7 @@ export function Pagination({
     <div className="history-pagination">
       {page.error && <p role="alert">{t(page.error)}</p>}
       <small>
-        {t(page.loading ? 'Загружаем…' : 'Всего записей')}
+        {page.loading ? <LoadingStatus /> : t('Всего записей')}
         {!page.loading && `: ${page.total}`}
       </small>
       <div className="operation-toolbar">

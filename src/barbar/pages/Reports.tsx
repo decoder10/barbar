@@ -1,3 +1,4 @@
+import { LoadingStatus } from '../ui/loading';
 import { useServerReport } from '../features/reports/use-server-report';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { menuQuantitySummary } from '../domain/quantity-summary';
@@ -253,7 +254,7 @@ export default function Reports() {
         ),
       )}
       {remote.error && <p role="alert">{t(remote.error)}</p>}
-      {remote.loading && <p role="status">{t('Рассчитываем отчёт…')}</p>}
+      <>{remote.loading && <LoadingStatus label="Рассчитываем отчёт…" />}</>
       {(!data.opening || remote.report) && (
         <>
           <section className="metrics">

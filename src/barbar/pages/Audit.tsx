@@ -1,3 +1,4 @@
+import { LoadingStatus } from '../ui/loading';
 import { useEffect, useState } from 'react';
 import { PageHeading } from '../ui/layout';
 import { Field } from '../ui/fields';
@@ -108,7 +109,7 @@ export default function Audit() {
         </div>
         {error && <p role="alert">{t(error)}</p>}
         {loading ? (
-          <p>{t('Загружаем…')}</p>
+          <LoadingStatus />
         ) : (
           <div className="table-scroll">
             <table className="data-table operations-table">

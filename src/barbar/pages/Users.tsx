@@ -1,7 +1,8 @@
 import { Pencil, Plus, ShieldCheck, UserRound, Users as UsersIcon } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Field } from '../ui/fields';
-import { Modal } from '../ui/modal';
+import { LoadingStatus } from '../ui/loading';
+import { Modal, Submit } from '../ui/modal';
 import { PageHeading } from '../ui/layout';
 import { t } from '../presentation/i18n/runtime';
 import { api } from '../services/api-client';
@@ -9,13 +10,12 @@ import { useBar } from '../app/providers/BarProvider';
 import type { UserInput, UserProfile } from '../domain/identity/user';
 const blank: UserInput = { username: '', fullName: '', email: '', phone: '', password: '', role: 'worker' };
 export default function Users() {
-  const { user: me, notify } = useBar();
+  const { user: me, notify, perform, busy: saving } = useBar();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<UserProfile | null>(null);
   const [active, setActive] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<UserInput>(blank);
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
@@ -37,13 +37,15 @@ export default function Users() {
   async function create(event: FormEvent) {
     event.preventDefault();
     if (saving) return;
-    setSaving(true);
     setError('');
     try {
-      const result = await api('/api/barbar/users', {
-        method: editing ? 'PATCH' : 'POST',
-        body: JSON.stringify({ ...form, ...(editing ? { id: editing.id, active } : {}) }),
-      });
+      const result = await perform(() =>
+        api('/api/barbar/users', {
+          method: editing ? 'PATCH' : 'POST',
+          body: JSON.stringify({ ...form, ...(editing ? { id: editing.id, active } : {}) }),
+        }),
+      );
+      if (!result) return;
       setUsers((current) =>
         editing ? current.map((u) => (u.id === editing.id ? result.user : u)) : [...current, result.user],
       );
@@ -56,8 +58,6 @@ export default function Users() {
       );
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Не удалось создать пользователя.');
-    } finally {
-      setSaving(false);
     }
   }
   return (
@@ -107,7 +107,7 @@ export default function Users() {
         </div>
         {t(
           loading ? (
-            <p className="muted">{t('Загружаем пользователей…')}</p>
+            <LoadingStatus label="Загружаем пользователей…" />
           ) : loadError ? (
             <div role="alert">
               <p>{t(loadError)}</p>
@@ -285,9 +285,7 @@ export default function Users() {
                   </div>
                 ),
               )}
-              <button type="submit" className="button primary full" disabled={saving}>
-                {t(saving ? 'Сохраняем…' : editing ? 'Сохранить изменения' : 'Создать пользователя')}
-              </button>
+              <Submit>{t(editing ? 'Сохранить изменения' : 'Создать пользователя')}</Submit>
             </form>
           </Modal>
         ),

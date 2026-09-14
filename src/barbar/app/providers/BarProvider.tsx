@@ -1,3 +1,4 @@
+import { useAsyncTask, type AsyncTaskRunner } from '../../ui/use-async-task';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { initialData, uid } from '../../domain/model';
 import type { Action, BarData, Command, Role, StaffData } from '../../domain/types';
@@ -17,6 +18,10 @@ interface Store {
   role: Role | null;
   mode: Mode;
   busy: boolean;
+  activity: string | null;
+  syncing: boolean;
+  hasData: boolean;
+  perform: AsyncTaskRunner;
   notice: Notice;
   connected: boolean;
   run: (action: Action, message?: string) => Promise<boolean>;
@@ -32,12 +37,13 @@ export function BarProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role | null>(null);
   const [staffData, setStaffData] = useState<StaffData | null>(null);
   const [mode, setMode] = useState<Mode>('loading');
-  const [busy, setBusy] = useState(false);
+  const { busy, label: activity, execute: perform, active: saving } = useAsyncTask();
+  const [syncing, setSyncing] = useState(false);
+  const [hasData, setHasData] = useState(false);
   const [connected, setConnected] = useState(true);
   const [notice, setNotice] = useState<Notice>(null);
   const revision = useRef<string | null>(null);
   const sequence = useRef(0);
-  const saving = useRef(false);
   const refreshing = useRef(false);
   const latestRole = useRef<Role | null>(null);
   const pending = useRef<{ key: string; command: Command } | null>(null);
@@ -47,6 +53,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
       return;
     }
     refreshing.current = true;
+    setSyncing(true);
     const current = ++sequence.current;
     try {
       const result = await api('/api/barbar', {
@@ -66,6 +73,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
         latestRole.current = result.role;
       }
       setConnected(true);
+      setHasData(true);
     } catch (error) {
       if (current !== sequence.current) {
         return;
@@ -81,8 +89,9 @@ export function BarProvider({ children }: { children: ReactNode }) {
       notify(error instanceof Error ? error.message : 'Не удалось обновить данные.', true);
     } finally {
       refreshing.current = false;
+      setSyncing(false);
     }
-  }, [mode, notify]);
+  }, [mode, notify, saving]);
   useEffect(() => {
     let active = true;
     const initialize = async () => {
@@ -137,57 +146,62 @@ export function BarProvider({ children }: { children: ReactNode }) {
     if (saving.current || mode !== 'cloud') {
       return false;
     }
-    saving.current = true;
-    setBusy(true);
-    ++sequence.current;
-    const key = JSON.stringify(action);
-    if (pending.current?.key !== key) {
-      pending.current = { key, command: { ...action, id: uid() } };
-    }
-    let warning: string | undefined;
-    try {
-      const result = await api('/api/barbar', {
-        method: 'POST',
-        body: JSON.stringify({ command: pending.current.command, revision: revision.current }),
-      });
-      setData(result.role === 'admin' ? result.data : initialData());
-      setStaffData(result.role === 'barbar' ? result.staffData : null);
-      setRole(result.role);
-      revision.current = result.revision;
-      latestRole.current = result.role;
-      setConnected(true);
-      warning = result.warning;
-      pending.current = null;
-      notify(warning || message, !!warning);
-      return true;
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        setData(initialData());
-        setStaffData(null);
-        setUser(null);
-        setRole(null);
-        setMode('login');
-      }
-      if (error instanceof ApiError && [400, 403, 413].includes(error.status)) {
-        pending.current = null;
-      }
-      notify(error instanceof Error ? error.message : 'Не удалось сохранить. Повторите попытку.', true);
-      return false;
-    } finally {
-      saving.current = false;
-      setBusy(false);
-    }
+    return (
+      (await perform(async () => {
+        ++sequence.current;
+        setNotice(null);
+        const key = JSON.stringify(action);
+        if (pending.current?.key !== key) {
+          pending.current = { key, command: { ...action, id: uid() } };
+        }
+        let warning: string | undefined;
+        try {
+          const result = await api('/api/barbar', {
+            method: 'POST',
+            body: JSON.stringify({ command: pending.current.command, revision: revision.current }),
+          });
+          setData(result.role === 'admin' ? result.data : initialData());
+          setStaffData(result.role === 'barbar' ? result.staffData : null);
+          setRole(result.role);
+          revision.current = result.revision;
+          latestRole.current = result.role;
+          setConnected(true);
+          warning = result.warning;
+          pending.current = null;
+          notify(warning || message, !!warning);
+          return true;
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 401) {
+            setData(initialData());
+            setStaffData(null);
+            setUser(null);
+            setRole(null);
+            setMode('login');
+          }
+          if (error instanceof ApiError && [400, 403, 413].includes(error.status)) {
+            pending.current = null;
+          }
+          notify(error instanceof Error ? error.message : 'Не удалось сохранить. Повторите попытку.', true);
+          return false;
+        }
+      }, 'Сохраняем…')) ?? false
+    );
   };
   const login = async (username: string, password: string) => {
-    setBusy(true);
     try {
-      const auth = await api('/api/barbar/auth', {
-        method: 'POST',
-        body: JSON.stringify({ username, password }),
-      });
+      const auth = await perform(
+        () =>
+          api('/api/barbar/auth', {
+            method: 'POST',
+            body: JSON.stringify({ username, password }),
+          }),
+        'Входим…',
+      );
+      if (!auth) return;
       clearSessionFilters();
       ++sequence.current;
       setData(initialData());
+      setHasData(false);
       setStaffData(null);
       setUser(auth.user || null);
       setRole(auth.role);
@@ -197,35 +211,38 @@ export function BarProvider({ children }: { children: ReactNode }) {
       setMode('cloud');
     } catch (error) {
       notify(error instanceof Error ? error.message : 'Не удалось войти.', true);
-    } finally {
-      setBusy(false);
     }
   };
   const logout = async () => {
-    if (busy) {
+    if (saving.current) {
       return;
     }
     try {
-      if (mode === 'cloud') {
-        await api('/api/barbar/auth', { method: 'DELETE' });
-      }
-      clearSessionFilters();
-      ++sequence.current;
-      setData(initialData());
-      setStaffData(null);
-      setUser(null);
-      setRole(null);
-      revision.current = null;
-      setMode('login');
-      setNotice(null);
-      pending.current = null;
+      await perform(async () => {
+        if (mode === 'cloud') {
+          await api('/api/barbar/auth', { method: 'DELETE' });
+        }
+        clearSessionFilters();
+        ++sequence.current;
+        setData(initialData());
+        setStaffData(null);
+        setUser(null);
+        setRole(null);
+        revision.current = null;
+        setMode('login');
+        setHasData(false);
+        setNotice(null);
+        pending.current = null;
+      }, 'Выходим…');
     } catch (error) {
       notify(error instanceof Error ? error.message : 'Не удалось выйти.', true);
     }
   };
   const updatePreferences = async (preferences: Preferences) => {
-    const result = await api('/api/barbar/auth', { method: 'PATCH', body: JSON.stringify(preferences) });
-    setUser(result.user);
+    const result = await perform(() =>
+      api('/api/barbar/auth', { method: 'PATCH', body: JSON.stringify(preferences) }),
+    );
+    if (result) setUser(result.user);
   };
   return (
     <Context.Provider
@@ -237,6 +254,10 @@ export function BarProvider({ children }: { children: ReactNode }) {
         role,
         mode,
         busy,
+        activity,
+        syncing,
+        hasData,
+        perform,
         notice,
         connected,
         run,

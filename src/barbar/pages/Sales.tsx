@@ -1,3 +1,4 @@
+import { BusyButton } from '../ui/loading';
 import { useHistory } from '../features/sales/use-history';
 import { Pagination } from '../ui/pagination';
 import { useSessionFilter } from '../presentation/use-session-filter';
@@ -367,7 +368,8 @@ export default function Sales() {
                 'Ингредиенты вернутся на склад. Запись останется в истории с отметкой об отмене и не будет учитываться в выручке.',
               )}
             </p>
-            <button
+            <BusyButton
+              busy={busy}
               className="button primary full"
               disabled={busy}
               onClick={async () => {
@@ -379,7 +381,7 @@ export default function Sales() {
               }}
             >
               {t('Подтвердить отмену')}
-            </button>
+            </BusyButton>
           </Modal>
         ),
       )}

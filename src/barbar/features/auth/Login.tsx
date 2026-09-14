@@ -7,7 +7,7 @@ import { t } from '../../presentation/i18n/runtime';
 import { useBar } from '../../app/providers/BarProvider';
 
 export function Login() {
-  const { login, notice } = useBar();
+  const { login, notice, busy } = useBar();
   const [username, setUsername] = useState('barbar');
   const [password, setPassword] = useState('');
   return (
@@ -32,36 +32,38 @@ export function Login() {
               void login(username, password);
             }}
           >
-            <Field label="Логин">
-              <input
-                autoComplete="username"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </Field>
-            <Field label="Пароль вашего бара">
-              <input
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                placeholder={t('Введите пароль')}
-                maxLength={1024}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </Field>
-            {t(
-              notice && (
-                <div className="login-notice" role="alert">
-                  {t(notice.text)}
-                </div>
-              ),
-            )}
-            <Submit>
-              {t('Войти в Barbar ')}
-              <ArrowRight size={17} />
-            </Submit>
+            <fieldset className="action-lock" disabled={busy} aria-busy={busy}>
+              <Field label="Логин">
+                <input
+                  autoComplete="username"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </Field>
+              <Field label="Пароль вашего бара">
+                <input
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  placeholder={t('Введите пароль')}
+                  maxLength={1024}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </Field>
+              {t(
+                notice && (
+                  <div className="login-notice" role="alert">
+                    {t(notice.text)}
+                  </div>
+                ),
+              )}
+              <Submit>
+                {t('Войти в Barbar ')}
+                <ArrowRight size={17} />
+              </Submit>
+            </fieldset>
           </form>
         </div>
         <div className="login-footer">

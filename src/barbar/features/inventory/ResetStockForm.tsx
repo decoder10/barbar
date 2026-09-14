@@ -1,3 +1,4 @@
+import { BusyButton } from '../../ui/loading';
 import { useInventoryCalculations } from './use-inventory-calculations';
 import { useState } from 'react';
 import { Field } from '../../ui/fields';
@@ -62,13 +63,14 @@ export function ResetStockForm({ alcohol, close }: { alcohol: Alcohol; close: ()
           <button type="button" className="button secondary" disabled={busy} onClick={close}>
             {t('Отмена')}
           </button>
-          <button
+          <BusyButton
+            busy={busy}
             type="submit"
             className="button danger-button"
             disabled={busy || confirmation.trim().toLocaleUpperCase(locale()) !== 'СБРОС'}
           >
             {t(busy ? 'Списываем…' : 'Да, обнулить остаток')}
-          </button>
+          </BusyButton>
         </div>
       </form>
     </Modal>

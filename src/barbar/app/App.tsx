@@ -1,3 +1,4 @@
+import { LoadingStatus } from '../ui/loading';
 import {
   History,
   BarChart3,
@@ -44,7 +45,7 @@ const navigation = [
   { path: '/files', label: 'Данные и копии', icon: Files, caption: 'Ваши данные' },
 ];
 export default function App() {
-  const { mode, role, user, notice, logout, refresh, connected, busy } = useBar();
+  const { mode, role, user, notice, logout, refresh, connected, busy, activity, syncing, hasData } = useBar();
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
   if (mode === 'loading') {
@@ -69,9 +70,9 @@ export default function App() {
           <button className="sidebar-scrim" aria-label={t('Закрыть меню')} onClick={() => setMenu(false)} />
         ),
       )}
-      <aside className={`sidebar ${menu ? 'open' : ''}`}>
+      <aside className={`sidebar ${menu ? 'open' : ''}`} inert={busy}>
         <div className="sidebar-brand">
-          <Brand />
+          <Brand onNavigate={() => setMenu(false)} />
           <button
             className="mobile-close icon-button"
             aria-label={t('Закрыть меню')}
@@ -137,7 +138,11 @@ export default function App() {
                 void logout();
               }}
             >
-              <LogOut size={17} />
+              {activity === 'Выходим…' ? (
+                <span className="spinner" aria-hidden="true" />
+              ) : (
+                <LogOut size={17} />
+              )}
             </button>
           </div>
           <a
@@ -167,19 +172,20 @@ export default function App() {
           <div className="topbar-right">
             <span className={`sync-status ${connected ? '' : 'offline'}`}>
               <Cloud size={16} />
-              <span>{t(connected ? 'Общие данные' : 'Нет связи')}</span>
+              <span>{t(syncing ? 'Обновляем…' : connected ? 'Общие данные' : 'Нет связи')}</span>
             </span>
             {t(
               mode === 'cloud' && (
                 <button
                   className="icon-button"
                   aria-label={t('Обновить данные')}
-                  disabled={busy}
+                  aria-busy={syncing}
+                  disabled={busy || syncing}
                   onClick={() => {
                     void refresh();
                   }}
                 >
-                  <RefreshCw size={16} />
+                  <RefreshCw size={16} className={syncing ? 'is-spinning' : ''} />
                 </button>
               ),
             )}
@@ -192,31 +198,47 @@ export default function App() {
             )}
           </div>
         </header>
-        <main id="content" className="page-content">
-          <Suspense
-            fallback={
-              <div className="route-loading">
-                <span className="spinner" />
-                {t(' Открываем страницу…')}
+        <main id="content" className="page-content" inert={busy} aria-busy={busy}>
+          {!hasData ? (
+            connected ? (
+              <LoadingStatus label="Открываем ваш бар…" />
+            ) : (
+              <div role="alert">
+                {t('Не удалось обновить данные.')}
+                <button className="button secondary" disabled={syncing} onClick={() => void refresh()}>
+                  {t('Повторить')}
+                </button>
               </div>
-            }
-          >
-            <Routes>
-              <Route path="/" element={role === 'admin' ? <Sales /> : <StaffSales />} />
-              <Route path="/inventory" element={role === 'admin' ? <Inventory /> : <StaffInventory />} />
-              <Route path="/cocktails" element={role === 'admin' ? <Cocktails /> : <StaffRecipes />} />
-              <Route path="/reports" element={role === 'admin' ? <Reports /> : <Navigate to="/" replace />} />
-              <Route path="/files" element={role === 'admin' ? <Backups /> : <Navigate to="/" replace />} />
-              <Route
-                path="/operations"
-                element={role === 'admin' ? <Operations /> : <Navigate to="/" replace />}
-              />
-              <Route path="/audit" element={role === 'admin' ? <Audit /> : <Navigate to="/" replace />} />
-              <Route path="/users" element={role === 'admin' ? <Users /> : <Navigate to="/" replace />} />
-              <Route path="/barbar/*" element={<Navigate to="/" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+            )
+          ) : (
+            <Suspense
+              fallback={
+                <div className="route-loading">
+                  <span className="spinner" />
+                  {t(' Открываем страницу…')}
+                </div>
+              }
+            >
+              <Routes>
+                <Route path="/" element={role === 'admin' ? <Sales /> : <StaffSales />} />
+                <Route path="/inventory" element={role === 'admin' ? <Inventory /> : <StaffInventory />} />
+                <Route path="/cocktails" element={role === 'admin' ? <Cocktails /> : <StaffRecipes />} />
+                <Route
+                  path="/reports"
+                  element={role === 'admin' ? <Reports /> : <Navigate to="/" replace />}
+                />
+                <Route path="/files" element={role === 'admin' ? <Backups /> : <Navigate to="/" replace />} />
+                <Route
+                  path="/operations"
+                  element={role === 'admin' ? <Operations /> : <Navigate to="/" replace />}
+                />
+                <Route path="/audit" element={role === 'admin' ? <Audit /> : <Navigate to="/" replace />} />
+                <Route path="/users" element={role === 'admin' ? <Users /> : <Navigate to="/" replace />} />
+                <Route path="/barbar/*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          )}
           <footer className="page-footer">
             <span>
               BARBAR CAFE <i>✳</i> ART GALLERY
@@ -225,6 +247,7 @@ export default function App() {
           </footer>
         </main>
       </div>
+      {busy && <LoadingStatus label={activity || 'Сохраняем…'} className="action-progress" />}
       {t(
         notice && (
           <div role={notice.error ? 'alert' : 'status'} className={`toast ${notice.error ? 'error' : ''}`}>

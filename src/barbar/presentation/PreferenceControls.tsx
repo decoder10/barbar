@@ -1,3 +1,4 @@
+import { LoadingStatus } from '../ui/loading';
 import { Moon, Sun } from 'lucide-react';
 import { useContext } from 'react';
 import { displayCurrency } from './currency/format-money';
@@ -7,16 +8,17 @@ import { useBar } from '../app/providers/BarProvider';
 import { SettingsContext } from './settings-context';
 export function PreferenceControls() {
   const settings = useContext(SettingsContext);
-  const { role } = useBar();
+  const { role, busy } = useBar();
   if (!settings) return null;
   return (
-    <div className="preference-controls">
+    <div className="preference-controls" aria-busy={settings.pending}>
+      {settings.pending && <LoadingStatus label="Сохраняем…" />}
       <button
         type="button"
         className="theme-toggle"
         aria-label={t(settings.theme === 'light' ? 'Включить тёмную тему' : 'Включить светлую тему')}
         title={t(settings.theme === 'light' ? 'Тёмная тема' : 'Светлая тема')}
-        disabled={settings.pending}
+        disabled={settings.pending || busy}
         onClick={() =>
           void settings.update(
             settings.language,
@@ -31,7 +33,7 @@ export function PreferenceControls() {
         <span className="visually-hidden">{t('Язык')}</span>
         <select
           aria-label={t('Язык')}
-          disabled={settings.pending}
+          disabled={settings.pending || busy}
           value={settings.language}
           onChange={(e) => void settings.update(e.target.value as Language, settings.currency)}
         >
@@ -46,7 +48,7 @@ export function PreferenceControls() {
             <span className="visually-hidden">{t('Валюта отображения')}</span>
             <select
               aria-label={t('Валюта отображения')}
-              disabled={settings.pending}
+              disabled={settings.pending || busy}
               value={settings.currency}
               onChange={(e) => void settings.update(settings.language, e.target.value as Currency)}
             >

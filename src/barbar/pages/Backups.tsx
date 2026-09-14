@@ -1,3 +1,4 @@
+import { LoadingStatus, BusyButton } from '../ui/loading';
 import { Archive, ArrowDownToLine, FileJson, FolderArchive, Trash2, Upload } from 'lucide-react';
 import { api } from '../services/api-client';
 import { useEffect, useRef, useState } from 'react';
@@ -11,7 +12,7 @@ import { t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
 
 export default function Backups() {
-  const { data: working, run, notify, busy } = useBar();
+  const { data: working, run, notify, busy, perform } = useBar();
   const [snapshot, setFull] = useState<{ data: BarData; source: BarData } | null>(null);
   const full = snapshot?.source === working ? snapshot.data : null;
   const [loadError, setLoadError] = useState('');
@@ -73,7 +74,7 @@ export default function Backups() {
     },
   ];
   if (working.opening && !full)
-    return <p role={loadError ? 'alert' : 'status'}>{t(loadError || 'Загружаем полную копию…')}</p>;
+    return loadError ? <p role="alert">{t(loadError)}</p> : <LoadingStatus label="Загружаем полную копию…" />;
   return (
     <>
       <PageHeading
@@ -113,8 +114,14 @@ export default function Backups() {
                 if (file.size > 3_000_000) {
                   throw new Error('Максимальный размер файла — 3 МБ.');
                 }
-                setRestore(validateData(JSON.parse(await file.text())));
-                setConfirmation('');
+                const restored = await perform(
+                  async () => validateData(JSON.parse(await file.text())),
+                  'Проверяем файл…',
+                );
+                if (restored) {
+                  setRestore(restored);
+                  setConfirmation('');
+                }
               } catch (error) {
                 notify(error instanceof Error ? error.message : 'Файл не удалось прочитать.', true);
               }
@@ -256,7 +263,8 @@ export default function Backups() {
               <ArrowDownToLine size={17} />
               {t(' Скачать копию перед удалением')}
             </button>
-            <button
+            <BusyButton
+              busy={busy}
               className="button danger-button full"
               style={{ marginTop: 12 }}
               disabled={busy}
@@ -271,7 +279,7 @@ export default function Backups() {
               {t('Удалить ')}
               {t(purgeSales.length)}
               {t(' записей')}
-            </button>
+            </BusyButton>
           </Modal>
         ),
       )}
@@ -309,7 +317,8 @@ export default function Backups() {
                 autoComplete="off"
               />
             </label>
-            <button
+            <BusyButton
+              busy={busy}
               className="button primary full"
               disabled={busy || confirmation !== 'ВОССТАНОВИТЬ'}
               onClick={async () => {
@@ -321,7 +330,7 @@ export default function Backups() {
               }}
             >
               {t('Восстановить данные')}
-            </button>
+            </BusyButton>
           </Modal>
         ),
       )}
