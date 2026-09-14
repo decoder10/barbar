@@ -51,9 +51,14 @@ export async function handleUsers(request: Request, users: IdentityStore) {
     if (user.role !== 'owner')
       return json({ error: 'Управление пользователями доступно только владельцу.' }, 403);
     if (request.method === 'GET') return json({ users: await users.list() });
-    if (request.method !== 'POST') return json({ error: 'Метод не поддерживается.' }, 405);
+    if (!['POST', 'PATCH'].includes(request.method)) return json({ error: 'Метод не поддерживается.' }, 405);
     if (!sameOrigin(request)) return json({ error: 'Недопустимый источник запроса.' }, 403);
-    return json({ user: await users.create(await body(request)) }, 201);
+    const input = await body(request);
+    if (request.method === 'PATCH') {
+      if (!users.update) throw new Error('User updates unavailable');
+      return json({ user: await users.update(input?.id, input, user) });
+    }
+    return json({ user: await users.create(input, user) }, 201);
   } catch (error) {
     return failure(error);
   }

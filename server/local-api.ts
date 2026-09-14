@@ -1,6 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { loadEnv, type Plugin } from 'vite';
+import { handleReport } from '../netlify/lib/queries/report';
+import { handleHistory } from '../netlify/lib/queries/history';
+import { handleAudit } from '../netlify/lib/audit/handler';
 import { handleBarApi } from '../netlify/lib/barbar-handler';
 import { mongoConnection, mongoRepository } from '../netlify/lib/barbar-mongo';
 import { handleRates } from '../netlify/lib/barbar-rates';
@@ -44,9 +47,15 @@ export function localApi(): Plugin {
       });
       server.middlewares.use(async (request, response, next) => {
         if (
-          !['/api/barbar', '/api/barbar/auth', '/api/barbar/users', '/api/barbar/rates'].includes(
-            (request.url || '').split('?')[0],
-          )
+          ![
+            '/api/barbar',
+            '/api/barbar/auth',
+            '/api/barbar/users',
+            '/api/barbar/rates',
+            '/api/barbar/audit',
+            '/api/barbar/history',
+            '/api/barbar/report',
+          ].includes((request.url || '').split('?')[0])
         ) {
           next();
           return;
@@ -76,13 +85,19 @@ export function localApi(): Plugin {
             headers,
             ...(!['GET', 'HEAD'].includes(request.method || 'GET') ? { body: Buffer.concat(chunks) } : {}),
           });
-          const result = request.url?.startsWith('/api/barbar/rates')
-            ? await handleRates(input)
-            : request.url?.startsWith('/api/barbar/auth')
-              ? await handleAuth(input, users)
-              : request.url?.startsWith('/api/barbar/users')
-                ? await handleUsers(input, users)
-                : await handleBarApi(input, repository, users);
+          const result = request.url?.startsWith('/api/barbar/report')
+            ? await handleReport(input, db, users)
+            : request.url?.startsWith('/api/barbar/history')
+              ? await handleHistory(input, db, users)
+              : request.url?.startsWith('/api/barbar/audit')
+                ? await handleAudit(input, db, users)
+                : request.url?.startsWith('/api/barbar/rates')
+                  ? await handleRates(input)
+                  : request.url?.startsWith('/api/barbar/auth')
+                    ? await handleAuth(input, users)
+                    : request.url?.startsWith('/api/barbar/users')
+                      ? await handleUsers(input, users)
+                      : await handleBarApi(input, repository, users);
           response.writeHead(result.status, Object.fromEntries(result.headers));
           response.end(Buffer.from(await result.arrayBuffer()));
         } catch {

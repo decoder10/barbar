@@ -4,6 +4,10 @@ import { migrateBottleCatalog } from '../../src/barbar/domain/catalog/bottles';
 import { applyCommand, averageCost, initialData, stock } from '../../src/barbar/domain/model';
 import type { Command } from '../../src/barbar/domain/types';
 import { handleBarApi } from '../../tests/identity-fixture';
+import { businessToday } from '../../src/barbar/domain/business-day';
+import { handleHistory } from './queries/history';
+import { handleReport } from './queries/report';
+import { identity } from '../../tests/identity-fixture';
 import { sessionCookie } from './barbar-auth';
 import { mongoRepository } from './barbar-mongo';
 
@@ -62,7 +66,12 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
     const loader = vi.fn(async () => data);
     const { db, repo } = create(loader);
     const migrated = await repo.read();
-    expect(migrated.data).toEqual({ ...migrateBottleCatalog(data), stockResets: [] });
+    expect(migrated.data).toEqual({
+      ...migrateBottleCatalog(data),
+      stockResets: [],
+      stockMovements: [],
+      expenses: [],
+    });
     expect(stock(migrated.data, 'vodka')).toBe(80);
     expect(averageCost(migrated.data, 'vodka')).toBe(4000);
     const neverImport = vi.fn(async () => {
@@ -119,6 +128,132 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
     expect(state.data.sales).toHaveLength(1);
     expect((await handleBarApi(request(sale(state.data.sales[0].id)), other)).status).toBe(200);
     expect(await db.collection('sales').countDocuments()).toBe(1);
+  });
+  it('executes current-day sales without reading history and serves all-period aggregates with paginated worker redaction', async () => {
+    const { db, repo } = create(async () =>
+      applyCommand(initialData(), {
+        ...purchase,
+        value: { ...(purchase as Extract<Command, { type: 'purchase' }>).value, ml: 10000 },
+      }),
+    );
+    await repo.readWorking!();
+    const noFullRead = vi.spyOn(repo, 'read');
+    const currentSale = (id: string): Command => ({
+      type: 'sale',
+      id,
+      value: { kind: 'alcohol', productId: 'vodka', quantity: 10, date: businessToday() },
+    });
+    for (let i = 0; i < 55; i++)
+      expect((await handleBarApi(request(currentSale(`fast-${i}`)), repo)).status).toBe(200);
+    expect(noFullRead).not.toHaveBeenCalled();
+    const compact = await repo.readWorking!();
+    expect(compact.data.sales).toHaveLength(0);
+    expect(stock(compact.data, 'vodka')).toBe(9450);
+    expect((await handleBarApi(request(currentSale('fast-0')), repo)).status).toBe(200);
+    expect(await db.collection('sales').countDocuments()).toBe(55);
+    const get = (path: string, role = 'admin') =>
+      new Request('https://barbar.example' + path, {
+        headers: { cookie: sessionCookie(new Request('https://barbar.example'), role) },
+      });
+    const path = `/api/barbar/history?from=${businessToday()}&to=${businessToday()}`;
+    const page = await (await handleHistory(get(path), db, identity)).json();
+    expect(page.rows).toHaveLength(50);
+    expect(page.total).toBe(55);
+    expect(page.groups[0].quantity).toBe(550);
+    const second = await (await handleHistory(get(path + '&cursor=' + page.nextCursor), db, identity)).json();
+    expect(second.rows).toHaveLength(5);
+    expect(new Set([...page.rows, ...second.rows].map((r) => r.id)).size).toBe(55);
+    const worker = await (await handleHistory(get(path, 'barbar'), db, identity)).json();
+    expect(JSON.stringify(worker)).not.toMatch(/revenue|cost|price|ingredientIds/i);
+    const report = await (
+      await handleReport(
+        get(`/api/barbar/report?from=${businessToday()}&to=${businessToday()}`),
+        db,
+        identity,
+      )
+    ).json();
+    expect(report.groups[0].operations).toBe(55);
+    expect(report.performance[0].operations).toBe(55);
+    expect(report.consumed.vodka).toBe(550);
+    expect((await handleReport(get('/api/barbar/report', 'barbar'), db, identity)).status).toBe(403);
+    expect(
+      (await handleBarApi(request({ id: 'undo-fast', type: 'void', saleId: 'fast-0' }), repo)).status,
+    ).toBe(200);
+    expect(stock((await repo.readWorking!()).data, 'vodka')).toBe(9460);
+    expect(stock((await repo.read()).data, 'vodka')).toBe(9460);
+  });
+  it('rolls back fast mutations atomically and prevents concurrent overselling across instances', async () => {
+    const { db, repo } = create(async () => applyCommand(initialData(), purchase));
+    await repo.readWorking!();
+    const other = mongoRepository(client, db);
+    const todaySale = (id: string): Command => ({
+      type: 'sale',
+      id,
+      value: { kind: 'alcohol', productId: 'vodka', quantity: 80, date: businessToday() },
+    });
+    await db.command({
+      collMod: 'sales',
+      validator: { name: 'impossible' },
+      validationLevel: 'strict',
+      validationAction: 'error',
+    });
+    const before = await repo.readWorking!();
+    expect((await handleBarApi(request(todaySale('rollback-fast')), repo)).status).toBe(503);
+    expect(await repo.readWorking!()).toEqual(before);
+    expect(await db.collection('auditEvents').countDocuments()).toBe(0);
+    await db.command({ collMod: 'sales', validator: {}, validationLevel: 'off' });
+    const results = await Promise.all([
+      handleBarApi(request(todaySale('race-a')), repo),
+      handleBarApi(request(todaySale('race-b')), other),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 400]);
+    expect(stock((await repo.readWorking!()).data, 'vodka')).toBe(20);
+    expect(await db.collection('auditEvents').countDocuments()).toBe(1);
+  });
+  it('preserves fractional valuation, preparations and counted balances in the compact ledger', async () => {
+    const { db, repo } = create(async () =>
+      applyCommand(initialData(), {
+        ...purchase,
+        value: {
+          ...(purchase as Extract<Command, { type: 'purchase' }>).value,
+          ml: 333,
+          costPerLiter: 1234.56,
+        },
+      }),
+    );
+    await repo.readWorking!();
+    const commands: Command[] = [
+      {
+        id: 'prep',
+        type: 'prepare',
+        reason: 'Партия',
+        outputId: 'tonic',
+        quantity: 55,
+        ingredients: [{ alcoholId: 'vodka', ml: 50 }],
+      },
+      { id: 'loss', type: 'writeoff', reason: 'Пролив', alcoholId: 'tonic', quantity: 1, expected: 55 },
+      {
+        id: 'count',
+        type: 'count',
+        reason: 'Пересчёт',
+        lines: [{ alcoholId: 'tonic', expected: 54, actual: 53 }],
+      },
+      {
+        id: 'expense-test',
+        type: 'expense',
+        value: { date: businessToday(), category: 'other', description: 'Расход', amount: 100 },
+      },
+    ];
+    for (const command of commands) expect((await handleBarApi(request(command), repo)).status).toBe(200);
+    const full = (await repo.read()).data,
+      compact = (await repo.readWorking!()).data;
+    for (const id of ['vodka', 'tonic']) {
+      expect(stock(compact, id)).toBe(stock(full, id));
+      expect(averageCost(compact, id)).toBeCloseTo(averageCost(full, id), 9);
+    }
+    expect(full.stockMovements).toHaveLength(3);
+    expect(full.expenses).toHaveLength(1);
+    expect(await db.collection('auditEvents').countDocuments()).toBe(4);
   });
   it('preserves stock and valuation across purge, restore and cancellation', async () => {
     const { repo, db } = create(async () =>

@@ -3,15 +3,21 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatMoney as money } from '../../presentation/currency/format-money';
 import type { ReportPeriod } from '../../domain/reports/period';
-import { priceAdvice, salesPerformance } from '../../domain/reports/pricing';
+import { priceAdvice, salesPerformance, type ProductPerformance } from '../../domain/reports/pricing';
 import { t } from '../../presentation/i18n/runtime';
 import { useBar } from '../../app/providers/BarProvider';
-export function ReportPerformance({ period }: { period: ReportPeriod }) {
+export function ReportPerformance({
+  period,
+  serverRows,
+}: {
+  period: ReportPeriod;
+  serverRows?: ProductPerformance[];
+}) {
   const { data } = useBar();
   const [ranking, setRanking] = useSessionFilter<string>('ranking', 'revenue');
   const [unit, setUnit] = useSessionFilter<string>('unit', 'порц.');
   const [margin, setMargin] = useSessionFilter<number>('margin', 50);
-  const rows = useMemo(() => salesPerformance(data, period), [data, period]);
+  const rows = useMemo(() => serverRows || salesPerformance(data, period), [data, period, serverRows]);
   const advice = useMemo(() => priceAdvice(rows, margin), [rows, margin]);
   const ranked = useMemo(
     () =>

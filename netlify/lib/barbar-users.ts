@@ -1,4 +1,5 @@
 import type { Db } from 'mongodb';
+import { actorProfile, appendAudit } from './audit/store';
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
 import { defaultPreferences, type Preferences } from '../../src/barbar/domain/identity/preferences';
 import type { UserInput, UserProfile } from '../../src/barbar/domain/identity/user';
@@ -27,11 +28,12 @@ export interface IdentityStore {
   resolve(token: string): Promise<UserProfile | null>;
   revoke(token: string): Promise<void>;
   list(): Promise<UserProfile[]>;
-  create(input: unknown): Promise<UserProfile>;
+  create(input: unknown, actor?: UserProfile): Promise<UserProfile>;
+  update?: (id: string, input: unknown, actor: UserProfile) => Promise<UserProfile>;
   setPreferences?: (id: string, input: unknown) => Promise<UserProfile>;
 }
-type UserRecord = UserProfile & { _id: string; passwordHash: string };
-type SessionRecord = { _id: string; userId: string; expiresAt: Date };
+type UserRecord = UserProfile & { _id: string; passwordHash: string; authVersion?: number };
+type SessionRecord = { _id: string; userId: string; expiresAt: Date; authVersion?: number };
 export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString('hex');
   const key = (await derive(password, salt, 64, passwordWork)) as Buffer;
@@ -94,6 +96,10 @@ export function mongoUsers(db: Db): IdentityStore {
   async function initialize() {
     await users.createIndex({ username: 1 }, { unique: true });
     await sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+    await sessions.createIndex({ userId: 1 });
+    await db.collection('auditEvents').createIndex({ createdAt: -1, id: -1 });
+    await db.collection('auditEvents').createIndex({ action: 1, createdAt: -1, id: -1 });
+    await db.collection('auditEvents').createIndex({ 'actor.id': 1, createdAt: -1, id: -1 });
     // Insert-only migration. Existing database credentials and roles always remain authoritative.
     const accounts = [
       {
@@ -150,6 +156,74 @@ export function mongoUsers(db: Db): IdentityStore {
     await ready;
   }
   return {
+    async update(id, input, actor) {
+      if (!id || typeof input !== 'object' || !input) throw new UserError('Некорректный пользователь.');
+      const value = input as Record<string, unknown>;
+      const profile = validateUser({
+        ...value,
+        password:
+          value.password === undefined || value.password === '' ? 'validation-only-unused' : value.password,
+      });
+      if (typeof value.active !== 'boolean') throw new UserError('Укажите статус доступа.');
+      const active = value.active;
+      if (id === actor.id && (!value.active || profile.role !== 'owner'))
+        throw new UserError('Нельзя отключить свой аккаунт или снять с себя роль владельца.');
+      const passwordHash = value.password ? await hashPassword(profile.password) : undefined;
+      await ensureReady();
+      try {
+        return await db.client.withSession(async (session) =>
+          session.withTransaction(async () => {
+            // Serialize owner changes, including concurrent demotions of different owners.
+            await db
+              .collection<{ _id: string; version: number }>('identityState')
+              .updateOne({ _id: 'owners' }, { $inc: { version: 1 } }, { upsert: true, session });
+            const currentActor = await users.findOne(
+              { _id: actor.id, active: true, role: 'owner' },
+              { session },
+            );
+            if (!currentActor) throw new UserError('Доступ владельца отозван.', 403);
+            const current = await users.findOne({ _id: id }, { session });
+            if (!current) throw new UserError('Пользователь не найден.', 404);
+            if (
+              current.role === 'owner' &&
+              current.active &&
+              (!value.active || profile.role !== 'owner') &&
+              (await users.countDocuments({ role: 'owner', active: true }, { session })) <= 1
+            )
+              throw new UserError('В баре должен оставаться активный владелец.');
+            const { password: ignored, ...fields } = profile;
+            void ignored;
+            const changedAccess =
+              !!passwordHash || current.role !== profile.role || current.active !== value.active;
+            const result = await users.findOneAndUpdate(
+              { _id: id },
+              {
+                $set: { ...fields, active, ...(passwordHash ? { passwordHash } : {}) },
+                ...(changedAccess ? { $inc: { authVersion: 1 } } : {}),
+              },
+              { session, returnDocument: 'after' },
+            );
+            if (changedAccess) await sessions.deleteMany({ userId: id }, { session });
+            await appendAudit(db, session, {
+              id: randomUUID(),
+              createdAt: new Date().toISOString(),
+              actor: actorProfile(currentActor),
+              action: passwordHash
+                ? 'user.password'
+                : current.active !== value.active
+                  ? 'user.access'
+                  : 'user.update',
+              targetId: id,
+              summary: `${fields.fullName}: ${fields.role}; ${value.active ? 'доступ открыт' : 'доступ закрыт'}${passwordHash ? '; пароль изменён' : ''}`,
+            });
+            return publicUser(result!);
+          }),
+        );
+      } catch (error) {
+        if ((error as { code?: number }).code === 11000) throw new UserError('Этот логин уже занят.', 409);
+        throw error;
+      }
+    },
     async setPreferences(id, input) {
       const value = input as Preferences;
       if (
@@ -200,6 +274,7 @@ export function mongoUsers(db: Db): IdentityStore {
       await sessions.insertOne({
         _id: digest(token),
         userId: user.id,
+        authVersion: user.authVersion || 0,
         expiresAt: new Date(Date.now() + 43200000),
       });
       return { user: publicUser(user), token };
@@ -210,7 +285,7 @@ export function mongoUsers(db: Db): IdentityStore {
       const session = await sessions.findOne({ _id: digest(token), expiresAt: { $gt: new Date() } });
       if (!session) return null;
       const user = await users.findOne({ _id: session.userId, active: true });
-      return user ? publicUser(user) : null;
+      return user && (session.authVersion || 0) === (user.authVersion || 0) ? publicUser(user) : null;
     },
     async revoke(token) {
       if (/^[a-f0-9]{64}$/.test(token)) await sessions.deleteOne({ _id: digest(token) });
@@ -219,7 +294,7 @@ export function mongoUsers(db: Db): IdentityStore {
       await ensureReady();
       return (await users.find().sort({ createdAt: 1, username: 1 }).toArray()).map(publicUser);
     },
-    async create(input) {
+    async create(input, actor) {
       const value = validateUser(input);
       await ensureReady();
       const { password, ...profile } = value;
@@ -233,7 +308,27 @@ export function mongoUsers(db: Db): IdentityStore {
         passwordHash: await hashPassword(password),
       };
       try {
-        await users.insertOne(record);
+        await db.client.withSession(async (session) =>
+          session.withTransaction(async () => {
+            if (actor) {
+              await db
+                .collection<{ _id: string; version: number }>('identityState')
+                .updateOne({ _id: 'owners' }, { $inc: { version: 1 } }, { upsert: true, session });
+              if (!(await users.findOne({ _id: actor.id, active: true, role: 'owner' }, { session })))
+                throw new UserError('Доступ владельца отозван.', 403);
+            }
+            await users.insertOne(record, { session });
+            if (actor)
+              await appendAudit(db, session, {
+                id: randomUUID(),
+                createdAt: new Date().toISOString(),
+                actor: actorProfile(actor),
+                action: 'user.create',
+                targetId: id,
+                summary: `Создан пользователь ${profile.fullName} (${profile.role})`,
+              });
+          }),
+        );
       } catch (error) {
         if ((error as { code?: number }).code === 11000) throw new UserError('Этот логин уже занят.', 409);
         throw error;

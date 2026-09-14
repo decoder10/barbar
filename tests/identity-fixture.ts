@@ -14,7 +14,7 @@ const user = (role: 'admin' | 'barbar'): UserProfile => ({
   createdAt: '',
 });
 // Used only for ledger tests; database identity and session security have separate integration tests.
-const identity: IdentityStore = {
+export const identity: IdentityStore = {
   resolve: async (token) => (token === 'admin' || token === 'barbar' ? user(token) : null),
   login: async (username, password) => {
     if (username !== 'admin' && username !== 'barbar') return null;

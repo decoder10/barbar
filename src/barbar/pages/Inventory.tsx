@@ -1,3 +1,5 @@
+import { useHistory } from '../features/sales/use-history';
+import { Pagination } from '../ui/pagination';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { useInventoryCalculations } from '../features/inventory/use-inventory-calculations';
 import {
@@ -30,6 +32,18 @@ import { useBar } from '../app/providers/BarProvider';
 export default function Inventory() {
   const [params] = useSearchParams();
   const { data } = useBar();
+  const purchaseHistory = useHistory<import('../domain/types').Purchase>(
+    'purchases',
+    '1900-01-01',
+    '9999-12-31',
+  );
+  const purchases = purchaseHistory.enabled ? purchaseHistory.rows : data.purchases;
+  const resetHistory = useHistory<import('../domain/types').StockReset>(
+    'stockResets',
+    '1900-01-01',
+    '9999-12-31',
+  );
+  const resets = resetHistory.enabled ? resetHistory.rows : [...(data.stockResets || [])].reverse();
   const inventory = useInventoryCalculations(data);
   const quantities = useMemo(() => stockTotals(data), [data]);
   const remaining = (id: string) => quantities.get(id) || 0;
@@ -330,10 +344,11 @@ export default function Inventory() {
             <h2>{t('История закупок')}</h2>
             <p>{t('Каждая поставка сохраняется отдельной записью')}</p>
           </div>
-          <ExportButton name="purchases.json" value={data.purchases} />
+          <ExportButton name="purchases-page.json" value={purchases} />
+          <Pagination page={purchaseHistory} />
         </div>
         {t(
-          data.purchases.length ? (
+          purchases.length ? (
             <div className="table-scroll">
               <table className="data-table">
                 <thead>
@@ -348,7 +363,7 @@ export default function Inventory() {
                 </thead>
                 <tbody>
                   {t(
-                    [...data.purchases]
+                    [...purchases]
                       .sort((a, b) => b.date.localeCompare(a.date))
                       .map((p) => (
                         <tr key={p.id}>
@@ -389,14 +404,15 @@ export default function Inventory() {
         )}
       </section>
       {t(
-        !!data.stockResets?.length && (
+        (!!resets.length || resetHistory.loading || !!resetHistory.error) && (
           <section className="panel">
             <div className="section-title">
               <div>
                 <h2>{t('История сбросов')}</h2>
                 <p>{t('Списания запасов при обнулении остатков')}</p>
               </div>
-              <ExportButton name="stock-resets.json" value={data.stockResets} />
+              <Pagination page={resetHistory} />
+              <ExportButton name="stock-resets-page.json" value={resets} />
             </div>
             <div className="table-scroll">
               <table className="data-table">
@@ -410,7 +426,7 @@ export default function Inventory() {
                 </thead>
                 <tbody>
                   {t(
-                    [...data.stockResets].reverse().map((r) => (
+                    resets.map((r) => (
                       <tr key={r.id}>
                         <td>
                           {t(new Date(r.createdAt).toLocaleString(locale(), { timeZone: 'Asia/Yerevan' }))}

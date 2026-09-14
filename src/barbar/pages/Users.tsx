@@ -1,4 +1,4 @@
-import { Plus, ShieldCheck, UserRound, Users as UsersIcon } from 'lucide-react';
+import { Pencil, Plus, ShieldCheck, UserRound, Users as UsersIcon } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Field } from '../ui/fields';
 import { Modal } from '../ui/modal';
@@ -13,6 +13,8 @@ export default function Users() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<UserProfile | null>(null);
+  const [active, setActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<UserInput>(blank);
   const [error, setError] = useState('');
@@ -38,11 +40,20 @@ export default function Users() {
     setSaving(true);
     setError('');
     try {
-      const result = await api('/api/barbar/users', { method: 'POST', body: JSON.stringify(form) });
-      setUsers((current) => [...current, result.user]);
+      const result = await api('/api/barbar/users', {
+        method: editing ? 'PATCH' : 'POST',
+        body: JSON.stringify({ ...form, ...(editing ? { id: editing.id, active } : {}) }),
+      });
+      setUsers((current) =>
+        editing ? current.map((u) => (u.id === editing.id ? result.user : u)) : [...current, result.user],
+      );
       setForm(blank);
       setOpen(false);
-      notify('Пользователь создан. Он может войти со своим логином и паролем.');
+      notify(
+        editing
+          ? 'Пользователь обновлён. При изменении доступа или пароля старые сеансы завершены.'
+          : 'Пользователь создан. Он может войти со своим логином и паролем.',
+      );
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Не удалось создать пользователя.');
     } finally {
@@ -59,6 +70,8 @@ export default function Users() {
         <button
           className="button primary"
           onClick={() => {
+            setEditing(null);
+            setActive(true);
             setForm(blank);
             setError('');
             setOpen(true);
@@ -111,6 +124,7 @@ export default function Users() {
                     <th>{t('Роль')}</th>
                     <th>{t('Контакты')}</th>
                     <th>{t('Доступ')}</th>
+                    <th>{t('Действия')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -143,6 +157,21 @@ export default function Users() {
                           </div>
                         </td>
                         <td>{t(user.active ? 'Активен' : 'Отключён')}</td>
+                        <td>
+                          <button
+                            className="button secondary"
+                            onClick={() => {
+                              setEditing(user);
+                              setForm({ ...user, password: '' });
+                              setActive(user.active);
+                              setError('');
+                              setOpen(true);
+                            }}
+                          >
+                            <Pencil size={16} />
+                            {t('Редактировать')}
+                          </button>
+                        </td>
                       </tr>
                     )),
                   )}
@@ -155,7 +184,7 @@ export default function Users() {
       {t(
         open && (
           <Modal
-            title={t('Новый пользователь')}
+            title={t(editing ? 'Редактирование пользователя' : 'Новый пользователь')}
             subtitle="Укажите данные для входа и роль в команде."
             close={() => {
               if (!saving) {
@@ -189,7 +218,11 @@ export default function Users() {
                   />
                 </Field>
                 <Field label="Роль">
-                  <select value={form.role} onChange={(e) => field('role', e.target.value)}>
+                  <select
+                    disabled={editing?.id === me?.id}
+                    value={form.role}
+                    onChange={(e) => field('role', e.target.value)}
+                  >
                     <option value="worker">{t('Работник')}</option>
                     <option value="owner">{t('Владелец')}</option>
                   </select>
@@ -215,11 +248,30 @@ export default function Users() {
                   />
                 </Field>
               </div>
-              <Field label="Пароль" hint="От 12 символов. Передайте логин и пароль сотруднику.">
+              {editing && (
+                <Field label="Доступ">
+                  <select
+                    disabled={editing.id === me?.id}
+                    value={active ? 'active' : 'blocked'}
+                    onChange={(e) => setActive(e.target.value === 'active')}
+                  >
+                    <option value="active">{t('Активен')}</option>
+                    <option value="blocked">{t('Отключён')}</option>
+                  </select>
+                </Field>
+              )}
+              <Field
+                label={editing ? 'Новый пароль' : 'Пароль'}
+                hint={
+                  editing
+                    ? 'Оставьте пустым, чтобы сохранить пароль. Новый пароль завершит все старые сеансы.'
+                    : 'От 12 символов. Передайте логин и пароль сотруднику.'
+                }
+              >
                 <input
                   type="password"
                   autoComplete="new-password"
-                  required
+                  required={!editing}
                   minLength={12}
                   maxLength={128}
                   value={form.password}
@@ -234,7 +286,7 @@ export default function Users() {
                 ),
               )}
               <button type="submit" className="button primary full" disabled={saving}>
-                {t(saving ? 'Создаём…' : 'Создать пользователя')}
+                {t(saving ? 'Сохраняем…' : editing ? 'Сохранить изменения' : 'Создать пользователя')}
               </button>
             </form>
           </Modal>

@@ -1,10 +1,21 @@
 import { MongoClient, type ClientSession, type Db, type Document } from 'mongodb';
 import { migrateBottleCatalog } from '../../src/barbar/domain/catalog/bottles';
-import { initialData, validateData } from '../../src/barbar/domain/model';
+import { applyCommand, initialData, validateData } from '../../src/barbar/domain/model';
 import type { BarData } from '../../src/barbar/domain/types';
+import { businessToday } from '../../src/barbar/domain/business-day';
+import { compactData, saveBalances, workingData } from './barbar-working';
+import { commandAudit, appendAudit } from './audit/store';
 import type { Repository, Snapshot } from './barbar-repository';
 
-const collections = ['alcohol', 'cocktails', 'purchases', 'sales', 'stockResets'] as const;
+const collections = [
+  'alcohol',
+  'cocktails',
+  'purchases',
+  'sales',
+  'stockResets',
+  'stockMovements',
+  'expenses',
+] as const;
 type CollectionName = (typeof collections)[number];
 type Row = Document & { _id: string; _order: number; id: string };
 type Metadata = {
@@ -12,6 +23,7 @@ type Metadata = {
   revision: string;
   version: 1;
   operations: string[];
+  readModelVersion?: number;
   archived?: BarData['archived'];
 };
 const transactionOptions = {
@@ -57,6 +69,7 @@ export function mongoRepository(
     revision,
     version: data.version,
     operations: data.operations,
+    readModelVersion: 1,
     ...(data.archived ? { archived: data.archived } : {}),
   });
   async function initialize() {
@@ -64,9 +77,49 @@ export function mongoRepository(
     await Promise.all([
       ...collections.map((name) => db.collection(name).createIndex({ _order: 1 })),
       db.collection('sales').createIndex({ date: 1, createdAt: 1 }),
+      ...['sales', 'stockMovements', 'stockResets'].map((name) =>
+        db.collection(name).createIndex({ date: -1, createdAt: -1, id: -1 }),
+      ),
       db.collection('purchases').createIndex({ date: 1, alcoholId: 1 }),
+      db.collection('alcohol').createIndex({ id: 1 }, { unique: true }),
+      db.collection('stockResets').createIndex({ date: -1, id: -1 }),
+      ...['sales', 'purchases', 'stockMovements', 'expenses'].map((name) =>
+        db.collection(name).createIndex({ date: -1, id: -1 }),
+      ),
     ]);
-    if (await state.findOne({ _id: 'state' })) return;
+    const existing = await state.findOne({ _id: 'state' });
+    if (existing?.readModelVersion === 1) return;
+    if (existing) {
+      await client.withSession((session) =>
+        session.withTransaction(async () => {
+          const meta = await state.findOne({ _id: 'state' }, { session });
+          if (meta?.readModelVersion === 1) return;
+          const data: BarData = {
+            version: 1,
+            alcohol: [],
+            cocktails: [],
+            purchases: [],
+            sales: [],
+            operations: meta!.operations,
+            ...(meta?.archived ? { archived: meta.archived } : {}),
+          };
+          for (const name of collections)
+            Object.assign(data, {
+              [name]: await db
+                .collection(name)
+                .find({}, { session, projection: { _id: 0, _order: 0 } })
+                .sort({ _order: 1 })
+                .toArray(),
+            });
+          const migrated = migrateBottleCatalog(data);
+          validateData(migrated);
+          await writeChanges(session, data, migrated);
+          await saveBalances(db, session, migrated);
+          await state.replaceOne({ _id: 'state' }, metadata(migrated, crypto.randomUUID()), { session });
+        }, transactionOptions),
+      );
+      return;
+    }
     // Fail closed if the old store cannot be read. Never seed an empty bar over an unreadable ledger.
     const data = validateData(await loadLegacy());
     for (const name of ['state', ...collections]) {
@@ -91,6 +144,7 @@ export function mongoRepository(
           operations: [],
         };
         await writeChanges(session, empty, data);
+        await saveBalances(db, session, data);
       }, transactionOptions);
     } catch (error) {
       // A concurrent first import may have won the unique state key.
@@ -108,6 +162,141 @@ export function mongoRepository(
     await ready;
   }
   return {
+    async readWorking() {
+      await ensureReady();
+      return client.withSession((session) =>
+        session.withTransaction(async () => {
+          const meta = await state.findOne({ _id: 'state' }, { session });
+          return {
+            data: {
+              ...(await workingData(db, session, meta!.operations)),
+              ...(meta?.archived ? { historyBefore: meta.archived.before } : {}),
+            },
+            revision: meta!.revision,
+            days: {},
+          };
+        }, transactionOptions),
+      );
+    },
+    async execute(command, actor) {
+      if (!command || typeof command.id !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(command.id))
+        throw Object.assign(new Error('Некорректная операция.'), { status: 400 });
+      if (
+        ['restore', 'purge', 'correctPurchase'].includes(command?.type) ||
+        (command?.type === 'sale' && command.value?.date !== businessToday())
+      )
+        return null;
+      await ensureReady();
+      return client.withSession((session) =>
+        session.withTransaction(async () => {
+          const meta = await state.findOne({ _id: 'state' }, { session });
+          const current = await workingData(db, session, meta!.operations);
+          if (
+            await db
+              .collection('auditEvents')
+              .findOne({ _id: command.id as never }, { session, projection: { _id: 1 } })
+          )
+            return { data: current, revision: meta!.revision, days: {} };
+          current.historyBefore = meta?.archived?.before;
+          const previousBalances = current.opening!.ingredients.map((b) => ({
+            _id: b.alcoholId,
+            ml: b.ml,
+            cost: b.cost,
+          }));
+          const duplicateCollection =
+            command.type === 'sale'
+              ? 'sales'
+              : ['count', 'writeoff', 'prepare'].includes(command.type)
+                ? 'stockMovements'
+                : command.type === 'expense'
+                  ? 'expenses'
+                  : null;
+          if (
+            duplicateCollection &&
+            (await db
+              .collection(duplicateCollection)
+              .findOne({ _id: command.id as never }, { session, projection: { _id: 1 } }))
+          )
+            return { data: current, revision: meta!.revision, days: {} };
+          if (
+            command.type === 'purchase' &&
+            command.value?.id &&
+            (await db
+              .collection('purchases')
+              .findOne({ _id: command.value.id as never }, { session, projection: { _id: 1 } }))
+          ) {
+            if (meta!.operations.includes(command.id))
+              return { data: current, revision: meta!.revision, days: {} };
+            throw Object.assign(new Error('Закупка с таким идентификатором уже существует.'), {
+              status: 400,
+            });
+          }
+          if (command.type === 'void') {
+            const sale = await db
+              .collection('sales')
+              .findOne({ _id: command.saleId as never }, { session, projection: { _id: 0, _order: 0 } });
+            if (sale) {
+              current.sales = [sale as unknown as BarData['sales'][number]];
+              if (!sale.voided)
+                for (const i of sale.ingredients) {
+                  const balance = current.opening!.ingredients.find((b) => b.alcoholId === i.alcoholId)!;
+                  balance.ml += i.ml;
+                  balance.cost += i.cost;
+                }
+            }
+          }
+          if (command.type === 'voidExpense') {
+            const expense = await db
+              .collection('expenses')
+              .findOne({ _id: command.expenseId as never }, { session, projection: { _id: 0, _order: 0 } });
+            if (expense) current.expenses = [expense as unknown as NonNullable<BarData['expenses']>[number]];
+          }
+          let next: BarData;
+          try {
+            next = applyCommand(current, command);
+          } catch (error) {
+            throw Object.assign(error instanceof Error ? error : new Error('Некорректная операция.'), {
+              status: 400,
+            });
+          }
+          if (next === current)
+            return {
+              data: {
+                ...(await workingData(db, session, meta!.operations)),
+                ...(meta?.archived ? { historyBefore: meta.archived.before } : {}),
+              },
+              revision: meta!.revision,
+              days: {},
+            };
+          const revision = crypto.randomUUID();
+          // One ledger-wide write serializes balances and guards concurrent consumption.
+          const saved = await state.updateOne(
+            { _id: 'state', revision: meta!.revision },
+            { $set: { revision, operations: next.operations } },
+            { session },
+          );
+          if (!saved.matchedCount) throw new Error('Concurrent ledger revision');
+          for (const name of collections) {
+            const previous = new Map(rows(current, name).map((r) => [r.id, JSON.stringify(r)]));
+            for (const [index, row] of rows(next, name).entries()) {
+              if (previous.get(row.id) === JSON.stringify(row)) continue;
+              const catalog = name === 'alcohol' || name === 'cocktails';
+              await db.collection<Row>(name).updateOne(
+                { _id: row.id },
+                {
+                  $set: { ...row, ...(catalog ? { _order: index } : {}) },
+                  $setOnInsert: { ...(catalog ? {} : { _order: Date.now() }) },
+                },
+                { upsert: true, session },
+              );
+            }
+          }
+          await saveBalances(db, session, next, previousBalances);
+          await appendAudit(db, session, commandAudit(command, next, actor));
+          return { data: compactData(next), revision, days: {} };
+        }, transactionOptions),
+      );
+    },
     async readRevision() {
       await ensureReady();
       return (await state.findOne({ _id: 'state' }, { projection: { revision: 1 } }))?.revision || null;
@@ -151,6 +340,7 @@ export function mongoRepository(
               session,
             });
             await writeChanges(session, data, migrated);
+            await saveBalances(db, session, migrated);
             return { data: migrated, revision, days: {} };
           }
           return { data, revision: meta.revision, days: {} };
@@ -159,7 +349,7 @@ export function mongoRepository(
         await session.endSession();
       }
     },
-    async commit(current, next) {
+    async commit(current, next, audit) {
       await ensureReady();
       const session = client.startSession();
       try {
@@ -172,6 +362,8 @@ export function mongoRepository(
           );
           if (!result.matchedCount) return { modified: false };
           await writeChanges(session, current.data, next);
+          await saveBalances(db, session, next);
+          if (audit) await appendAudit(db, session, audit);
           return { modified: true, revision };
         }, transactionOptions);
       } finally {

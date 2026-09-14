@@ -1,4 +1,5 @@
 import {
+  History,
   BarChart3,
   Boxes,
   CheckCircle2,
@@ -21,6 +22,8 @@ import { Login } from '../features/auth/Login';
 import { t } from '../presentation/i18n/runtime';
 import { PreferenceControls } from '../presentation/PreferenceControls';
 import { useBar } from './providers/BarProvider';
+const Operations = lazy(() => import('../pages/Operations'));
+const Audit = lazy(() => import('../pages/Audit'));
 const Users = lazy(() => import('../pages/Users'));
 const StaffRecipes = lazy(() => import('../pages/StaffRecipes'));
 const StaffInventory = lazy(() => import('../pages/StaffInventory'));
@@ -35,6 +38,8 @@ const navigation = [
   { path: '/inventory', label: 'Склад', icon: Boxes, caption: 'Напитки и закупки' },
   { path: '/cocktails', label: 'Меню и рецепты', icon: GlassWater, caption: 'Коктейли, настойки и всё меню' },
   { path: '/reports', label: 'Отчёты', icon: BarChart3, caption: 'Всё в цифрах' },
+  { path: '/operations', label: 'Операции и расходы', icon: Boxes, caption: 'Пересчёт, списания, заготовки' },
+  { path: '/audit', label: 'Журнал действий', icon: History, caption: 'История изменений' },
   { path: '/users', label: 'Пользователи', icon: UsersIcon, caption: 'Команда и роли' },
   { path: '/files', label: 'Данные и копии', icon: Files, caption: 'Ваши данные' },
 ];
@@ -202,6 +207,11 @@ export default function App() {
               <Route path="/cocktails" element={role === 'admin' ? <Cocktails /> : <StaffRecipes />} />
               <Route path="/reports" element={role === 'admin' ? <Reports /> : <Navigate to="/" replace />} />
               <Route path="/files" element={role === 'admin' ? <Backups /> : <Navigate to="/" replace />} />
+              <Route
+                path="/operations"
+                element={role === 'admin' ? <Operations /> : <Navigate to="/" replace />}
+              />
+              <Route path="/audit" element={role === 'admin' ? <Audit /> : <Navigate to="/" replace />} />
               <Route path="/users" element={role === 'admin' ? <Users /> : <Navigate to="/" replace />} />
               <Route path="/barbar/*" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />

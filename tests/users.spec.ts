@@ -28,6 +28,12 @@ test('owner creates a named worker and owner, table persists after refresh', asy
       const user = { ...profile, id: String(users.length), active: true, createdAt: '' };
       users.push(user);
       await route.fulfill({ status: 201, json: { user } });
+    } else if (route.request().method() === 'PATCH') {
+      const { password, ...profile } = route.request().postDataJSON();
+      expect(password).toBe('replacement-password-123');
+      const index = users.findIndex((u) => u.id === profile.id);
+      users[index] = { ...users[index], ...profile };
+      await route.fulfill({ json: { user: users[index] } });
     } else await route.fulfill({ json: { users } });
   });
   await page.goto('/users');
@@ -50,6 +56,20 @@ test('owner creates a named worker and owner, table persists after refresh', asy
   }
   await page.reload();
   await expect(page.getByRole('row')).toHaveCount(4);
+  await page
+    .getByRole('row')
+    .filter({ hasText: 'Анна' })
+    .getByRole('button', { name: 'Редактировать' })
+    .click();
+  await page.getByLabel('Имя и фамилия').fill('Анна Новая');
+  await page.getByLabel('Роль', { exact: true }).selectOption('owner');
+  await page.getByLabel('Доступ', { exact: true }).selectOption('blocked');
+  await page.getByLabel('Новый пароль', { exact: true }).fill('replacement-password-123');
+  await page.getByRole('button', { name: 'Сохранить изменения' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('row').filter({ hasText: 'Анна Новая' })).toContainText('Отключён');
+  await expect(page.getByRole('row').filter({ hasText: 'Анна Новая' })).toContainText('Владелец');
   await page.screenshot({ path: '/tmp/barbar-users-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole('button', { name: 'Новый пользователь' })).toBeVisible();

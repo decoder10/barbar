@@ -1,6 +1,13 @@
 import type { BarData, Role, StaffData } from '../domain/types';
 import type { UserProfile } from '../domain/identity/user';
 interface ApiResponses {
+  [path: `/api/barbar/report${string}`]: import('../domain/reports/server-types').ServerReport;
+  '/api/barbar?view=full': { data: BarData; revision: string };
+  [path: `/api/barbar/history${string}`]: import('../domain/reports/server-types').HistoryPage;
+  [path: `/api/barbar/audit${string}`]: {
+    events: import('../domain/identity/audit').AuditEvent[];
+    nextCursor: string | null;
+  };
   '/api/barbar/auth': { authenticated: boolean; user: UserProfile | null; role: Role | null };
   '/api/barbar/users': { users: UserProfile[]; user: UserProfile };
   '/api/barbar': {

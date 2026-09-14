@@ -8,6 +8,8 @@ export function inventoryCalculations(data: BarData) {
   const basis = (id: string) => (products.get(id)?.unit === 'bottle' ? 1 : 1000);
   const values = new Map<string, number>();
   const add = (id: string, amount: number) => values.set(id, (values.get(id) || 0) + amount);
+  for (const i of data.opening?.ingredients || []) add(i.alcoholId, i.cost);
+  for (const m of data.stockMovements || []) for (const i of m.lines) add(i.alcoholId, i.cost);
   for (const p of data.purchases) add(p.alcoholId, (p.ml * p.costPerLiter) / basis(p.alcoholId));
   for (const s of data.sales) if (!s.voided) for (const i of s.ingredients) add(i.alcoholId, -i.cost);
   for (const i of [...(data.archived?.ingredients || []), ...(data.stockResets || [])])
@@ -30,5 +32,13 @@ export function inventoryCalculations(data: BarData) {
     recipe.length
       ? Math.max(0, Math.floor(Math.min(...recipe.map((i) => (stock(i.alcoholId) + 1e-7) / i.ml))))
       : 0;
-  return { quantities, stock, averageCost, recipeCost, recipeReady, portions };
+  return {
+    quantities,
+    stock,
+    averageCost,
+    recipeCost,
+    recipeReady,
+    portions,
+    stockValue: (id: string) => values.get(id) || 0,
+  };
 }

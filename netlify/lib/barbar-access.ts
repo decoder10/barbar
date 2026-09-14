@@ -7,6 +7,7 @@ export function staffData(data: BarData): StaffData {
   const remaining = (id: string) => quantities.get(id) || 0;
   const alcohol = new Map(data.alcohol.map((a) => [a.id, a]));
   return {
+    ...(data.opening ? { paged: true } : {}),
     recipes: data.cocktails.map((c) => ({
       id: c.id,
       name: c.name,
@@ -82,7 +83,9 @@ export function staffData(data: BarData): StaffData {
         ...(servingMl ? { servingMl } : {}),
       }),
     ),
-    ...(data.archived ? { archivedBefore: data.archived.before } : {}),
+    ...(data.archived?.before || data.historyBefore
+      ? { archivedBefore: data.archived?.before || data.historyBefore }
+      : {}),
   };
 }
 export const publicSnapshot = (data: BarData, revision: string | null | undefined, role: Role) =>

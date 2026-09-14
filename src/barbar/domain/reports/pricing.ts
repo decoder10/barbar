@@ -1,4 +1,5 @@
-import { stockTotals } from '../model';
+import { aggregatedPerformance } from './aggregated';
+import type { SalesGroup } from './server-types';
 import type { BarData, Sale } from '../types';
 import { inReportPeriod, type ReportPeriod } from './period';
 export interface ProductPerformance {
@@ -18,56 +19,34 @@ export interface ProductPerformance {
   margin: number | null;
 }
 export function salesPerformance(data: BarData, period: ReportPeriod): ProductPerformance[] {
-  const quantities = stockTotals(data),
-    groups = new Map<string, ProductPerformance>();
-  const cocktails = new Map(data.cocktails.map((c) => [c.id, c]));
-  const alcohol = new Map(data.alcohol.map((a) => [a.id, a]));
+  const groups = new Map<string, SalesGroup & { ingredientIds: string[][] }>();
   for (const s of data.sales) {
     if (s.voided || !inReportPeriod(s.date, period)) continue;
     const id = `${s.kind}:${s.productId}:${s.unit || ''}:${s.servingMl || ''}`;
-    const c = cocktails.get(s.productId),
-      a = alcohol.get(s.productId);
-    const linked = c?.stockAlcoholId ? alcohol.get(c.stockAlcoholId) : undefined;
-    const currentPrice =
-      s.kind === 'alcohol'
-        ? a
-          ? a.pricePerLiter / 20
-          : null
-        : c
-          ? c.price * (s.servingMl && linked?.glassSizeMl ? s.servingMl / linked.glassSizeMl : 1)
-          : null;
     const row = groups.get(id) || {
-      id,
+      productId: s.productId,
+      kind: s.kind,
       name: s.name,
-      unit:
-        s.kind === 'alcohol' ? '50 мл' : s.unit === 'bottle' ? 'бут.' : s.unit === 'glass' ? 'бок.' : 'порц.',
+      unit: s.unit,
       servingMl: s.servingMl,
       quantity: 0,
       operations: 0,
       revenue: 0,
       cost: 0,
-      costKnown: true,
-      outOfStock: false,
-      averagePrice: 0,
-      currentPrice,
-      profit: 0,
-      margin: null,
+      knownCost: true,
+      ingredientIds: [],
     };
-    row.quantity += s.kind === 'alcohol' ? s.quantity / 50 : s.quantity;
+    row.quantity += s.quantity;
     row.operations++;
-    row.revenue += s.revenue;
-    row.cost += s.cost;
-    row.costKnown &&= saleCostKnown(s);
-    row.outOfStock ||= s.ingredients.some((i) => (quantities.get(i.alcoholId) || 0) <= 0);
+    row.revenue! += s.revenue;
+    row.cost! += s.cost;
+    row.knownCost &&= saleCostKnown(s);
+    row.ingredientIds.push(s.ingredients.map((i) => i.alcoholId));
     groups.set(id, row);
   }
-  return [...groups.values()].map((row) => ({
-    ...row,
-    averagePrice: row.quantity ? row.revenue / row.quantity : 0,
-    profit: row.revenue - row.cost,
-    margin: row.costKnown && row.revenue > 0 ? ((row.revenue - row.cost) / row.revenue) * 100 : null,
-  }));
+  return aggregatedPerformance(data, [...groups.values()]);
 }
+
 export function saleCostKnown(s: Sale) {
   return (
     s.ingredients.length + (s.extraCosts?.length || 0) > 0 &&

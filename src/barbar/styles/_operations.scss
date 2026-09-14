@@ -1,0 +1,38 @@
+.operation-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-block: 16px;
+}
+.history-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-block: 12px;
+  color: var(--muted);
+  .operation-toolbar {
+    margin: 0;
+  }
+  [role='alert'] {
+    flex-basis: 100%;
+  }
+}
+.operations-table {
+  font-size: 14px;
+  white-space: normal;
+  min-width: 560px;
+  th {
+    font-size: 13px;
+  }
+  td {
+    vertical-align: top;
+  }
+  td small {
+    display: block;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+}

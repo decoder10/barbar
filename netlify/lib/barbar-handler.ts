@@ -1,3 +1,4 @@
+import { commandAudit } from './audit/store';
 import { applyCommand } from '../../src/barbar/domain/model';
 import type { BarData, Command } from '../../src/barbar/domain/types';
 import type { UserProfile } from '../../src/barbar/domain/identity/user';
@@ -25,12 +26,25 @@ export const handleBarApi = async (
   }
   try {
     if (request.method === 'GET') {
+      if (new URL(request.url).searchParams.get('view') === 'full') {
+        if (role !== 'admin') return json({ error: 'Полная копия доступна только владельцу.' }, 403);
+        const full = await repository.read();
+        if (JSON.stringify(full.data).length > 3_000_000)
+          return json(
+            {
+              error:
+                'Для этой истории используйте зашифрованную копию с компьютера: npm run db:backup. Копия через браузер ограничена 3 МБ.',
+            },
+            413,
+          );
+        return json(publicSnapshot(full.data, full.revision, role));
+      }
       const previous = request.headers.get('X-Barbar-Revision');
       if (previous && request.headers.get('X-Barbar-Role') === role && repository.readRevision) {
         const revision = await repository.readRevision();
         if (revision && previous === revision) return json({ unchanged: true, revision, role });
       }
-      const current = await repository.read();
+      const current = await (repository.readWorking || repository.read)();
       return json(publicSnapshot(current.data, current.revision, role));
     }
     const body = await request.text();
@@ -46,6 +60,10 @@ export const handleBarApi = async (
     }
     if (role !== 'admin' && !['sale', 'createCocktail', 'updateRecipe'].includes(input?.command?.type)) {
       return json({ error: 'Эта операция доступна только администратору.' }, 403);
+    }
+    if (repository.execute) {
+      const result = await repository.execute(input.command, user);
+      if (result) return json(publicSnapshot(result.data, result.revision, role));
     }
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const current = await repository.read();
@@ -68,9 +86,10 @@ export const handleBarApi = async (
         return json({ error: error instanceof Error ? error.message : 'Некорректная операция.' }, 400);
       }
       if (next === current.data) {
-        return json(publicSnapshot(current.data, current.revision, role));
+        const snapshot = repository.readWorking ? await repository.readWorking() : current;
+        return json(publicSnapshot(snapshot.data, snapshot.revision, role));
       }
-      if (JSON.stringify(next).length > 3_000_000) {
+      if (!repository.execute && JSON.stringify(next).length > 3_000_000) {
         return json(
           {
             error:
@@ -79,10 +98,13 @@ export const handleBarApi = async (
           413,
         );
       }
-      const result = await repository.commit(current, next);
+      const result = await repository.commit(current, next, commandAudit(input.command, next, user));
       if (result.modified) {
+        const snapshot = repository.readWorking
+          ? await repository.readWorking()
+          : { data: next, revision: result.revision };
         return json({
-          ...publicSnapshot(next, result.revision, role),
+          ...publicSnapshot(snapshot.data, snapshot.revision, role),
           warning: result.cleanupPending
             ? 'Операция сохранена, но часть устаревших файлов пока не удалена из хранилища. Обратитесь к владельцу сайта.'
             : undefined,
@@ -91,6 +113,7 @@ export const handleBarApi = async (
     }
     return json({ error: 'Другое устройство обновляет данные. Повторите операцию.' }, 409);
   } catch (error) {
+    if ((error as { status?: number })?.status === 400) return json({ error: (error as Error).message }, 400);
     console.error('Barbar storage error', error instanceof Error ? error.name : 'UnknownError');
     return json(
       { error: 'Хранилище временно недоступно. Проверьте подключение и повторите попытку в той же форме.' },

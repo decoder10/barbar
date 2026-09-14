@@ -2,6 +2,7 @@ import alcoholDefaults from '../data/alcohol.json' with { type: 'json' };
 import cocktailDefaults from '../data/cocktails.json' with { type: 'json' };
 import salesDefaults from '../data/sales/initial.json' with { type: 'json' };
 import { maxMenuImage } from './catalog/legacy-images';
+import { applyOperations, validateOperations } from './operations';
 import { businessToday } from './business-day';
 import { isGlassServing } from './serving';
 import { Alcohol, BarData, Cocktail, Command, Ingredient, MenuCategory, PortionExpense, Sale } from './types';
@@ -89,7 +90,12 @@ export const stock = (data: BarData, id: string) =>
   quantityRound(
     data,
     id,
-    data.purchases.filter((p) => p.alcoholId === id).reduce((n, p) => n + p.ml, 0) -
+    (data.opening?.ingredients || []).filter((i) => i.alcoholId === id).reduce((sum, i) => sum + i.ml, 0) +
+      data.purchases.filter((p) => p.alcoholId === id).reduce((n, p) => n + p.ml, 0) +
+      (data.stockMovements || [])
+        .flatMap((m) => m.lines)
+        .filter((i) => i.alcoholId === id)
+        .reduce((sum, i) => sum + i.ml, 0) -
       activeSales(data).reduce(
         (n, s) => n + s.ingredients.filter((i) => i.alcoholId === id).reduce((sum, i) => sum + i.ml, 0),
         0,
@@ -104,7 +110,9 @@ export function stockTotals(data: BarData): Map<string, number> {
   const removed = new Map<string, number>();
   const add = (map: Map<string, number>, id: string, quantity: number) =>
     map.set(id, (map.get(id) || 0) + quantity);
+  for (const i of data.opening?.ingredients || []) add(purchased, i.alcoholId, i.ml);
   for (const p of data.purchases) add(purchased, p.alcoholId, p.ml);
+  for (const m of data.stockMovements || []) for (const i of m.lines) add(purchased, i.alcoholId, i.ml);
   for (const s of data.sales) if (!s.voided) for (const i of s.ingredients) add(consumed, i.alcoholId, i.ml);
   for (const i of [...retired(data), ...resets(data)]) add(removed, i.alcoholId, i.ml);
   return new Map(
@@ -135,7 +143,14 @@ export const averageCost = (data: BarData, id: string) => {
   );
   return Math.max(
     0,
-    ((bought -
+    ((bought +
+      (data.opening?.ingredients || [])
+        .filter((i) => i.alcoholId === id)
+        .reduce((sum, i) => sum + i.cost, 0) +
+      (data.stockMovements || [])
+        .flatMap((m) => m.lines)
+        .filter((i) => i.alcoholId === id)
+        .reduce((sum, i) => sum + i.cost, 0) -
       used -
       [...retired(data), ...resets(data)].filter((i) => i.alcoholId === id).reduce((n, i) => n + i.cost, 0)) /
       remaining) *
@@ -234,11 +249,21 @@ function cocktailValid(c: Cocktail, data: BarData) {
   );
 }
 function assertLedger(data: BarData) {
+  if (data.opening) {
+    if ([...stockTotals(data).values()].some((value) => value < -1e-7))
+      fail('Недостаточно остатка на складе.');
+    return;
+  }
   const balances: Record<string, number> = {};
   const events = [
+    ...(data.stockMovements || []).map((m) => ({
+      date: m.date,
+      order: 0,
+      ingredients: [...m.lines].sort((a, b) => b.ml - a.ml),
+    })),
     ...data.purchases.map((p) => ({
       date: p.date,
-      order: 0,
+      order: -2,
       ingredients: [{ alcoholId: p.alcoholId, ml: p.ml }],
     })),
     ...(data.archived
@@ -278,6 +303,7 @@ export function validateData(value: unknown): BarData {
     return fail('Некорректный файл резервной копии.');
   }
   const d = value as BarData;
+  if (d.opening) return fail('Рабочее представление не является полной резервной копией.');
   if (d.version !== 1 || ![d.alcohol, d.cocktails, d.purchases, d.sales, d.operations].every(Array.isArray)) {
     return fail('Формат резервной копии не поддерживается.');
   }
@@ -371,6 +397,7 @@ export function validateData(value: unknown): BarData {
   ) {
     return fail('Некорректный остаток после очистки истории.');
   }
+  validateOperations(d);
   assertLedger(d);
   return d;
 }
@@ -382,12 +409,23 @@ export function applyCommand(data: BarData, command: Command): BarData {
   if (
     data.operations.includes(command.id) ||
     data.sales.some((s) => s.id === command.id) ||
-    resets(data).some((r) => r.id === command.id)
+    resets(data).some((r) => r.id === command.id) ||
+    data.stockMovements?.some((m) => m.id === command.id) ||
+    data.expenses?.some((e) => e.id === command.id)
   ) {
     return data;
   }
   const next: BarData = JSON.parse(JSON.stringify(data));
   switch (command.type) {
+    case 'count':
+    case 'writeoff':
+    case 'prepare':
+    case 'expense':
+    case 'voidExpense': {
+      applyOperations(next, command, { stock, averageCost, priceBasis, round, day: businessToday });
+      assertLedger(next);
+      break;
+    }
     case 'alcohol': {
       const a = command.value;
       if (!alcoholValid(a)) {
@@ -405,7 +443,9 @@ export function applyCommand(data: BarData, command: Command): BarData {
       if (
         index >= 0 &&
         (next.alcohol[index].unit || 'ml') !== (a.unit || 'ml') &&
-        (next.purchases.some((p) => p.alcoholId === a.id) ||
+        (!!next.opening ||
+          next.purchases.some((p) => p.alcoholId === a.id) ||
+          next.stockMovements?.some((m) => m.lines.some((i) => i.alcoholId === a.id)) ||
           next.cocktails.some((c) => c.ingredients.some((i) => i.alcoholId === a.id)))
       ) {
         return fail('Единицы измерения используемого ингредиента менять нельзя. Создайте новый ингредиент.');
@@ -414,7 +454,7 @@ export function applyCommand(data: BarData, command: Command): BarData {
         index >= 0 &&
         !!next.alcohol[index].bottleSizeMl &&
         next.alcohol[index].bottleSizeMl !== a.bottleSizeMl &&
-        next.purchases.some((p) => p.alcoholId === a.id)
+        (!!next.opening || next.purchases.some((p) => p.alcoholId === a.id))
       )
         return fail(
           'Объём закупленной бутылки менять нельзя. Для другого объёма создайте отдельную позицию.',
@@ -615,7 +655,10 @@ export function applyCommand(data: BarData, command: Command): BarData {
     }
     case 'purchase': {
       const p = command.value;
-      if (next.archived && p?.date < next.archived.before) {
+      if (
+        (next.archived?.before || next.historyBefore) &&
+        p?.date < (next.archived?.before || next.historyBefore!)
+      ) {
         return fail('Этот период уже очищен. Закупки в нём закрыты.');
       }
       if (

@@ -12,3 +12,9 @@ playwright-report/
 .barbar-data/
 
 .idea/
+
+.barbar-backups/
+*.barbar-backup
+*.backup-key
+
+!.env.backup.example

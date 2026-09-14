@@ -1,3 +1,5 @@
+import { useHistory } from '../features/sales/use-history';
+import { Pagination } from '../ui/pagination';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { menuQuantitySummary } from '../domain/quantity-summary';
 import { useInventoryCalculations } from '../features/inventory/use-inventory-calculations';
@@ -40,12 +42,17 @@ export default function Sales() {
   const [visible, setVisible] = useState(24);
   const [selected, setSelected] = useState<{ kind: Sale['kind']; product: Alcohol | Cocktail } | null>(null);
   const [voiding, setVoiding] = useState<Sale | null>(null);
-  const sales = activeSales(data).filter((s) => s.date === date);
-  const allDaySales = data.sales.filter((s) => s.date === date);
-  const revenue = round(sales.reduce((n, s) => n + s.revenue, 0));
-  const cost = round(sales.reduce((n, s) => n + s.cost, 0));
-  const count = sales.filter((s) => s.kind === 'cocktail').reduce((n, s) => n + s.quantity, 0);
-  const ml = sales.filter((s) => s.kind === 'alcohol').reduce((n, s) => n + s.quantity, 0);
+  const history = useHistory('sales', date);
+  const allDaySales = history.enabled ? history.rows : data.sales.filter((s) => s.date === date);
+  const sales = allDaySales.filter((s) => !s.voided);
+  const totals = history.enabled ? history.groups : activeSales(data).filter((s) => s.date === date);
+  const operationCount = history.enabled
+    ? history.groups.reduce((n, g) => n + g.operations, 0)
+    : sales.length;
+  const revenue = round(totals.reduce((n, s) => n + (s.revenue || 0), 0));
+  const cost = round(totals.reduce((n, s) => n + (s.cost || 0), 0));
+  const count = totals.filter((s) => s.kind === 'cocktail').reduce((n, s) => n + s.quantity, 0);
+  const ml = totals.filter((s) => s.kind === 'alcohol').reduce((n, s) => n + s.quantity, 0);
   const query = search.trim().toLocaleLowerCase();
   const cocktails =
     category !== 'alcohol'
@@ -59,8 +66,11 @@ export default function Sales() {
     ? data.alcohol.filter((a) => a.category === 'alcohol' && a.name.toLocaleLowerCase().includes(query))
     : [];
   const popularity = new Map<string, number>();
-  sales.forEach((s) =>
-    popularity.set(`${s.kind}:${s.productId}`, (popularity.get(`${s.kind}:${s.productId}`) || 0) + 1),
+  totals.forEach((s) =>
+    popularity.set(
+      `${s.kind}:${s.productId}`,
+      (popularity.get(`${s.kind}:${s.productId}`) || 0) + ('operations' in s ? s.operations : 1),
+    ),
   );
   const cocktailSortData = new Map(
     cocktails.map((c) => [
@@ -151,7 +161,7 @@ export default function Sales() {
         <Metric
           label="Продано из меню"
           value={`${count} ед.`}
-          hint={menuQuantitySummary(sales)}
+          hint={menuQuantitySummary(totals)}
           icon={<GlassWater size={18} />}
         />
         <Metric
@@ -277,7 +287,7 @@ export default function Sales() {
               <h2>{t('Продажи за день')}</h2>
               <p>{t(dayLabel)}</p>
             </div>
-            <span className="count-badge">{t(sales.length)}</span>
+            <span className="count-badge">{t(operationCount)}</span>
           </div>
           <div className="receipt-lines">
             {t(
@@ -287,7 +297,7 @@ export default function Sales() {
                   text="Добавьте первую продажу — она появится здесь."
                 />
               ) : (
-                [...allDaySales].reverse().map((s) => (
+                (history.enabled ? allDaySales : [...allDaySales].reverse()).map((s) => (
                   <div className={`receipt-line ${s.voided ? 'voided' : ''}`} key={s.id}>
                     <span className="receipt-drink">
                       <GlassWater size={18} />
@@ -318,20 +328,21 @@ export default function Sales() {
               ),
             )}
           </div>
+          <Pagination page={history} />
           <div className="receipt-total">
             <span>
               {t('Итого за день')}
               <strong>{t(money(revenue))}</strong>
             </span>
             <small>
-              <ShoppingBag size={14} /> {t(sales.length)}
+              <ShoppingBag size={14} /> {t(operationCount)}
               {t(' операций · ')}
-              {t(menuQuantitySummary(sales))}
+              {t(menuQuantitySummary(totals))}
               {ml > 0 ? ` · ${volume(ml)}` : ''}
             </small>
           </div>
           <ExportButton name={`sales-${date}.json`} value={allDaySales}>
-            {t('Скачать день')}
+            {t(history.enabled ? 'Скачать страницу' : 'Скачать день')}
           </ExportButton>
           <div className="receipt-note">
             <span />

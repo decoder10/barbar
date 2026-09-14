@@ -67,6 +67,10 @@ export interface StockReset {
   cost: number;
 }
 export interface BarData {
+  historyBefore?: string;
+  opening?: { ingredients: (Ingredient & { cost: number })[]; mode: 'read-model' };
+  stockMovements?: StockMovement[];
+  expenses?: BarExpense[];
   version: 1;
   alcohol: Alcohol[];
   cocktails: Cocktail[];
@@ -77,6 +81,7 @@ export interface BarData {
   archived?: { before: string; ingredients: (Ingredient & { cost: number })[]; count: number };
 }
 export type Action =
+  | OperationsAction
   | { type: 'alcohol'; value: Alcohol }
   | { type: 'cocktail'; value: Cocktail }
   | { type: 'createCocktail'; value: Omit<Cocktail, 'id' | 'price' | 'extraCosts'> }
@@ -143,6 +148,7 @@ export interface StaffRecipe extends Pick<
   managedIngredientIds: string[];
 }
 export interface StaffData {
+  paged?: boolean;
   recipes: StaffRecipe[];
   ingredients: (Pick<Alcohol, 'id' | 'name' | 'unit' | 'category' | 'bottleSizeMl' | 'color'> & {
     available: number;
@@ -151,3 +157,41 @@ export interface StaffData {
   sales: StaffSale[];
   archivedBefore?: string;
 }
+
+export interface StockMovement {
+  id: string;
+  date: string;
+  createdAt: string;
+  kind: 'count' | 'writeoff' | 'prepare';
+  reason: string;
+  lines: { alcoholId: string; ml: number; cost: number }[];
+  outputId?: string;
+  outputQuantity?: number;
+  expiresOn?: string;
+  counted?: { alcoholId: string; expected: number; actual: number }[];
+}
+export interface BarExpense {
+  id: string;
+  date: string;
+  category: 'rent' | 'payroll' | 'utilities' | 'marketing' | 'maintenance' | 'other';
+  description: string;
+  amount: number;
+  voided: boolean;
+}
+export type OperationsAction =
+  | {
+      type: 'count';
+      reason: string;
+      lines: { alcoholId: string; expected: number; actual: number; costPerBasis?: number }[];
+    }
+  | { type: 'writeoff'; reason: string; alcoholId: string; quantity: number; expected: number }
+  | {
+      type: 'prepare';
+      reason: string;
+      outputId: string;
+      quantity: number;
+      ingredients: Ingredient[];
+      expiresOn?: string;
+    }
+  | { type: 'expense'; value: Omit<BarExpense, 'id' | 'voided'> }
+  | { type: 'voidExpense'; expenseId: string };

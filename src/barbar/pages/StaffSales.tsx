@@ -1,3 +1,5 @@
+import { useHistory } from '../features/sales/use-history';
+import { Pagination } from '../ui/pagination';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import {
   CalendarDays,
@@ -40,9 +42,13 @@ export default function StaffSales() {
   const [selected, setSelected] = useState<StaffProduct | null>(null);
   const [quantity, setQuantity] = useState('1');
   const [glassMl, setGlassMl] = useState('150');
+  const history = useHistory<import('../domain/types').StaffSale>('sales', date);
   if (!staffData) return <p className="muted">{t('Загружаем продажи…')}</p>;
-  const day = staffData.sales.filter((sale) => sale.date === date);
-  const sales = day.filter((sale) => !sale.voided);
+  const day = history.enabled ? history.rows : staffData.sales.filter((sale) => sale.date === date);
+  const sales = history.enabled ? history.groups : day.filter((sale) => !sale.voided);
+  const operationCount = history.enabled
+    ? history.groups.reduce((n, g) => n + g.operations, 0)
+    : sales.length;
   const summary = new Map<
     string,
     {
@@ -88,7 +94,10 @@ export default function StaffSales() {
   );
   const popularity = new Map<string, number>();
   sales.forEach((s) =>
-    popularity.set(`${s.kind}:${s.productId}`, (popularity.get(`${s.kind}:${s.productId}`) || 0) + 1),
+    popularity.set(
+      `${s.kind}:${s.productId}`,
+      (popularity.get(`${s.kind}:${s.productId}`) || 0) + ('operations' in s ? s.operations : 1),
+    ),
   );
   products.sort((a, b) =>
     compareCatalog(
@@ -380,7 +389,7 @@ export default function StaffSales() {
                 </div>
                 <p className="staff-receipt-meta">
                   <CheckCircle2 size={14} />
-                  {t(sales.length)}
+                  {t(operationCount)}
                   {t(' записей ·')}
                   {t(summary.size)}
                   {t(' позиций')}
@@ -407,7 +416,7 @@ export default function StaffSales() {
                   historyOpen && (
                     <div id="staff-day-history" className="staff-history-lines">
                       {t(
-                        [...day].reverse().map((sale) => (
+                        (history.enabled ? day : [...day].reverse()).map((sale) => (
                           <div className={`staff-history-row ${sale.voided ? 'voided' : ''}`} key={sale.id}>
                             <time>
                               {t(
@@ -437,6 +446,7 @@ export default function StaffSales() {
               </div>
             ),
           )}
+          <Pagination page={history} />
           <div className="receipt-note">
             {t('Остатки списываются автоматически.')}
             <br />

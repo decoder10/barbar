@@ -1,5 +1,6 @@
 import { Archive, ArrowDownToLine, FileJson, FolderArchive, Trash2, Upload } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { api } from '../services/api-client';
+import { useEffect, useRef, useState } from 'react';
 import { download, ExportButton } from '../ui/export';
 import { Modal } from '../ui/modal';
 import { PageHeading } from '../ui/layout';
@@ -10,7 +11,25 @@ import { t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
 
 export default function Backups() {
-  const { data, run, notify, busy } = useBar();
+  const { data: working, run, notify, busy } = useBar();
+  const [snapshot, setFull] = useState<{ data: BarData; source: BarData } | null>(null);
+  const full = snapshot?.source === working ? snapshot.data : null;
+  const [loadError, setLoadError] = useState('');
+  useEffect(() => {
+    if (!working.opening) return;
+    let stopped = false;
+    void api('/api/barbar?view=full')
+      .then((r) => {
+        if (!stopped) setFull({ data: r.data, source: working });
+      })
+      .catch((e) => {
+        if (!stopped) setLoadError(e.message);
+      });
+    return () => {
+      stopped = true;
+    };
+  }, [working]);
+  const data = working.opening ? full || working : working;
   const input = useRef<HTMLInputElement>(null);
   const [restore, setRestore] = useState<BarData | null>(null);
   const [cutoff, setCutoff] = useState(() => {
@@ -53,6 +72,8 @@ export default function Backups() {
       value: grouped,
     },
   ];
+  if (working.opening && !full)
+    return <p role={loadError ? 'alert' : 'status'}>{t(loadError || 'Загружаем полную копию…')}</p>;
   return (
     <>
       <PageHeading
