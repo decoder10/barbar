@@ -4,7 +4,10 @@ import type { DeployInfo } from '../lib/barbar-mongo';
 import { handleAuth } from '../lib/barbar-user-handler';
 export default async (request: Request, context: { deploy: DeployInfo }) => {
   try {
-    return await handleAuth(request, identityStore(context?.deploy));
+    const started = performance.now();
+    const response = await handleAuth(request, identityStore(context?.deploy));
+    response.headers.set('Server-Timing', `app;dur=${(performance.now() - started).toFixed(1)}`);
+    return response;
   } catch {
     return json({ error: 'Не удалось подключить базу пользователей.' }, 503);
   }

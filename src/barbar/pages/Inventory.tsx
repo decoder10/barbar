@@ -1,3 +1,4 @@
+import { useNearViewport } from '../ui/use-near-viewport';
 import { useHistory } from '../features/sales/use-history';
 import { Pagination } from '../ui/pagination';
 import { useSessionFilter } from '../presentation/use-session-filter';
@@ -32,16 +33,19 @@ import { useBar } from '../app/providers/BarProvider';
 export default function Inventory() {
   const [params] = useSearchParams();
   const { data } = useBar();
+  const historySection = useNearViewport();
   const purchaseHistory = useHistory<import('../domain/types').Purchase>(
     'purchases',
     '1900-01-01',
     '9999-12-31',
+    historySection.active,
   );
   const purchases = purchaseHistory.enabled ? purchaseHistory.rows : data.purchases;
   const resetHistory = useHistory<import('../domain/types').StockReset>(
     'stockResets',
     '1900-01-01',
     '9999-12-31',
+    historySection.active,
   );
   const resets = resetHistory.enabled ? resetHistory.rows : [...(data.stockResets || [])].reverse();
   const inventory = useInventoryCalculations(data);
@@ -338,7 +342,7 @@ export default function Inventory() {
           ),
         )}
       </section>
-      <section className="panel">
+      <section className="panel" ref={historySection.ref}>
         <div className="section-title">
           <div>
             <h2>{t('История закупок')}</h2>

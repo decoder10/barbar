@@ -21,6 +21,7 @@ try {
     .insertOne({ _id: 'u1', username: 'owner', passwordHash: 'test-hash', active: true });
   await source.collection('users').createIndex({ username: 1 }, { unique: true });
   await source.collection('sessions').insertOne({ _id: 'excluded-session' });
+  await source.collection('appMigrations').insertOne({ _id: 'excluded-migration' });
   await source.createCollection('empty');
   await source.collection('sales').insertMany(
     Array.from({ length: 501 }, (_, i) => ({
@@ -43,6 +44,7 @@ try {
     );
   }
   assert.equal(await target.collection('sessions').countDocuments(), 0);
+  assert.equal(await target.collection('appMigrations').countDocuments(), 0);
   assert.equal(
     (await target.collection('users').indexes()).find((i) => i.name === 'username_1').unique,
     true,

@@ -7,6 +7,7 @@ export function useHistory<T = Sale>(
   collection: 'sales' | 'purchases' | 'stockMovements' | 'stockResets' | 'expenses',
   from: string,
   to = from,
+  active = true,
 ) {
   const { data, staffData } = useBar();
   const enabled = !!data.opening || !!staffData?.paged;
@@ -17,7 +18,7 @@ export function useHistory<T = Sale>(
   const [error, setError] = useState('');
   const pageCursor = cursor.key === key ? cursor.value : null;
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !active) return;
     let stopped = false;
     setLoading(true);
     setError('');
@@ -48,7 +49,7 @@ export function useHistory<T = Sale>(
     return () => {
       stopped = true;
     };
-  }, [data, staffData, enabled, collection, from, to, pageCursor, key]);
+  }, [data, staffData, enabled, active, collection, from, to, pageCursor, key]);
   const value = state?.key === key ? state.value : null;
   return {
     enabled,

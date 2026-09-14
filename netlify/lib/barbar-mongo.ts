@@ -471,6 +471,7 @@ export interface DeployInfo {
   id: string;
 }
 
+const connections = new Map<string, { client: MongoClient; db: Db }>();
 export function mongoConnection(local = false, deploy?: DeployInfo) {
   const uri =
     process.env.BARBAR_MONGODB_URI ||
@@ -483,6 +484,14 @@ export function mongoConnection(local = false, deploy?: DeployInfo) {
     !local && deploy!.context !== 'production'
       ? `${base}_preview_${deploy!.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`
       : base;
-  const client = new MongoClient(uri, { maxPoolSize: 5, serverSelectionTimeoutMS: 5000 });
-  return { client, db: client.db(database) };
+  const key = `${uri}|${database}`;
+  if (!local && connections.has(key)) return connections.get(key)!;
+  const client = new MongoClient(uri, {
+    maxPoolSize: 5,
+    serverSelectionTimeoutMS: 5000,
+    maxIdleTimeMS: 60000,
+  });
+  const connection = { client, db: client.db(database) };
+  if (!local) connections.set(key, connection);
+  return connection;
 }

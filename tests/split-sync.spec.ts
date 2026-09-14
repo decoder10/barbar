@@ -92,3 +92,29 @@ for (const role of ['admin', 'barbar'] as const) {
     if (role === 'barbar') await expect(page.locator('#content')).not.toContainText(/֏|Себестоимость/);
   });
 }
+
+test('warehouse histories wait until their section approaches the viewport', async ({ page }) => {
+  const data = fixtureData();
+  const collections: string[] = [];
+  await page.route('**/api/barbar/auth', (r) => r.fulfill({ json: { authenticated: true, role: 'admin' } }));
+  await page.route('**/api/barbar/catalog', (r) =>
+    r.fulfill({ json: publicCatalog({ catalogRevision: 'c1', data }, 'admin') }),
+  );
+  await page.route('**/api/barbar', (r) =>
+    r.fulfill({
+      json: publicStock(
+        { revision: 's1', catalogRevision: 'c1', stock: compactData(data).opening!.ingredients },
+        'admin',
+      ),
+    }),
+  );
+  await page.route('**/api/barbar/history?*', (r) => {
+    collections.push(new URL(r.request().url()).searchParams.get('collection')!);
+    return r.fulfill({ json: { rows: [], total: 0, nextCursor: null } });
+  });
+  await page.goto('/inventory');
+  await expect(page.locator('.inventory-table tbody tr').first()).toBeVisible();
+  expect(collections).toEqual([]);
+  await page.getByRole('heading', { name: 'История закупок', exact: true }).scrollIntoViewIfNeeded();
+  await expect.poll(() => collections.slice().sort()).toEqual(['purchases', 'stockResets']);
+});

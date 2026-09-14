@@ -1,6 +1,7 @@
 import { MongoClient, type Document } from 'mongodb';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ensureAuditIndexes, ensureLedgerIndexes } from './indexes';
+import { oncePerDatabase } from './migrations';
 
 const uri = process.env.BARBAR_TEST_MONGODB_URI;
 const stats = (plan: Document) =>
@@ -161,5 +162,26 @@ describe.skipIf(!uri)('query-driven indexes on an isolated local database', () =
         ?.unique,
     ).toBe(true);
     expect(await db.collection('sales').countDocuments()).toBe(30000);
+  });
+  it('skips completed cold-start setup and retries an interrupted migration', async () => {
+    let calls = 0;
+    await oncePerDatabase(db, 'test-cold-start', async () => {
+      calls++;
+    });
+    // A new Db handle represents an independent function instance.
+    await oncePerDatabase(client.db(db.databaseName), 'test-cold-start', async () => {
+      calls++;
+    });
+    expect(calls).toBe(1);
+    await expect(
+      oncePerDatabase(db, 'test-retry', async () => {
+        throw new Error('interrupted');
+      }),
+    ).rejects.toThrow('interrupted');
+    expect(await db.collection('appMigrations').findOne({ _id: 'test-retry' } as never)).toBeNull();
+    await oncePerDatabase(db, 'test-retry', async () => {
+      calls++;
+    });
+    expect(calls).toBe(2);
   });
 });

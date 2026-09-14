@@ -1,3 +1,4 @@
+import { oncePerDatabase } from './database/migrations';
 import { ensureAuditIndexes } from './database/indexes';
 import type { Db } from 'mongodb';
 import { actorProfile, appendAudit } from './audit/store';
@@ -148,7 +149,7 @@ export function mongoUsers(db: Db): IdentityStore {
       throw new Error('Configure initial owner credentials');
   }
   async function ensureReady() {
-    ready ||= initialize().catch((error) => {
+    ready ||= oncePerDatabase(db, 'identity-bootstrap-v2', initialize).catch((error) => {
       ready = undefined;
       throw error;
     });
@@ -281,10 +282,25 @@ export function mongoUsers(db: Db): IdentityStore {
     async resolve(token) {
       if (!/^[a-f0-9]{64}$/.test(token)) return null;
       await ensureReady();
-      const session = await sessions.findOne({ _id: digest(token), expiresAt: { $gt: new Date() } });
-      if (!session) return null;
-      const user = await users.findOne({ _id: session.userId, active: true });
-      return user && (session.authVersion || 0) === (user.authVersion || 0) ? publicUser(user) : null;
+      // Both lookups use _id indexes. Resolve live access in one database round trip;
+      // never cache authorization across blocking, password resets or role changes.
+      const result = await sessions
+        .aggregate<{ user: UserRecord }>([
+          { $match: { _id: digest(token), expiresAt: { $gt: new Date() } } },
+          { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'user' } },
+          { $unwind: '$user' },
+          {
+            $match: {
+              'user.active': true,
+              $expr: {
+                $eq: [{ $ifNull: ['$authVersion', 0] }, { $ifNull: ['$user.authVersion', 0] }],
+              },
+            },
+          },
+          { $project: { _id: 0, user: 1 } },
+        ])
+        .next();
+      return result ? publicUser(result.user) : null;
     },
     async revoke(token) {
       if (/^[a-f0-9]{64}$/.test(token)) await sessions.deleteOne({ _id: digest(token) });

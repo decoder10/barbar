@@ -11,9 +11,11 @@ let repository: Repository | undefined;
 
 export default async (request: Request, context: { deploy: DeployInfo }) => {
   try {
+    const started = performance.now();
     const users = identityStore(context?.deploy);
     const user = await authenticated(request, users);
     if (!user) return json({ error: 'Войдите в Barbar Cafe.' }, 401);
+    const authorized = performance.now();
     if (!repository) {
       const { client, db } = mongoConnection(false, context?.deploy);
       repository = mongoRepository(client, db, async () => {
@@ -43,6 +45,10 @@ export default async (request: Request, context: { deploy: DeployInfo }) => {
     const response = await handleBarApi(request, repository, users, user);
     if (request.method === 'POST' && response.ok)
       await safelyDeliverStockAlerts(mongoConnection(false, context?.deploy).db);
+    response.headers.set(
+      'Server-Timing',
+      `auth;dur=${(authorized - started).toFixed(1)},data;dur=${(performance.now() - authorized).toFixed(1)}`,
+    );
     return response;
   } catch {
     return json(
@@ -51,4 +57,4 @@ export default async (request: Request, context: { deploy: DeployInfo }) => {
     );
   }
 };
-export const config = { path: '/api/barbar' };
+export const config = { path: ['/api/barbar', '/api/barbar/catalog'] };

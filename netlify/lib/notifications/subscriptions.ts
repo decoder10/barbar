@@ -1,3 +1,4 @@
+import { oncePerDatabase } from '../database/migrations';
 import { createHash } from 'node:crypto';
 import type { Db } from 'mongodb';
 import type { PushSubscription } from 'web-push';
@@ -43,12 +44,14 @@ export function ensurePushIndexes(db: Db) {
   if (!ready.has(db))
     ready.set(
       db,
-      Promise.all([
-        db.collection('pushDevices').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
-        db.collection('pushDevices').createIndex({ userId: 1 }),
-        db.collection('stockAlertEvents').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
-        db.collection('stockAlertEvents').createIndex({ done: 1, nextAttempt: 1 }),
-      ]).catch((error) => {
+      oncePerDatabase(db, 'push-indexes-v1', () =>
+        Promise.all([
+          db.collection('pushDevices').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+          db.collection('pushDevices').createIndex({ userId: 1 }),
+          db.collection('stockAlertEvents').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+          db.collection('stockAlertEvents').createIndex({ done: 1, nextAttempt: 1 }),
+        ]),
+      ).catch((error) => {
         ready.delete(db);
         throw error;
       }),

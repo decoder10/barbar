@@ -140,4 +140,24 @@ describe('working-state synchronization', () => {
     expect(worker.staffData).not.toBeNull();
     expect(mock).toHaveBeenCalledTimes(2);
   });
+  it('starts the first stock and catalog reads together, without waiting for stock', async () => {
+    let release!: (value: ReturnType<typeof supply>) => void;
+    mock.mockImplementation((path) =>
+      path === '/api/barbar'
+        ? new Promise((resolve) => {
+            release = resolve as typeof release;
+          })
+        : (Promise.resolve(catalog) as ReturnType<typeof api>),
+    );
+    const pending = loadWorking(null);
+    expect(mock.mock.calls.map(([path]) => path)).toEqual(['/api/barbar', '/api/barbar/catalog']);
+    release(supply(stock));
+    expect((await pending).revision).toBe('stock-1');
+  });
+  it('keeps legacy full-snapshot servers usable when the speculative catalog endpoint is absent', async () => {
+    mock
+      .mockResolvedValueOnce({ role: 'admin', revision: 'legacy', data })
+      .mockRejectedValueOnce(new Error('Endpoint not available'));
+    expect((await loadWorking(null)).data).toBe(data);
+  });
 });

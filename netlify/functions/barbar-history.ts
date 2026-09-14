@@ -6,9 +6,12 @@ let connection: ReturnType<typeof mongoConnection> | undefined;
 let users: ReturnType<typeof mongoUsers> | undefined;
 export default async (request: Request, context: { deploy: DeployInfo }) => {
   try {
+    const started = performance.now();
     connection ||= mongoConnection(false, context?.deploy);
     users ||= mongoUsers(connection.db);
-    return await handleHistory(request, connection.db, users);
+    const response = await handleHistory(request, connection.db, users);
+    response.headers.set('Server-Timing', `app;dur=${(performance.now() - started).toFixed(1)}`);
+    return response;
   } catch {
     return json({ error: 'История временно недоступна.' }, 503);
   }

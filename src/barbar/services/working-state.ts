@@ -81,7 +81,17 @@ export async function loadWorking(
   previous: WorkingState | null,
   supplied?: Awaited<ReturnType<typeof readWorking>>,
 ): Promise<WorkingState> {
-  let response = supplied || (await readWorking(previous));
+  // Start independent reads together. A legacy server may not have /catalog;
+  // its speculative failure must not prevent a compatible full snapshot loading.
+  const stockRead = supplied ? undefined : readWorking(previous);
+  const catalogRead =
+    !previous && !supplied
+      ? api('/api/barbar/catalog').then(
+          (value) => ({ value }),
+          (error) => ({ error }),
+        )
+      : undefined;
+  let response = supplied || (await stockRead!);
   // Keep old deployed tabs/legacy stores and migrations compatible with full snapshots.
   if (!response.catalogRevision) {
     if (response.unchanged && previous) return previous;
@@ -93,6 +103,11 @@ export async function loadWorking(
     };
   }
   let catalog = previous?.role === response.role ? previous.catalog : undefined;
+  if (catalogRead) {
+    const result = await catalogRead;
+    if ('error' in result) throw result.error;
+    catalog = result.value;
+  }
   if (response.unchanged && previous && catalog?.catalogRevision === response.catalogRevision)
     return previous;
   for (let attempt = 0; attempt < 4; attempt++) {

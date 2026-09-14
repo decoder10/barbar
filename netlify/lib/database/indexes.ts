@@ -1,3 +1,4 @@
+import { oncePerDatabase } from './migrations';
 import type { Db, IndexDescription } from 'mongodb';
 
 export const ledgerCollections = [
@@ -40,7 +41,7 @@ const retired: Record<string, Record<string, Record<string, number>>> = {
   stockMovements: { 'date_-1_id_-1': { date: -1, id: -1 } },
 };
 
-export async function ensureLedgerIndexes(db: Db) {
+async function buildLedgerIndexes(db: Db) {
   await Promise.all(
     ledgerCollections.map((name) =>
       db.collection(name).createIndexes([{ key: { _order: 1 } }, ...(ledgerIndexes[name] || [])]),
@@ -71,7 +72,7 @@ export async function ensureLedgerIndexes(db: Db) {
   }
 }
 
-export async function ensureAuditIndexes(db: Db) {
+async function buildAuditIndexes(db: Db) {
   await db
     .collection('auditEvents')
     .createIndexes([
@@ -81,3 +82,8 @@ export async function ensureAuditIndexes(db: Db) {
       { key: { 'actor.id': 1, action: 1, createdAt: -1, id: -1 } },
     ]);
 }
+
+export const ensureLedgerIndexes = (db: Db) =>
+  oncePerDatabase(db, 'ledger-indexes-v2', () => buildLedgerIndexes(db));
+export const ensureAuditIndexes = (db: Db) =>
+  oncePerDatabase(db, 'audit-indexes-v1', () => buildAuditIndexes(db));

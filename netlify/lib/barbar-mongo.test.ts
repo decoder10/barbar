@@ -53,6 +53,8 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
     const { db, repo } = create();
     const current = await repo.read();
     await db.collection('sales').dropIndex('_order_1');
+    // Simulate an older database that has not completed the versioned index migration.
+    await db.collection('appMigrations').deleteMany({});
     const neverImport = vi.fn(async () => initialData());
     const reopened = mongoRepository(client, db, neverImport);
     expect(await reopened.readRevision!()).toBe(current.revision);
