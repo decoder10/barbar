@@ -1,3 +1,4 @@
+import { ensureAuditIndexes } from './database/indexes';
 import type { Db } from 'mongodb';
 import { actorProfile, appendAudit } from './audit/store';
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
@@ -97,9 +98,7 @@ export function mongoUsers(db: Db): IdentityStore {
     await users.createIndex({ username: 1 }, { unique: true });
     await sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
     await sessions.createIndex({ userId: 1 });
-    await db.collection('auditEvents').createIndex({ createdAt: -1, id: -1 });
-    await db.collection('auditEvents').createIndex({ action: 1, createdAt: -1, id: -1 });
-    await db.collection('auditEvents').createIndex({ 'actor.id': 1, createdAt: -1, id: -1 });
+    await ensureAuditIndexes(db);
     // Insert-only migration. Existing database credentials and roles always remain authoritative.
     const accounts = [
       {

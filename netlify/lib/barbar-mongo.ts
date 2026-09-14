@@ -7,15 +7,8 @@ import { compactData, saveBalances, workingData } from './barbar-working';
 import { commandAudit, appendAudit } from './audit/store';
 import type { Repository, Snapshot } from './barbar-repository';
 
-const collections = [
-  'alcohol',
-  'cocktails',
-  'purchases',
-  'sales',
-  'stockResets',
-  'stockMovements',
-  'expenses',
-] as const;
+import { ensureLedgerIndexes, ledgerCollections as collections } from './database/indexes';
+
 type CollectionName = (typeof collections)[number];
 type Row = Document & { _id: string; _order: number; id: string };
 type Metadata = {
@@ -74,19 +67,7 @@ export function mongoRepository(
   });
   async function initialize() {
     // Also upgrade indexes for an existing ledger; never reimport its catalog.
-    await Promise.all([
-      ...collections.map((name) => db.collection(name).createIndex({ _order: 1 })),
-      db.collection('sales').createIndex({ date: 1, createdAt: 1 }),
-      ...['sales', 'stockMovements', 'stockResets'].map((name) =>
-        db.collection(name).createIndex({ date: -1, createdAt: -1, id: -1 }),
-      ),
-      db.collection('purchases').createIndex({ date: 1, alcoholId: 1 }),
-      db.collection('alcohol').createIndex({ id: 1 }, { unique: true }),
-      db.collection('stockResets').createIndex({ date: -1, id: -1 }),
-      ...['sales', 'purchases', 'stockMovements', 'expenses'].map((name) =>
-        db.collection(name).createIndex({ date: -1, id: -1 }),
-      ),
-    ]);
+    await ensureLedgerIndexes(db);
     const existing = await state.findOne({ _id: 'state' });
     if (existing?.readModelVersion === 1) return;
     if (existing) {

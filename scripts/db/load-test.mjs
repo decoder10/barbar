@@ -138,7 +138,7 @@ try {
   const plan = await db
     .collection('sales')
     .find({ date: { $gte: day, $lte: day } })
-    .sort({ date: -1, id: -1 })
+    .sort({ date: -1, createdAt: -1, id: -1 })
     .limit(51)
     .explain('executionStats');
   const fullBytes = Buffer.byteLength(JSON.stringify(full));
