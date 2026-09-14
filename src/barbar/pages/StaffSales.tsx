@@ -1,3 +1,4 @@
+import { useSessionFilter } from '../presentation/use-session-filter';
 import {
   CalendarDays,
   CheckCircle2,
@@ -32,8 +33,8 @@ export default function StaffSales() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [date, setDate, currentShift] = useBusinessDate();
-  const [category, setCategory] = useState('all');
-  const [search, setSearch] = useState('');
+  const [category, setCategory] = useSessionFilter<string>('category', 'all');
+  const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('worker-sales');
   const [visible, setVisible] = useState(24);
   const [selected, setSelected] = useState<StaffProduct | null>(null);
@@ -213,7 +214,6 @@ export default function StaffSales() {
               )}
             </div>
             <CatalogSortControl
-              storageKey="worker-sales"
               value={sort}
               onChange={(value) => {
                 setSort(value);

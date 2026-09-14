@@ -1,3 +1,4 @@
+import { useSessionFilter } from '../presentation/use-session-filter';
 import { menuQuantitySummary } from '../domain/quantity-summary';
 import { useInventoryCalculations } from '../features/inventory/use-inventory-calculations';
 import {
@@ -33,8 +34,8 @@ export default function Sales() {
   const { data, run, busy } = useBar();
   const inventory = useInventoryCalculations(data);
   const [date, setDate, currentShift] = useBusinessDate();
-  const [category, setCategory] = useState('cocktail');
-  const [search, setSearch] = useState('');
+  const [category, setCategory] = useSessionFilter<string>('category', 'cocktail');
+  const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('owner-sales');
   const [visible, setVisible] = useState(24);
   const [selected, setSelected] = useState<{ kind: Sale['kind']; product: Alcohol | Cocktail } | null>(null);
@@ -193,7 +194,6 @@ export default function Sales() {
               )}
             </div>
             <CatalogSortControl
-              storageKey="owner-sales"
               value={sort}
               onChange={(value) => {
                 setSort(value);

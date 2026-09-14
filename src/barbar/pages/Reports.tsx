@@ -1,6 +1,7 @@
+import { useSessionFilter } from '../presentation/use-session-filter';
 import { menuQuantitySummary } from '../domain/quantity-summary';
 import { ArrowDownToLine, ArrowUpRight, Banknote, CalendarDays, GlassWater, ReceiptText } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { download, ExportButton } from '../ui/export';
 import { Empty, Metric, PageHeading } from '../ui/layout';
@@ -17,11 +18,11 @@ import { useBusinessDate } from '../features/sales/use-business-date';
 
 export default function Reports() {
   const { data } = useBar();
-  const [mode, setMode] = useState('month');
+  const [mode, setMode] = useSessionFilter<string>('mode', 'month');
   const [day, setDay] = useBusinessDate();
-  const [month, setMonth] = useState(businessToday().slice(0, 7));
-  const [from, setFrom] = useState(businessToday().slice(0, 7) + '-01');
-  const [to, setTo] = useState(businessToday());
+  const [month, setMonth] = useSessionFilter<string>('month', businessToday().slice(0, 7));
+  const [from, setFrom] = useSessionFilter<string>('from', businessToday().slice(0, 7) + '-01');
+  const [to, setTo] = useSessionFilter<string>('to', businessToday());
   const period: ReportPeriod = useMemo(
     () => (mode === 'range' ? { from, to } : mode === 'day' ? day : month),
     [mode, from, to, day, month],

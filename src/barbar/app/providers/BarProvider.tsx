@@ -4,6 +4,7 @@ import type { Action, BarData, Command, Role, StaffData } from '../../domain/typ
 import type { Preferences } from '../../domain/identity/preferences';
 import { PresentationContext } from '../../presentation/presentation-context';
 import { api, ApiError } from '../../services/api-client';
+import { clearSessionFilters } from '../../services/session-filters';
 import type { UserProfile } from '../../domain/identity/user';
 
 type Mode = 'loading' | 'login' | 'cloud';
@@ -184,6 +185,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         body: JSON.stringify({ username, password }),
       });
+      clearSessionFilters();
       ++sequence.current;
       setData(initialData());
       setStaffData(null);
@@ -207,6 +209,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
       if (mode === 'cloud') {
         await api('/api/barbar/auth', { method: 'DELETE' });
       }
+      clearSessionFilters();
       ++sequence.current;
       setData(initialData());
       setStaffData(null);

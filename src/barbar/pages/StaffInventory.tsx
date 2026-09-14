@@ -1,5 +1,5 @@
+import { useSessionFilter } from '../presentation/use-session-filter';
 import { Boxes, Search, TriangleAlert } from 'lucide-react';
-import { useState } from 'react';
 import { BottleArt } from '../features/catalog/art';
 import { Empty, Metric, PageHeading } from '../ui/layout';
 import { InventoryViewSwitch, useInventoryView } from '../features/inventory/view-switch';
@@ -19,11 +19,11 @@ const categories = [
 
 export default function StaffInventory() {
   const { staffData } = useBar();
-  const [category, setCategory] = useState('all');
-  const [search, setSearch] = useState('');
+  const [category, setCategory] = useSessionFilter<string>('category', 'all');
+  const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('worker-stock', 'missing');
   const [view, setView] = useInventoryView();
-  const [missingOnly, setMissingOnly] = useState(false);
+  const [missingOnly, setMissingOnly] = useSessionFilter<boolean>('missingOnly', false);
   if (!staffData) return <p className="muted">{t('Загружаем склад…')}</p>;
   const items = staffData.ingredients;
   const missing = items.filter((a) => a.available <= 0).length;
@@ -74,7 +74,6 @@ export default function StaffInventory() {
             )}
           </div>
           <CatalogSortControl
-            storageKey="worker-stock"
             value={sort}
             onChange={(value) => {
               setSort(value);

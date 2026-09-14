@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useSessionFilter } from '../../presentation/use-session-filter';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatMoney as money } from '../../presentation/currency/format-money';
 import type { ReportPeriod } from '../../domain/reports/period';
@@ -7,9 +8,9 @@ import { t } from '../../presentation/i18n/runtime';
 import { useBar } from '../../app/providers/BarProvider';
 export function ReportPerformance({ period }: { period: ReportPeriod }) {
   const { data } = useBar();
-  const [ranking, setRanking] = useState('revenue');
-  const [unit, setUnit] = useState('порц.');
-  const [margin, setMargin] = useState(50);
+  const [ranking, setRanking] = useSessionFilter<string>('ranking', 'revenue');
+  const [unit, setUnit] = useSessionFilter<string>('unit', 'порц.');
+  const [margin, setMargin] = useSessionFilter<number>('margin', 50);
   const rows = useMemo(() => salesPerformance(data, period), [data, period]);
   const advice = useMemo(() => priceAdvice(rows, margin), [rows, margin]);
   const ranked = useMemo(

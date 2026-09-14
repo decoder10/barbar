@@ -1,3 +1,4 @@
+import { useSessionFilter } from '../presentation/use-session-filter';
 import { Plus, Search, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { CocktailArt } from '../features/catalog/art';
@@ -12,8 +13,8 @@ import { useBar } from '../app/providers/BarProvider';
 
 export default function StaffRecipes() {
   const { staffData } = useBar();
-  const [category, setCategory] = useState('all');
-  const [search, setSearch] = useState('');
+  const [category, setCategory] = useSessionFilter<string>('category', 'all');
+  const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('worker-recipes');
   const [visible, setVisible] = useState(24);
   const [selected, setSelected] = useState<StaffRecipe | 'new' | null>(null);
@@ -61,7 +62,6 @@ export default function StaffRecipes() {
           )}
         </div>
         <CatalogSortControl
-          storageKey="worker-recipes"
           value={sort}
           onChange={(value) => {
             setSort(value);

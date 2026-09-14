@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSessionFilter } from '../../presentation/use-session-filter';
 import { t } from '../../presentation/i18n/runtime';
 export type CatalogSort =
   'original' | 'name' | 'name-desc' | 'available' | 'missing' | 'popular' | 'recipe' | 'price' | 'price-desc';
@@ -36,24 +36,19 @@ export function compareCatalog(a: SortItem, b: SortItem, sort: CatalogSort) {
   return name();
 }
 export function useCatalogSort(key: string, initial: CatalogSort = 'original') {
-  return useState<CatalogSort>(() => {
-    try {
-      const value = localStorage.getItem(`barbar-sort-${key}`) as CatalogSort;
-      return value in labels ? value : initial;
-    } catch {
-      return initial;
-    }
-  });
+  return useSessionFilter<CatalogSort>(
+    `sort-${key}`,
+    initial,
+    (value): value is CatalogSort => typeof value === 'string' && Object.hasOwn(labels, value),
+  );
 }
 export function CatalogSortControl({
   value,
   onChange,
-  storageKey,
   options,
 }: {
   value: CatalogSort;
   onChange: (value: CatalogSort) => void;
-  storageKey: string;
   options: CatalogSort[];
 }) {
   return (
@@ -65,11 +60,6 @@ export function CatalogSortControl({
         onChange={(e) => {
           const next = e.target.value as CatalogSort;
           onChange(next);
-          try {
-            localStorage.setItem(`barbar-sort-${storageKey}`, next);
-          } catch {
-            /* Private browsing may disable storage. */
-          }
         }}
       >
         {t(

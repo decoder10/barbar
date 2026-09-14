@@ -1,8 +1,14 @@
+import { useSessionFilter } from '../../presentation/use-session-filter';
 import { useEffect, useState } from 'react';
 import { businessToday } from '../../domain/business-day';
 export function useBusinessDate() {
   const [current, setCurrent] = useState(businessToday);
-  const [chosen, setChosen] = useState<string | null>(null);
+  const [chosen, setChosen] = useSessionFilter<string | null>(
+    'business-date',
+    null,
+    (value): value is string | null =>
+      value === null || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)),
+  );
   useEffect(() => {
     const update = () => setCurrent(businessToday());
     const timer = window.setInterval(update, 10000);

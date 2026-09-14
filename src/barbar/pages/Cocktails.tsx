@@ -1,3 +1,4 @@
+import { useSessionFilter } from '../presentation/use-session-filter';
 import { useInventoryCalculations } from '../features/inventory/use-inventory-calculations';
 import { Calculator, Plus, Search } from 'lucide-react';
 import { useState } from 'react';
@@ -19,9 +20,9 @@ export default function Cocktails() {
   const [selected, setSelected] = useState<Cocktail | 'new' | null>(
     () => data.cocktails.find((c) => c.id === params.get('edit')) || null,
   );
-  const [category, setCategory] = useState('cocktail');
+  const [category, setCategory] = useSessionFilter<string>('category', 'cocktail');
   const [visible, setVisible] = useState(24);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('owner-recipes');
   const items = data.cocktails.filter(
     (c) =>
@@ -71,7 +72,6 @@ export default function Cocktails() {
           <p>{t('Нажмите на коктейль, чтобы открыть рецепт и настроить цену')}</p>
         </div>
         <CatalogSortControl
-          storageKey="owner-recipes"
           value={sort}
           onChange={(value) => {
             setSort(value);

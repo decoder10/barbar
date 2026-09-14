@@ -1,3 +1,4 @@
+import { useSessionFilter } from '../presentation/use-session-filter';
 import { useInventoryCalculations } from '../features/inventory/use-inventory-calculations';
 import {
   ArrowDownToLine,
@@ -32,10 +33,10 @@ export default function Inventory() {
   const inventory = useInventoryCalculations(data);
   const quantities = useMemo(() => stockTotals(data), [data]);
   const remaining = (id: string) => quantities.get(id) || 0;
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('owner-stock');
   const [view, setView] = useInventoryView();
-  const [category, setCategory] = useState('all');
+  const [category, setCategory] = useSessionFilter<string>('category', 'all');
   const [newCategory, setNewCategory] = useState<Alcohol['category']>('alcohol');
   const [edit, setEdit] = useState<Alcohol | 'new' | null>(
     () => data.alcohol.find((a) => a.id === params.get('edit')) || null,
@@ -170,7 +171,6 @@ export default function Inventory() {
             )}
           </div>
           <CatalogSortControl
-            storageKey="owner-stock"
             value={sort}
             onChange={(value) => {
               setSort(value);

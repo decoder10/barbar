@@ -1,26 +1,13 @@
 import { LayoutGrid, List } from 'lucide-react';
-import { useState } from 'react';
+import { useSessionFilter } from '../../presentation/use-session-filter';
 import { t } from '../../presentation/i18n/runtime';
 
 export function useInventoryView() {
-  const [view, setView] = useState<'list' | 'grid'>(() => {
-    try {
-      return localStorage.getItem('barbar-inventory-view') === 'grid' ? 'grid' : 'list';
-    } catch {
-      return 'list';
-    }
-  });
-  return [
-    view,
-    (value: 'list' | 'grid') => {
-      setView(value);
-      try {
-        localStorage.setItem('barbar-inventory-view', value);
-      } catch {
-        /* Private browsing may disable storage. */
-      }
-    },
-  ] as const;
+  return useSessionFilter<'list' | 'grid'>(
+    'inventory-view',
+    'list',
+    (value): value is 'list' | 'grid' => value === 'list' || value === 'grid',
+  );
 }
 
 export function InventoryViewSwitch({
