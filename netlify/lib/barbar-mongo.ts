@@ -36,6 +36,7 @@ export function mongoRepository(
 ): Repository {
   const state = db.collection<Metadata>('state');
   let ready: Promise<void> | undefined;
+  let catalogCache: { catalogRevision: string; data: Pick<BarData, 'alcohol' | 'cocktails'> } | undefined;
   const rows = (data: BarData, name: CollectionName) => data[name] || [];
   async function writeChanges(session: ClientSession, previous: BarData, next: BarData) {
     for (const name of collections) {
@@ -150,6 +151,18 @@ export function mongoRepository(
   return {
     async readStock(known) {
       await ensureReady();
+      if (known) {
+        const meta = await state.findOne(
+          { _id: 'state' },
+          { projection: { revision: 1, catalogRevision: 1 } },
+        );
+        if (known === meta?.revision)
+          return {
+            revision: meta.revision,
+            catalogRevision: meta.catalogRevision || meta.revision,
+            unchanged: true,
+          };
+      }
       return client.withSession((session) =>
         session.withTransaction(async () => {
           const meta = await state.findOne(
@@ -175,7 +188,18 @@ export function mongoRepository(
     },
     async readCatalog(known) {
       await ensureReady();
-      return client.withSession((session) =>
+      if (known || catalogCache) {
+        // Validate the live revision even on a cache hit. Never cache permissions.
+        const meta = await state.findOne(
+          { _id: 'state' },
+          { projection: { revision: 1, catalogRevision: 1 } },
+        );
+        const catalogRevision = meta!.catalogRevision || meta!.revision;
+        if (known === catalogRevision) return { catalogRevision, unchanged: true };
+        if (catalogCache?.catalogRevision === catalogRevision) return structuredClone(catalogCache);
+        catalogCache = undefined;
+      }
+      const result = await client.withSession((session) =>
         session.withTransaction(async () => {
           const meta = await state.findOne(
             { _id: 'state' },
@@ -199,6 +223,11 @@ export function mongoRepository(
           };
         }, transactionOptions),
       );
+      // One bounded, versioned snapshot per repository; clients receive independent objects.
+      if (result.data && JSON.stringify(result.data).length <= 1_000_000) {
+        catalogCache = structuredClone({ catalogRevision: result.catalogRevision, data: result.data });
+      }
+      return result;
     },
     async readSale(id) {
       await ensureReady();

@@ -73,6 +73,23 @@ describe.skipIf(!uri)('split catalog and stock API in isolated MongoDB', () => {
       client.off('commandStarted', listen);
     }
   });
+  it('serves a cached catalog with one revision read and keeps callers isolated', async () => {
+    const first = await repo.readCatalog!();
+    const commands: string[] = [];
+    const listen = (event: CommandStartedEvent) => {
+      commands.push(event.commandName);
+    };
+    client.on('commandStarted', listen);
+    try {
+      const cached = await repo.readCatalog!();
+      expect(cached).toEqual(first);
+      expect(commands).toEqual(['find']);
+      cached.data!.cocktails[0].notes = 'must not poison cache';
+      expect((await repo.readCatalog!()).data).toEqual(first.data);
+    } finally {
+      client.off('commandStarted', listen);
+    }
+  });
   it('returns only changed balances and saved sale; preserves catalog version after a sale', async () => {
     const before = await call();
     const catalog = await call('/api/barbar/catalog');
