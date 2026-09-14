@@ -1,3 +1,4 @@
+import { AutoReveal } from '../ui/auto-reveal';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { useInventoryCalculations } from '../features/inventory/use-inventory-calculations';
 import { Calculator, Plus, Search } from 'lucide-react';
@@ -85,7 +86,10 @@ export default function Cocktails() {
             aria-label={t('Поиск коктейля')}
             placeholder={t('Название коктейля…')}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setVisible(24);
+            }}
           />
         </label>
       </div>
@@ -159,10 +163,7 @@ export default function Cocktails() {
       </div>
       {t(
         items.length > visible && (
-          <button className="button secondary load-more" onClick={() => setVisible(visible + 24)}>
-            {t('Показать ещё · ')}
-            {t(items.length - visible)}
-          </button>
+          <AutoReveal total={items.length} visible={visible} setVisible={setVisible} />
         ),
       )}
       {t(

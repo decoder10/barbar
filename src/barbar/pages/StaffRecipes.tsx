@@ -1,3 +1,4 @@
+import { AutoReveal } from '../ui/auto-reveal';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { Plus, Search, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
@@ -131,10 +132,7 @@ export default function StaffRecipes() {
       </div>
       {t(
         recipes.length > visible && (
-          <button className="button secondary load-more" onClick={() => setVisible(visible + 24)}>
-            {t('Показать ещё · ')}
-            {t(recipes.length - visible)}
-          </button>
+          <AutoReveal total={recipes.length} visible={visible} setVisible={setVisible} />
         ),
       )}
       {t(!recipes.length && <Empty title={t('Рецепты не найдены')} text="Измените поиск или категорию." />)}

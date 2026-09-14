@@ -1,3 +1,4 @@
+import { AutoReveal } from '../ui/auto-reveal';
 import { useHistory } from '../features/sales/use-history';
 import { Pagination } from '../ui/pagination';
 import { useSessionFilter } from '../presentation/use-session-filter';
@@ -299,10 +300,7 @@ export default function StaffSales() {
           </div>
           {t(
             products.length > visible && (
-              <button className="button secondary load-more" onClick={() => setVisible(visible + 24)}>
-                {t('Показать ещё · ')}
-                {t(products.length - visible)}
-              </button>
+              <AutoReveal total={products.length} visible={visible} setVisible={setVisible} />
             ),
           )}
           {t(

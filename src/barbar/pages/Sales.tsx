@@ -1,3 +1,4 @@
+import { AutoReveal } from '../ui/auto-reveal';
 import { BusyButton } from '../ui/loading';
 import { useHistory } from '../features/sales/use-history';
 import { Pagination } from '../ui/pagination';
@@ -218,7 +219,10 @@ export default function Sales() {
                 aria-label={t('Поиск напитка')}
                 placeholder={t('Найти напиток…')}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setVisible(24);
+                }}
               />
             </label>
           </div>
@@ -267,10 +271,7 @@ export default function Sales() {
           </div>
           {t(
             cocktails.length > visible && (
-              <button className="button secondary load-more" onClick={() => setVisible(visible + 24)}>
-                {t('Показать ещё · ')}
-                {t(cocktails.length - visible)}
-              </button>
+              <AutoReveal total={cocktails.length} visible={visible} setVisible={setVisible} />
             ),
           )}
           {t(
