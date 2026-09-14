@@ -1,9 +1,9 @@
 import { Maximize, Minimize } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { t } from '../../presentation/i18n/runtime';
 import { BusyButton } from '../../ui/loading';
 
-export function SalesFullscreen() {
+export function SalesFullscreen({ children }: { children?: ReactNode }) {
   const [active, setActive] = useState(false);
   const [pending, setPending] = useState(false);
   const changing = useRef(false);
@@ -73,6 +73,7 @@ export function SalesFullscreen() {
         {active ? <Minimize size={17} /> : <Maximize size={17} />}
         {t(active ? 'Выйти из полного экрана' : 'На весь экран')}
       </BusyButton>
+      {children}
     </div>
   );
 }

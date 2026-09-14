@@ -1,4 +1,7 @@
+import { handlePush } from '../netlify/lib/notifications/subscriptions';
+import { safelyDeliverStockAlerts } from '../netlify/lib/notifications/deliver';
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadEnv, type Plugin } from 'vite';
 import { handleReport } from '../netlify/lib/queries/report';
@@ -17,6 +20,7 @@ export function localApi(): Plugin {
     apply: 'serve',
     configureServer(server) {
       // Development secrets are loaded from a Git-ignored .env file.
+      if (existsSync('.env.push')) process.loadEnvFile('.env.push');
       const environment = loadEnv('development', process.cwd(), 'BARBAR_');
       for (const [key, value] of Object.entries(environment)) process.env[key] ||= value;
       const folder = resolve(process.cwd(), '.barbar-data');
@@ -55,6 +59,7 @@ export function localApi(): Plugin {
             '/api/barbar/audit',
             '/api/barbar/history',
             '/api/barbar/report',
+            '/api/barbar/push',
           ].includes((request.url || '').split('?')[0])
         ) {
           next();
@@ -85,19 +90,23 @@ export function localApi(): Plugin {
             headers,
             ...(!['GET', 'HEAD'].includes(request.method || 'GET') ? { body: Buffer.concat(chunks) } : {}),
           });
-          const result = request.url?.startsWith('/api/barbar/report')
-            ? await handleReport(input, db, users)
-            : request.url?.startsWith('/api/barbar/history')
-              ? await handleHistory(input, db, users)
-              : request.url?.startsWith('/api/barbar/audit')
-                ? await handleAudit(input, db, users)
-                : request.url?.startsWith('/api/barbar/rates')
-                  ? await handleRates(input)
-                  : request.url?.startsWith('/api/barbar/auth')
-                    ? await handleAuth(input, users)
-                    : request.url?.startsWith('/api/barbar/users')
-                      ? await handleUsers(input, users)
-                      : await handleBarApi(input, repository, users);
+          const result = request.url?.startsWith('/api/barbar/push')
+            ? await handlePush(input, db, users)
+            : request.url?.startsWith('/api/barbar/report')
+              ? await handleReport(input, db, users)
+              : request.url?.startsWith('/api/barbar/history')
+                ? await handleHistory(input, db, users)
+                : request.url?.startsWith('/api/barbar/audit')
+                  ? await handleAudit(input, db, users)
+                  : request.url?.startsWith('/api/barbar/rates')
+                    ? await handleRates(input)
+                    : request.url?.startsWith('/api/barbar/auth')
+                      ? await handleAuth(input, users)
+                      : request.url?.startsWith('/api/barbar/users')
+                        ? await handleUsers(input, users)
+                        : await handleBarApi(input, repository, users);
+          if (input.method === 'POST' && new URL(input.url).pathname === '/api/barbar' && result.ok)
+            await safelyDeliverStockAlerts(db);
           response.writeHead(result.status, Object.fromEntries(result.headers));
           response.end(Buffer.from(await result.arrayBuffer()));
         } catch {

@@ -1,6 +1,9 @@
 .sales-mode-toolbar {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 12px;
 }
 
@@ -11,7 +14,7 @@
   .page-footer,
   .page-content > .metrics,
   .page-content > .page-heading,
-  .page-content > .sales-date-bar,
+  .sales-mode-toolbar > .date-control,
   .page-content > .business-day-hint,
   .sales-layout > .catalog > .section-title {
     display: none;

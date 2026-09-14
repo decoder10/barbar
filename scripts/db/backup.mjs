@@ -34,7 +34,7 @@ export async function encryptionKey(path, create = false) {
 export async function backupDatabase(db, key, path) {
   const names = (await db.listCollections({ type: 'collection' }, { nameOnly: true }).toArray())
     .map((c) => c.name)
-    .filter((n) => !n.startsWith('system.') && n !== 'sessions')
+    .filter((n) => !n.startsWith('system.') && !['sessions', 'pushDevices', 'stockAlertEvents'].includes(n))
     .sort();
   const indexes = {};
   for (const name of names) indexes[name] = await db.collection(name).indexes();
@@ -171,7 +171,7 @@ export async function restoreDatabase(client, target, path, key) {
   await readBackup(path, key, async (record) => {
     if (record.kind !== 'document') return;
     if (
-      record.collection === 'sessions' ||
+      ['sessions', 'pushDevices', 'stockAlertEvents'].includes(record.collection) ||
       record.collection.startsWith('system.') ||
       record.collection === '_restore_in_progress'
     )

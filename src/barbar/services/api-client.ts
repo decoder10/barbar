@@ -1,6 +1,7 @@
 import type { BarData, Role, StaffData } from '../domain/types';
 import type { UserProfile } from '../domain/identity/user';
 interface ApiResponses {
+  '/api/barbar/push': { publicKey: string | null; ok?: boolean };
   [path: `/api/barbar/report${string}`]: import('../domain/reports/server-types').ServerReport;
   '/api/barbar?view=full': { data: BarData; revision: string };
   [path: `/api/barbar/history${string}`]: import('../domain/reports/server-types').HistoryPage;

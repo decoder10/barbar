@@ -1,0 +1,47 @@
+.stock-notifications-toggle {
+  position: fixed;
+  right: 22px;
+  bottom: 18px;
+  z-index: 45;
+  box-shadow: 0 3px 18px #0002;
+}
+.stock-alerts {
+  position: fixed;
+  right: 22px;
+  bottom: 72px;
+  z-index: 44;
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(50vh, 430px);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px #0002;
+  padding: 12px;
+  .stock-alert {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px;
+    border-bottom: 1px solid var(--line);
+    p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    &.empty {
+      background: var(--pink-light);
+    }
+  }
+  > a {
+    display: inline-block;
+    padding: 12px 8px 4px;
+    color: var(--pink);
+  }
+}
+
+// Keep save confirmations above the notification control.
+.toast {
+  bottom: 76px;
+}

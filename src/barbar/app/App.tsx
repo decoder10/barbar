@@ -1,3 +1,4 @@
+import { StockNotifications } from '../features/notifications/StockNotifications';
 import { SalesFullscreen } from '../features/sales/SalesFullscreen';
 import { useRouteScroll } from './use-route-scroll';
 import { LoadingStatus } from '../ui/loading';
@@ -202,7 +203,7 @@ export default function App() {
           </div>
         </header>
         <main id="content" className="page-content" inert={busy} aria-busy={busy}>
-          {pathname === '/' && hasData && <SalesFullscreen />}
+          {pathname === '/' && role === 'barbar' && hasData && <SalesFullscreen />}
           {!hasData ? (
             connected ? (
               <LoadingStatus label="Открываем ваш бар…" />
@@ -251,6 +252,7 @@ export default function App() {
           </footer>
         </main>
       </div>
+      {hasData && <StockNotifications key={`${user?.id || role}`} />}
       {busy && <LoadingStatus label={activity || 'Сохраняем…'} className="action-progress" />}
       {t(
         notice && (

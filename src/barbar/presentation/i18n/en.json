@@ -845,5 +845,19 @@
   "Обновляем…": "Refreshing…",
   "Проверяем файл…": "Checking file…",
   "На весь экран": "Full screen",
-  "Выйти из полного экрана": "Exit full screen"
+  "Выйти из полного экрана": "Exit full screen",
+  "Уведомления об остатках": "Stock notifications",
+  "Уведомления": "Notifications",
+  "Скрыть уведомление": "Dismiss notification",
+  "В приложении предупреждения включены автоматически. Порог: 3 бутылки или запас на 3 порции по рецептам.": "In-app alerts are automatic. Threshold: 3 bottles or ingredients for 3 recipe portions.",
+  "Системные уведомления приходят, когда приложение в фоне или закрыто. Они действуют до выхода или окончания сеанса.": "System notifications arrive when the app is in the background or closed, until logout or session expiry.",
+  "Этот браузер не поддерживает push. На iPhone добавьте сайт на экран «Домой» и откройте его оттуда.": "This browser does not support push. On iPhone, add the site to your Home Screen and open it there.",
+  "Системные уведомления ещё не настроены на сервере.": "System notifications are not configured on the server yet.",
+  "Выключить push на этом устройстве": "Disable push on this device",
+  "Включить push на этом устройстве": "Enable push on this device",
+  "Не удалось загрузить настройки уведомлений.": "Could not load notification settings.",
+  "Разрешите уведомления в настройках браузера.": "Allow notifications in browser settings.",
+  "Не удалось включить уведомления.": "Could not enable notifications.",
+  "Не удалось сохранить настройку уведомлений.": "Could not save notification settings.",
+  "Лимит устройств: 10.": "Device limit: 10."
 }

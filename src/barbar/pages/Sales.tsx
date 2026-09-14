@@ -1,3 +1,4 @@
+import { SalesFullscreen } from '../features/sales/SalesFullscreen';
 import { AutoReveal } from '../ui/auto-reveal';
 import { BusyButton } from '../ui/loading';
 import { useHistory } from '../features/sales/use-history';
@@ -118,7 +119,7 @@ export default function Sales() {
   return (
     <>
       <h1 className="visually-hidden">{t('Продажи за день')}</h1>
-      <div className="sales-date-bar">
+      <SalesFullscreen>
         <div className="date-control">
           <button aria-label={t('Предыдущий день')} onClick={() => changeDate(-1)}>
             <ChevronLeft size={16} />
@@ -144,7 +145,7 @@ export default function Sales() {
             <ChevronRight size={16} />
           </button>
         </div>
-      </div>
+      </SalesFullscreen>
       <p className="business-day-hint">{t(businessDayHint)}</p>
       <section className="metrics">
         <Metric

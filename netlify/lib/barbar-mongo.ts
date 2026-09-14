@@ -1,3 +1,5 @@
+import { ensurePushIndexes } from './notifications/subscriptions';
+import { recordStockAlerts } from './notifications/events';
 import { MongoClient, type ClientSession, type Db, type Document } from 'mongodb';
 import { migrateBottleCatalog } from '../../src/barbar/domain/catalog/bottles';
 import { applyCommand, initialData, validateData } from '../../src/barbar/domain/model';
@@ -68,6 +70,7 @@ export function mongoRepository(
   async function initialize() {
     // Also upgrade indexes for an existing ledger; never reimport its catalog.
     await ensureLedgerIndexes(db);
+    await ensurePushIndexes(db);
     const existing = await state.findOne({ _id: 'state' });
     if (existing?.readModelVersion === 1) return;
     if (existing) {
@@ -274,6 +277,7 @@ export function mongoRepository(
           }
           await saveBalances(db, session, next, previousBalances);
           await appendAudit(db, session, commandAudit(command, next, actor));
+          if (command.type === 'sale') await recordStockAlerts(db, session, command.id, current, next);
           return { data: compactData(next), revision, days: {} };
         }, transactionOptions),
       );
@@ -345,6 +349,7 @@ export function mongoRepository(
           await writeChanges(session, current.data, next);
           await saveBalances(db, session, next);
           if (audit) await appendAudit(db, session, audit);
+          if (audit?.action === 'sale') await recordStockAlerts(db, session, audit.id, current.data, next);
           return { modified: true, revision };
         }, transactionOptions);
       } finally {
