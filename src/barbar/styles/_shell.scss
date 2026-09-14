@@ -1,0 +1,281 @@
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand img {
+  width: 174px;
+  height: 83px;
+  object-fit: contain;
+}
+
+.brand small {
+  font-size: 7px;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 224px;
+  background: var(--navy);
+  color: #e9eaf0;
+  padding: 23px 16px 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 30;
+}
+
+.sidebar-brand {
+  padding: 2px 5px 23px;
+  border-bottom: 1px solid #ffffff0d;
+}
+
+.workspace-label {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 7px;
+  letter-spacing: 1.8px;
+  color: #8e98aa;
+  margin: 27px 14px 16px;
+}
+
+.workspace-label span {
+  width: 5px;
+  height: 5px;
+  background: #c66b96;
+  border-radius: 50%;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 8px;
+  color: #aab2c1;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+
+.nav-item small {
+  display: block;
+  margin-top: 5px;
+  font-size: 9px;
+  color: #808b9e;
+  font-weight: 400;
+}
+
+.nav-item.active {
+  background: #af527c;
+  color: #fff;
+  box-shadow: 0 5px 18px #0000000b;
+}
+
+.nav-item.active small {
+  color: #f4cfdf;
+}
+
+.nav-item:hover:not(.active) {
+  background: #ffffff07;
+  color: #fff;
+}
+
+.nav-arrow {
+  margin-left: auto;
+  opacity: 0;
+}
+
+.active .nav-arrow {
+  opacity: 1;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 30px;
+}
+
+.sidebar-tip {
+  position: relative;
+  border: 1px solid #ffffff0e;
+  border-radius: 10px;
+  background: linear-gradient(140deg, #ffffff04, #ad4d7818);
+  padding: 20px 17px;
+  overflow: hidden;
+}
+
+.sidebar-tip > svg {
+  color: #ce7a9e;
+  margin-bottom: 13px;
+}
+
+.sidebar-tip h3 {
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.5;
+  color: #e8dee5;
+  font-weight: 400;
+}
+
+.sidebar-tip p {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #8c96a8;
+  margin-top: 11px;
+}
+
+.sidebar-tip > span {
+  display: block;
+  color: #c67798;
+  font-size: 7px;
+  letter-spacing: 1.3px;
+  margin-top: 21px;
+}
+
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-top: 1px solid #ffffff0d;
+  margin-top: 21px;
+  padding: 18px 1px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: #ffffff0b;
+  color: #da95b3;
+  font-family: var(--serif);
+  font-size: 19px;
+  border-radius: 8px;
+}
+
+.sidebar-footer strong {
+  font-size: 10px;
+}
+
+.sidebar-footer small {
+  display: block;
+  color: #838fa3;
+  font-size: 9px;
+  margin-top: 5px;
+}
+
+.sidebar-footer .icon-button {
+  margin-left: auto;
+}
+
+.workspace {
+  margin-left: 224px;
+  min-height: 100vh;
+}
+
+.topbar {
+  height: 68px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 35px;
+  gap: 12px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.breadcrumb strong {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sync-status {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--text);
+  font-size: 9px;
+}
+
+.sync-status.demo {
+  color: #977549;
+}
+
+.sync-status.offline {
+  color: #b84963;
+}
+
+.currency-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 9px;
+  border-left: 1px solid var(--line);
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.currency-tag b {
+  font-size: 16px;
+  color: var(--text);
+}
+
+.page-content {
+  margin: auto;
+  padding: 27px 35px 0;
+}
+
+.demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  padding: 9px 12px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 9px;
+  margin-bottom: 23px;
+}
+
+.demo-banner button {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  white-space: nowrap;
+  color: var(--text);
+}

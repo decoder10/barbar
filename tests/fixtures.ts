@@ -1,5 +1,6 @@
-import { initialData, today } from '../src/barbar/model';
-import type { BarData, Ingredient } from '../src/barbar/types';
+import { businessToday } from '../src/barbar/domain/business-day';
+import { initialData } from '../src/barbar/domain/model';
+import type { BarData, Ingredient } from '../src/barbar/domain/types';
 export function fixtureData(): BarData {
   const d = JSON.parse(JSON.stringify(initialData())) as BarData;
   const prices: Record<string, number> = {
@@ -51,7 +52,7 @@ export function fixtureData(): BarData {
   d.purchases = d.alcohol.map((a) => ({
     id: `demo-${a.id}`,
     alcoholId: a.id,
-    date: today(),
+    date: businessToday(),
     ml: 2000,
     costPerLiter: a.costPerLiter,
   }));

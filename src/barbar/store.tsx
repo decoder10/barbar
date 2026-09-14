@@ -1,10 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { initialData, uid } from './model';
-import type { Action, BarData, Command, Role, StaffData } from './types';
+import { initialData, uid } from './domain/model';
+import type { Action, BarData, Command, Role, StaffData } from './domain/types';
+import type { Preferences } from './preferences';
+import { PresentationContext } from './presentation-context';
+import { api, ApiError } from './services/api-client';
+import type { UserProfile } from './users';
 
 type Mode = 'loading' | 'login' | 'cloud';
 type Notice = { text: string; error: boolean } | null;
 interface Store {
+  user: UserProfile | null;
+  updatePreferences: (preferences: Preferences) => Promise<void>;
   data: BarData;
   staffData: StaffData | null;
   role: Role | null;
@@ -19,46 +25,8 @@ interface Store {
   notify: (text: string, error?: boolean) => void;
 }
 const Context = createContext<Store | null>(null);
-class ApiError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-  ) {
-    super(message);
-  }
-}
-async function api(path: string, options?: RequestInit) {
-  let response: Response;
-  try {
-    response = await fetch(path, {
-      credentials: 'same-origin',
-      cache: 'no-store',
-      ...options,
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      signal: AbortSignal.timeout(15000),
-    });
-  } catch {
-    throw new ApiError(
-      'Нет связи с сервером. Проверьте интернет. Если отправляли продажу, повторите её в этой же форме — она не запишется дважды.',
-      0,
-    );
-  }
-  if (response.status === 429) {
-    throw new ApiError('Слишком много попыток входа. Попробуйте через минуту.', 429);
-  }
-  if (!response.headers.get('content-type')?.includes('application/json')) {
-    throw new ApiError(
-      'Сервер ещё не подключён. Запустите npm run dev или опубликуйте проект с Functions в Netlify.',
-      503,
-    );
-  }
-  const body = await response.json();
-  if (!response.ok) {
-    throw new ApiError(body.error || 'Не удалось выполнить запрос.', response.status);
-  }
-  return body;
-}
 export function BarProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [data, setData] = useState<BarData>(initialData);
   const [role, setRole] = useState<Role | null>(null);
   const [staffData, setStaffData] = useState<StaffData | null>(null);
@@ -69,22 +37,33 @@ export function BarProvider({ children }: { children: ReactNode }) {
   const revision = useRef<string | null>(null);
   const sequence = useRef(0);
   const saving = useRef(false);
+  const refreshing = useRef(false);
+  const latestRole = useRef<Role | null>(null);
   const pending = useRef<{ key: string; command: Command } | null>(null);
   const notify = useCallback((text: string, error = false) => setNotice({ text, error }), []);
   const refresh = useCallback(async () => {
-    if (mode !== 'cloud' || saving.current) {
+    if (mode !== 'cloud' || saving.current || refreshing.current) {
       return;
     }
+    refreshing.current = true;
     const current = ++sequence.current;
     try {
-      const result = await api('/api/barbar');
+      const result = await api('/api/barbar', {
+        headers:
+          revision.current && latestRole.current
+            ? { 'X-Barbar-Revision': revision.current, 'X-Barbar-Role': latestRole.current }
+            : {},
+      });
       if (current !== sequence.current) {
         return;
       }
-      setData(result.role === 'admin' ? result.data : initialData());
-      setStaffData(result.role === 'barbar' ? result.staffData : null);
-      setRole(result.role);
-      revision.current = result.revision;
+      if (!result.unchanged) {
+        setData(result.role === 'admin' ? result.data : initialData());
+        setStaffData(result.role === 'barbar' ? result.staffData : null);
+        setRole(result.role);
+        revision.current = result.revision;
+        latestRole.current = result.role;
+      }
       setConnected(true);
     } catch (error) {
       if (current !== sequence.current) {
@@ -94,10 +73,13 @@ export function BarProvider({ children }: { children: ReactNode }) {
       if (error instanceof ApiError && error.status === 401) {
         setData(initialData());
         setStaffData(null);
+        setUser(null);
         setRole(null);
         setMode('login');
       }
       notify(error instanceof Error ? error.message : 'Не удалось обновить данные.', true);
+    } finally {
+      refreshing.current = false;
     }
   }, [mode, notify]);
   useEffect(() => {
@@ -106,6 +88,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
       try {
         const auth = await api('/api/barbar/auth');
         if (active) {
+          setUser(auth.user || null);
           setRole(auth.role || null);
           setMode(auth.authenticated ? 'cloud' : 'login');
         }
@@ -113,6 +96,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
         if (active) {
           setData(initialData());
           setStaffData(null);
+          setUser(null);
           setRole(null);
           setMode('login');
           notify(error instanceof Error ? error.message : 'Не удалось открыть данные.', true);
@@ -130,7 +114,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
       if (document.visibilityState === 'visible') {
         void refresh();
       }
-    }, 30000);
+    }, 60000);
     const focus = () => {
       void refresh();
     };
@@ -169,6 +153,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
       setStaffData(result.role === 'barbar' ? result.staffData : null);
       setRole(result.role);
       revision.current = result.revision;
+      latestRole.current = result.role;
       setConnected(true);
       warning = result.warning;
       pending.current = null;
@@ -178,6 +163,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
       if (error instanceof ApiError && error.status === 401) {
         setData(initialData());
         setStaffData(null);
+        setUser(null);
         setRole(null);
         setMode('login');
       }
@@ -201,6 +187,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
       ++sequence.current;
       setData(initialData());
       setStaffData(null);
+      setUser(auth.user || null);
       setRole(auth.role);
       revision.current = null;
       pending.current = null;
@@ -223,6 +210,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
       ++sequence.current;
       setData(initialData());
       setStaffData(null);
+      setUser(null);
       setRole(null);
       revision.current = null;
       setMode('login');
@@ -232,15 +220,35 @@ export function BarProvider({ children }: { children: ReactNode }) {
       notify(error instanceof Error ? error.message : 'Не удалось выйти.', true);
     }
   };
+  const updatePreferences = async (preferences: Preferences) => {
+    const result = await api('/api/barbar/auth', { method: 'PATCH', body: JSON.stringify(preferences) });
+    setUser(result.user);
+  };
   return (
     <Context.Provider
-      value={{ data, staffData, role, mode, busy, notice, connected, run, login, logout, refresh, notify }}
+      value={{
+        user,
+        updatePreferences,
+        data,
+        staffData,
+        role,
+        mode,
+        busy,
+        notice,
+        connected,
+        run,
+        login,
+        logout,
+        refresh,
+        notify,
+      }}
     >
       {children}
     </Context.Provider>
   );
 }
 export function useBar() {
+  useContext(PresentationContext);
   const value = useContext(Context);
   if (!value) {
     throw new Error('BarProvider is missing');

@@ -1,0 +1,60 @@
+@use 'mixins' as *;
+
+.sales-date-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.menu-categories button {
+  font-size: 14px;
+  min-height: 42px;
+  padding: 10px 15px;
+}
+
+.stock-unavailable-label {
+  display: inline-block;
+  margin-left: 10px;
+  color: #a65468;
+  font-size: 12px;
+}
+
+.catalog-sort {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted, var(--muted));
+  font-size: 13px;
+}
+
+.catalog-sort select {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  padding: 8px 30px 8px 12px;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  max-width: 100%;
+}
+
+@include below(600px) {
+  .catalog-sort {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .catalog-sort select {
+    flex: 1;
+    min-width: 0;
+  }
+}

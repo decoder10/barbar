@@ -1,7 +1,7 @@
-import { MongoClient, type Db, type Document, type ClientSession } from 'mongodb';
+import { MongoClient, type ClientSession, type Db, type Document } from 'mongodb';
 import { migrateBottleCatalog } from '../../src/barbar/bottles';
-import { initialData, validateData } from '../../src/barbar/model';
-import type { BarData } from '../../src/barbar/types';
+import { initialData, validateData } from '../../src/barbar/domain/model';
+import type { BarData } from '../../src/barbar/domain/types';
 import type { Repository, Snapshot } from './barbar-repository';
 
 const collections = ['alcohol', 'cocktails', 'purchases', 'sales', 'stockResets'] as const;
@@ -60,6 +60,12 @@ export function mongoRepository(
     ...(data.archived ? { archived: data.archived } : {}),
   });
   async function initialize() {
+    // Also upgrade indexes for an existing ledger; never reimport its catalog.
+    await Promise.all([
+      ...collections.map((name) => db.collection(name).createIndex({ _order: 1 })),
+      db.collection('sales').createIndex({ date: 1, createdAt: 1 }),
+      db.collection('purchases').createIndex({ date: 1, alcoholId: 1 }),
+    ]);
     if (await state.findOne({ _id: 'state' })) return;
     // Fail closed if the old store cannot be read. Never seed an empty bar over an unreadable ledger.
     const data = validateData(await loadLegacy());
@@ -70,8 +76,6 @@ export function mongoRepository(
         if ((error as { code?: number }).code !== 48) throw error;
       }
     }
-    await db.collection('sales').createIndex({ date: 1, createdAt: 1 });
-    await db.collection('purchases').createIndex({ date: 1, alcoholId: 1 });
     const session = client.startSession();
     try {
       await session.withTransaction(async () => {
@@ -104,6 +108,10 @@ export function mongoRepository(
     await ready;
   }
   return {
+    async readRevision() {
+      await ensureReady();
+      return (await state.findOne({ _id: 'state' }, { projection: { revision: 1 } }))?.revision || null;
+    },
     async read(): Promise<Snapshot> {
       await ensureReady();
       const session = client.startSession();

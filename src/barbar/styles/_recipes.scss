@@ -1,0 +1,148 @@
+.recipe-banner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 27px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 32px;
+}
+
+.recipe-banner-icon {
+  width: 51px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  background: #fff9;
+  color: #9b5779;
+  border-radius: 9px;
+}
+
+.recipe-banner h3 {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.recipe-banner p {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 9px;
+  line-height: 1.8;
+}
+
+.recipe-banner-number {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.recipe-grid .card-content p {
+  height: 43px;
+  -webkit-line-clamp: 3;
+}
+
+.recipe-grid .card-image {
+  aspect-ratio: 1.04;
+}
+
+.recipe-grid .card-content {
+  padding: 17px;
+}
+
+.recipe-grid .card-content h3 {
+  font-size: 15px;
+}
+
+.recipe-grid .card-bottom > strong {
+  font-size: 15px;
+}
+
+.edit-recipe {
+  font-size: 9px;
+  color: var(--pink);
+}
+
+.inline-count {
+  font-size: 11px;
+  color: var(--muted);
+  padding-left: 6px;
+}
+
+.recipe-card-meta {
+  padding: 13px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.recipe-card-meta > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recipe-card-meta b {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.new-recipe-card {
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  min-height: 295px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 17px;
+  background: #f4f0f233;
+  transition: background 0.2s;
+}
+
+.new-recipe-card:hover {
+  background: var(--pink-light);
+}
+
+.new-recipe-card > span {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+}
+
+.new-recipe-card h3 {
+  font-family: var(--serif);
+  font-size: 19px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.new-recipe-card p {
+  font-size: 10px;
+  line-height: 1.9;
+  color: var(--muted);
+}
+
+.page-footnote {
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.9;
+  margin: 25px 0;
+  max-width: 880px;
+}

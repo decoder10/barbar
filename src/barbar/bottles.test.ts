@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { staffData } from '../../netlify/lib/barbar-access';
 import { migrateBottleCatalog } from './bottles';
 import {
   applyCommand,
@@ -9,9 +10,8 @@ import {
   stock,
   today,
   validateData,
-} from './model';
-import { staffData } from '../../netlify/lib/barbar-access';
-import type { Alcohol, BarData } from './types';
+} from './domain/model';
+import type { Alcohol, BarData } from './domain/types';
 
 const add = (data: BarData, value: Alcohol) =>
   applyCommand(data, { id: crypto.randomUUID(), type: 'alcohol', value });

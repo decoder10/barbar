@@ -1,0 +1,254 @@
+.modal-error,
+.login-notice {
+  padding: 12px 15px;
+  border-radius: 7px;
+  font-size: 10px;
+  line-height: 1.8;
+  margin: 0 0 17px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 250px;
+  top: 0;
+  transform: translateY(-120%);
+  padding: 12px;
+  background: var(--surface);
+  z-index: 100;
+  font-size: 12px;
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.mobile-close,
+.mobile-menu,
+.sidebar-scrim {
+  display: none;
+}
+
+.app-loading {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 25px;
+  color: #ab6a89;
+}
+
+.app-loading p {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.route-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  min-height: 350px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.login-page {
+  display: grid;
+  grid-template-columns: 46% 54%;
+  min-height: 100dvh;
+  background: var(--surface);
+}
+
+.login-form-side {
+  padding: 35px 50px 23px;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-form-side > .brand {
+  align-self: start;
+  align-items: center;
+  margin-left: 0;
+}
+
+.login-form-side .brand img {
+  width: 162px;
+  height: 83px;
+}
+
+.login-form-side .brand small {
+  font-size: 6px;
+}
+
+.login-form-wrap {
+  width: 100%;
+  max-width: 337px;
+  align-self: center;
+  margin: auto;
+  padding: 53px 0 60px;
+}
+
+.login-form-wrap > .eyebrow {
+  font-size: 8px;
+  letter-spacing: 1.8px;
+}
+
+.login-form-wrap h1 {
+  font-family: var(--serif);
+  font-size: 58px;
+  font-weight: 400;
+  letter-spacing: -1.6px;
+  line-height: 1.14;
+  margin: 16px 0 21px;
+  color: var(--text);
+}
+
+.login-description {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--muted);
+  margin-bottom: 32px;
+}
+
+.login-form-wrap .field input {
+  height: 46px;
+  background: var(--surface);
+}
+
+.login-form-wrap .button {
+  min-height: 45px;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin: 25px 0 20px;
+}
+
+.login-divider span {
+  height: 1px;
+  flex: 1;
+  background: var(--surface-muted);
+}
+
+.login-demo-note {
+  text-align: center;
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin-top: 12px;
+}
+
+.login-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.login-footer > span {
+  margin-left: auto;
+  font-size: 8px;
+}
+
+.login-visual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #1b283e;
+  min-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  color: #fff;
+  padding: 39px 44px 28px;
+}
+
+.login-visual:before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url('/barbar/bar-hero.jpg') 67% 57% / cover no-repeat;
+  opacity: 0.85;
+}
+
+.login-visual:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, #1b263ccf 0%, #18243a05 40%, #172239b5 70%, #162137 100%);
+}
+
+.login-visual-top,
+.login-visual-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  font-size: 7px;
+  letter-spacing: 1.6px;
+  color: #dbc9d4;
+}
+
+.login-visual-top span:first-child {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+}
+
+.login-visual-copy {
+  margin-top: auto;
+  padding: 400px 0 55px;
+}
+
+.login-visual-copy .eyebrow {
+  font-size: 8px;
+  color: #d795b5;
+  letter-spacing: 2px;
+  margin-bottom: 17px;
+}
+
+.login-visual-copy h2 {
+  font-family: var(--serif);
+  font-size: 51px;
+  font-weight: 400;
+  letter-spacing: -1.5px;
+  line-height: 1.2;
+}
+
+.login-visual-copy h2 em {
+  font-style: normal;
+  color: #e5a5c4;
+}
+
+.login-visual-copy p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #c1adbb;
+  margin-top: 20px;
+}
+
+.login-visual-bottom {
+  border-top: 1px solid #ffffff17;
+  padding-top: 20px;
+  font-size: 6px;
+  color: #a59baa;
+}
+
+.login-art-orbit {
+  position: absolute;
+  width: 440px;
+  height: 440px;
+  border: 1px solid #e5a5c421;
+  border-radius: 50%;
+  top: 15%;
+  right: -130px;
+  z-index: -1;
+}

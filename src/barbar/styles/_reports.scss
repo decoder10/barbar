@@ -1,0 +1,132 @@
+.report-filter {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 24px;
+}
+
+.report-filter > .muted {
+  margin-left: auto;
+  font-size: 9px;
+}
+
+.chart-legend {
+  font-size: 9px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-legend i {
+  width: 7px;
+  height: 7px;
+  background: #b66088;
+  border-radius: 2px;
+}
+
+.chart {
+  height: 200px;
+  display: flex;
+  padding: 18px 0 26px;
+  gap: 18px;
+}
+
+.chart-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: end;
+  width: 70px;
+  font-size: 8px;
+  color: var(--muted);
+  padding-bottom: 1px;
+}
+
+.chart-bars {
+  display: flex;
+  gap: 9px;
+  align-items: end;
+  flex: 1;
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+  background: repeating-linear-gradient(
+    to top,
+    transparent 0,
+    transparent calc(50% - 1px),
+    var(--surface-muted) calc(50% - 1px),
+    var(--surface-muted) 50%
+  );
+}
+
+.chart-column {
+  height: 100%;
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+}
+
+.chart-bar {
+  width: 100%;
+  max-width: 52px;
+  background: #b9668f;
+  border-radius: 3px 3px 0 0;
+  min-height: 0;
+  transition: height 0.2s;
+}
+
+.chart-bar:hover {
+  background: #8e3e63;
+}
+
+.chart-bar.zero {
+  height: 2px !important;
+  min-height: 2px;
+  background: var(--surface-muted);
+}
+
+.chart-column > span {
+  position: absolute;
+  bottom: -21px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.chart-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 9px;
+}
+
+.consumption-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.consumption-grid > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 17px;
+  background: var(--surface);
+  border-radius: 6px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.consumption-grid strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.panel > .muted {
+  font-size: 11px;
+  line-height: 1.8;
+}

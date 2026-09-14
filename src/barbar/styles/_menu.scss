@@ -1,0 +1,143 @@
+@use 'mixins' as *;
+
+.menu-categories {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  margin: 0 0 23px;
+  padding-bottom: 8px;
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #d9becb transparent;
+}
+
+.menu-categories button {
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 6px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.menu-categories button.active {
+  background: #ad4d78;
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.sales-catalog-tools {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sales-catalog-tools .menu-categories {
+  width: 100%;
+  margin: 0;
+}
+
+.sales-catalog-tools .search {
+  max-width: none !important;
+  width: 100%;
+}
+
+.image-options {
+  grid-template-columns: repeat(6, 1fr);
+  gap: 7px;
+}
+
+.load-more {
+  display: flex;
+  margin: 25px auto 0;
+}
+
+.history-notice {
+  padding: 13px 17px;
+  border: 1px solid var(--line);
+  background: var(--pink-light);
+  color: #9a825e;
+  border-radius: 7px;
+  font-size: 10px;
+  line-height: 1.9;
+  margin-bottom: 23px;
+}
+
+.cleanup-controls {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+
+.cleanup-controls .field {
+  margin: 0;
+  min-width: 200px;
+}
+
+.danger-button {
+  background: #ad5262;
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.cleanup-summary {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+
+.daily-files {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.daily-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.daily-file code {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.daily-file small {
+  font-size: 9px;
+  color: var(--muted);
+  margin-left: 10px;
+}
+
+.daily-file .button {
+  font-size: 9px;
+  min-height: 30px;
+  padding: 6px 10px;
+}
+
+@include below(480px) {
+  .image-options {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .menu-categories button {
+    font-size: 9px;
+    padding: 9px 12px;
+  }
+  .sales-catalog-tools {
+    flex-wrap: nowrap;
+  }
+  .daily-file small {
+    display: block;
+    margin: 6px 0 0;
+  }
+  .login-form-wrap {
+    padding-block: 30px;
+  }
+}

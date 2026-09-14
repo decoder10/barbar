@@ -1,7 +1,7 @@
-import { fixtureData } from '../../tests/fixtures';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { applyCommand, averageCost, initialData, recipeCost, stock, validateData } from './model';
-import type { BarData, Command } from './types';
+import { fixtureData } from '../../tests/fixtures';
+import { applyCommand, averageCost, initialData, recipeCost, stock, validateData } from './domain/model';
+import type { BarData, Command } from './domain/types';
 let counter = 0;
 const command = (action: Omit<Command, 'id'>) => ({ ...action, id: `op-${++counter}` }) as Command;
 const buy = (data: BarData, ml = 1000, cost = 4000, date = '2026-09-01', alcoholId = 'vodka') =>

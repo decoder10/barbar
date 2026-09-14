@@ -1,0 +1,85 @@
+.real-photo,
+.real-photo.packshot {
+  background: transparent;
+}
+
+.real-photo img {
+  object-fit: contain;
+  padding: 12px;
+  mix-blend-mode: multiply;
+}
+
+.card-image {
+  background: var(--surface);
+}
+
+.card-image > .real-photo,
+.drink-card:hover .card-image > .real-photo {
+  position: absolute;
+  inset: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  transform: none;
+}
+
+.drink-card:hover {
+  transform: none;
+}
+
+.labelled-bottle {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+}
+
+.bottle-label-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 58px;
+  text-align: center;
+  color: #473829;
+  font:
+    bold 10px Georgia,
+    serif;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+.bottle-art .labelled-bottle {
+  width: 100%;
+  height: 100%;
+  filter: none;
+}
+
+.table-product .bottle-art .labelled-bottle {
+  width: 100%;
+  height: 100%;
+  padding: 1px;
+}
+
+.generated-label-name {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 310px;
+  padding: 12px;
+  text-align: center;
+  font:
+    bold 49px Georgia,
+    serif;
+  line-height: 1.25;
+  color: #443328;
+  overflow-wrap: anywhere;
+}
+
+.photo-credits-link {
+  display: block;
+  margin: 12px 0 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 10px;
+}

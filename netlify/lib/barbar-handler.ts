@@ -1,14 +1,22 @@
-import { applyCommand } from '../../src/barbar/model';
-import type { BarData, Command } from '../../src/barbar/types';
-import { authenticated, json, sameOrigin } from './barbar-auth';
-import type { Repository } from './barbar-repository';
+import { applyCommand } from '../../src/barbar/domain/model';
+import type { BarData, Command } from '../../src/barbar/domain/types';
+import type { UserProfile } from '../../src/barbar/users';
 import { publicSnapshot } from './barbar-access';
+import { authenticated, json, roleFor, sameOrigin } from './barbar-auth';
+import type { Repository } from './barbar-repository';
+import type { IdentityStore } from './barbar-users';
 
-export const handleBarApi = async (request: Request, repository: Repository) => {
-  const role = authenticated(request);
-  if (!role) {
+export const handleBarApi = async (
+  request: Request,
+  repository: Repository,
+  users: IdentityStore,
+  resolvedUser?: UserProfile,
+) => {
+  const user = resolvedUser || (await authenticated(request, users));
+  if (!user) {
     return json({ error: 'Войдите в Barbar Cafe.' }, 401);
   }
+  const role = roleFor(user);
   if (!['GET', 'POST'].includes(request.method)) {
     return json({ error: 'Метод не поддерживается.' }, 405);
   }
@@ -17,6 +25,11 @@ export const handleBarApi = async (request: Request, repository: Repository) => 
   }
   try {
     if (request.method === 'GET') {
+      const previous = request.headers.get('X-Barbar-Revision');
+      if (previous && request.headers.get('X-Barbar-Role') === role && repository.readRevision) {
+        const revision = await repository.readRevision();
+        if (revision && previous === revision) return json({ unchanged: true, revision, role });
+      }
       const current = await repository.read();
       return json(publicSnapshot(current.data, current.revision, role));
     }

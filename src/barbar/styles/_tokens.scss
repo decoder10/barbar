@@ -1,0 +1,38 @@
+:root {
+  --navy: #19273d;
+  --pink: #ad4d78;
+  --pink-light: #f6eaf0;
+  --serif: 'Playfair Display', Georgia, serif;
+  color-scheme: light;
+  --canvas: #f7f7f5;
+  --surface: #fff;
+  --surface-muted: #f1f1ef;
+  --text: #252a38;
+  --muted: #727782;
+  --line: #e5e5e8;
+  --danger-surface: #fff7f8;
+  --danger: #a33e59;
+  --success-surface: #edf5ef;
+  --success: #39725a;
+  --warning-surface: #fbf1e8;
+  --warning: #95603d;
+  background: var(--canvas);
+  color: var(--text);
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #111823;
+  --surface: #1b2533;
+  --surface-muted: #263344;
+  --text: #ecf0f6;
+  --muted: #abb8ca;
+  --line: #344155;
+  --pink: #dc8bb0;
+  --pink-light: #352737;
+  --danger-surface: #30242d;
+  --danger: #f0a3b7;
+  --success-surface: #20362f;
+  --success: #9bd7b4;
+  --warning-surface: #382e25;
+  --warning: #e6bd94;
+}

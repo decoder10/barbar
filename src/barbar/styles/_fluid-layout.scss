@@ -1,0 +1,181 @@
+@use 'mixins' as *;
+
+/* Fluid workspace without a fixed desktop content cap. */
+
+.page-content {
+  width: 100%;
+  max-width: none;
+  padding-inline: clamp(16px, 2.4vw, 44px);
+}
+
+.page-heading,
+.catalog-tools,
+.section-title {
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.heading-actions {
+  flex-wrap: wrap;
+}
+
+.drink-grid,
+.recipe-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 225px), 1fr));
+}
+
+.metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+
+.inventory-grid-view tbody {
+  @include fluid-grid(260px, 20px);
+}
+
+.inventory-grid-view tr {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  padding: 20px;
+  gap: 0 14px;
+  box-shadow: 0 3px 14px #23304705;
+}
+
+.inventory-grid-view td:first-child,
+.inventory-grid-view td:nth-child(2),
+.inventory-grid-view td:last-child {
+  grid-column: 1 / -1;
+}
+
+.inventory-grid-view .table-product {
+  gap: 18px;
+}
+
+.inventory-grid-view .table-product strong {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.inventory-grid-view .table-product small {
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 5px;
+}
+
+.inventory-grid-view .bottle-art,
+.inventory-grid-view .staff-stock-art {
+  height: 210px;
+}
+
+.inventory-grid-view .inventory-shortage td {
+  background: transparent;
+  box-shadow: none;
+}
+
+.inventory-grid-view .inventory-shortage {
+  border-color: var(--line);
+}
+
+.inventory-grid-view td:nth-child(2) {
+  padding: 12px 0 16px;
+}
+
+.inventory-grid-view td[data-label] {
+  border-top: 1px solid var(--line);
+  padding-block: 14px;
+  font-size: 14px;
+}
+
+.inventory-grid-view td:last-child {
+  border-top: 1px solid var(--line);
+  padding-top: 15px;
+  margin-top: 2px;
+}
+
+.inventory-grid-view .inventory-shortage-details summary {
+  font-size: 12px;
+}
+
+.inventory-grid-view .row-actions {
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inventory-grid-view .stock-pill {
+  font-size: 13px;
+}
+
+@include below(600px) {
+  .drink-grid,
+  .recipe-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .page-heading {
+    align-items: flex-start;
+  }
+  .catalog-tools .search {
+    flex: 1 1 100%;
+  }
+}
+
+@include below(360px) {
+  .drink-grid,
+  .recipe-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.inventory-grid-view .inventory-table .inventory-shortage td:first-child {
+  box-shadow: none;
+  border-left: 0;
+}
+
+.inventory-grid-view .inventory-table .inventory-shortage {
+  background: var(--pink-light);
+}
+
+.inventory-grid-view .inventory-shortage .real-photo {
+  background: transparent;
+}
+
+.inventory-grid-view .inventory-shortage .real-photo img {
+  mix-blend-mode: multiply;
+}
+
+.sales-layout .drink-grid {
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(300px, calc((100% - 80px) / 5))), 1fr));
+}
+
+.sales-layout .card-image {
+  height: clamp(230px, 17vw, 300px);
+}
+
+@include below(700px) {
+  .sales-layout .drink-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .sales-layout .card-image {
+    height: 170px;
+  }
+}
+
+@include below(360px) {
+  .sales-layout .drink-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.section-title > div {
+  min-width: 0;
+}
+@include below(600px) {
+  .section-title > .catalog-sort,
+  .section-title > .search {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+}

@@ -1,5 +1,5 @@
-import { initialData } from '../../src/barbar/model';
-import type { BarData, Sale } from '../../src/barbar/types';
+import { initialData } from '../../src/barbar/domain/model';
+import type { BarData, Sale } from '../../src/barbar/domain/types';
 
 export interface Storage {
   read: (key: string) => Promise<{ value: unknown; etag: string } | null>;
@@ -108,6 +108,7 @@ export async function commitSnapshot(storage: Storage, current: Snapshot, next: 
 
 // Legacy file storage is retained only for migration and compatibility tests.
 export interface Repository {
+  readRevision?: () => Promise<string | null>;
   read: () => Promise<Snapshot>;
   commit: (
     current: Snapshot,

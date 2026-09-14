@@ -1,10 +1,12 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { loadEnv, type Plugin } from 'vite';
-import auth from '../netlify/functions/barbar-auth';
 import { handleBarApi } from '../netlify/lib/barbar-handler';
-import { readSnapshot, type Storage } from '../netlify/lib/barbar-repository';
 import { mongoConnection, mongoRepository } from '../netlify/lib/barbar-mongo';
+import { handleRates } from '../netlify/lib/barbar-rates';
+import { readSnapshot, type Storage } from '../netlify/lib/barbar-repository';
+import { handleAuth, handleUsers } from '../netlify/lib/barbar-user-handler';
+import { mongoUsers } from '../netlify/lib/barbar-users';
 
 export function localApi(): Plugin {
   return {
@@ -35,21 +37,27 @@ export function localApi(): Plugin {
         },
       };
       const { client, db } = mongoConnection(true);
+      const users = mongoUsers(db);
       const repository = mongoRepository(client, db, async () => (await readSnapshot(legacy)).data);
       server.httpServer?.once('close', () => {
         void client.close();
       });
       server.middlewares.use(async (request, response, next) => {
-        if (!['/api/barbar', '/api/barbar/auth'].includes((request.url || '').split('?')[0])) {
+        if (
+          !['/api/barbar', '/api/barbar/auth', '/api/barbar/users', '/api/barbar/rates'].includes(
+            (request.url || '').split('?')[0],
+          )
+        ) {
           next();
           return;
         }
         try {
           const chunks: Buffer[] = [];
           let length = 0;
+          const limit = request.url?.split('?')[0] === '/api/barbar' ? 3_000_000 : 4096;
           for await (const chunk of request) {
             length += chunk.length;
-            if (length > 3_000_000) {
+            if (length > limit) {
               response.writeHead(413);
               response.end();
               return;
@@ -68,9 +76,13 @@ export function localApi(): Plugin {
             headers,
             ...(!['GET', 'HEAD'].includes(request.method || 'GET') ? { body: Buffer.concat(chunks) } : {}),
           });
-          const result = request.url?.startsWith('/api/barbar/auth')
-            ? await auth(input)
-            : await handleBarApi(input, repository);
+          const result = request.url?.startsWith('/api/barbar/rates')
+            ? await handleRates(input)
+            : request.url?.startsWith('/api/barbar/auth')
+              ? await handleAuth(input, users)
+              : request.url?.startsWith('/api/barbar/users')
+                ? await handleUsers(input, users)
+                : await handleBarApi(input, repository, users);
           response.writeHead(result.status, Object.fromEntries(result.headers));
           response.end(Buffer.from(await result.arrayBuffer()));
         } catch {

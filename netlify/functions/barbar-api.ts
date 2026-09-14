@@ -1,17 +1,18 @@
 import { getStore } from '@netlify/blobs';
+import { initialData } from '../../src/barbar/domain/model';
 import { authenticated, json } from '../lib/barbar-auth';
 import { handleBarApi } from '../lib/barbar-handler';
-import { readSnapshot, type Repository, type Storage } from '../lib/barbar-repository';
-import { initialData } from '../../src/barbar/model';
+import { identityStore } from '../lib/barbar-identity';
 import { mongoConnection, mongoRepository, type DeployInfo } from '../lib/barbar-mongo';
+import { readSnapshot, type Repository, type Storage } from '../lib/barbar-repository';
 
 let repository: Repository | undefined;
 
 export default async (request: Request, context: { deploy: DeployInfo }) => {
-  if (!authenticated(request)) {
-    return json({ error: 'Войдите в Barbar Cafe.' }, 401);
-  }
   try {
+    const users = identityStore(context?.deploy);
+    const user = await authenticated(request, users);
+    if (!user) return json({ error: 'Войдите в Barbar Cafe.' }, 401);
     if (!repository) {
       const { client, db } = mongoConnection(false, context?.deploy);
       repository = mongoRepository(client, db, async () => {
@@ -38,7 +39,7 @@ export default async (request: Request, context: { deploy: DeployInfo }) => {
         return (await readSnapshot(legacy)).data;
       });
     }
-    return handleBarApi(request, repository);
+    return await handleBarApi(request, repository, users, user);
   } catch {
     return json(
       { error: 'Не удалось подключить MongoDB. Проверьте BARBAR_MONGODB_URI и настройки доступа к базе.' },

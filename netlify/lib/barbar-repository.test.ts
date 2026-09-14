@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import auth from '../functions/barbar-auth';
+import { applyCommand, initialData, stock } from '../../src/barbar/domain/model';
+import type { Command } from '../../src/barbar/domain/types';
+import { auth, handleBarApi } from '../../tests/identity-fixture';
 import { sessionCookie } from './barbar-auth';
-import { handleBarApi } from './barbar-handler';
-import { commitSnapshot, readSnapshot, type Storage, legacyRepository } from './barbar-repository';
-import { applyCommand, initialData, stock } from '../../src/barbar/model';
-import type { Command } from '../../src/barbar/types';
+import { commitSnapshot, legacyRepository, readSnapshot, type Storage } from './barbar-repository';
 function memoryStore() {
   const files = new Map<string, { value: unknown; etag: string }>();
   let version = 0;
@@ -33,7 +32,7 @@ function request(command?: Command, revision: string | null = null) {
   const base = new Request(url);
   return new Request(url, {
     method: command ? 'POST' : 'GET',
-    headers: { origin: 'https://barbar.example', cookie: sessionCookie(base, false, 'admin').split(';')[0] },
+    headers: { origin: 'https://barbar.example', cookie: sessionCookie(base, 'admin').split(';')[0] },
     ...(command ? { body: JSON.stringify({ command, revision }) } : {}),
   });
 }

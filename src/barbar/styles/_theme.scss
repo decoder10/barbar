@@ -1,0 +1,145 @@
+@use 'mixins' as *;
+
+body,
+.workspace,
+.page-content,
+.app-loading {
+  background: var(--canvas);
+  color: var(--text);
+}
+.primary {
+  color: #fff;
+  background: #ad4d78;
+}
+.primary:hover:not(:disabled) {
+  background: #953f68;
+}
+input,
+select,
+textarea {
+  color: var(--text);
+  background-color: var(--surface);
+}
+.modal {
+  background: var(--surface);
+  color: var(--text);
+}
+.stock-pill {
+  color: var(--success);
+  background: var(--success-surface);
+}
+.stock-pill.low {
+  color: var(--warning);
+  background: var(--warning-surface);
+}
+.stock-unavailable-label,
+.negative-text,
+.form-warning {
+  color: var(--danger);
+}
+.inventory-grid-view .inventory-table .inventory-shortage,
+.inventory-table .inventory-shortage td,
+.staff-inventory-table .staff-stock-missing td {
+  background: var(--danger-surface);
+}
+.inventory-grid-view .inventory-table .inventory-shortage td {
+  background: transparent;
+}
+.inventory-grid-view .inventory-shortage-details summary {
+  color: var(--danger);
+}
+.report-insight {
+  background: var(--surface);
+}
+.report-insight.attention {
+  background: var(--warning-surface);
+}
+.report-insight.good {
+  background: var(--success-surface);
+}
+.report-insight p,
+.analytics-numbers span,
+.analytics-numbers small {
+  color: var(--muted);
+}
+.card-image,
+.tincture-composition,
+.set-photo {
+  background: #fff;
+}
+.card-image .real-photo {
+  background: #fff;
+}
+.set-photo {
+  background-image: none;
+}
+.card-image > .set-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+}
+.set-photo img {
+  padding: 16px;
+  object-fit: contain;
+  mix-blend-mode: normal;
+}
+[data-theme='dark'] .table-product .real-photo {
+  background: #fff;
+  border-radius: 10px;
+}
+[data-theme='dark'] .real-photo img {
+  mix-blend-mode: normal;
+}
+[data-theme='dark'] .metric.accent {
+  background: var(--pink-light);
+}
+[data-theme='dark'] .metric.accent > strong {
+  color: var(--pink);
+}
+[data-theme='dark'] .nav-item.active {
+  color: #fff;
+  background: #ad4d78;
+}
+[data-theme='dark'] .segmented button.active {
+  color: var(--pink);
+}
+.theme-toggle {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+.theme-toggle:hover {
+  background: var(--surface-muted);
+}
+@include below(760px) {
+  .topbar {
+    height: auto;
+    min-height: 64px;
+    padding-block: 10px;
+    gap: 10px;
+  }
+  .topbar-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+.menu-categories button.active {
+  color: #fff;
+  background: #ad4d78;
+}
+.image-options button.selected {
+  border-color: var(--pink);
+}
+.positive-text {
+  color: var(--success);
+}
+.toast {
+  color: #fff;
+}

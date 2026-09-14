@@ -1,0 +1,58 @@
+.performance-ranking {
+  display: grid;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.ranking-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.ranking-index {
+  color: var(--muted);
+  width: 20px;
+}
+
+.ranking-product {
+  flex: 1;
+  min-width: 0;
+}
+
+.ranking-product strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ranking-track {
+  height: 6px;
+  background: var(--surface-muted);
+  border-radius: 6px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.ranking-track i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: #b34d7b;
+}
+
+.price-reason {
+  min-width: 240px;
+  max-width: 440px;
+  white-space: normal !important;
+  line-height: 1.6;
+}
+
+.price-advice-panel > .muted {
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.price-advice-panel select {
+  min-width: 85px;
+}

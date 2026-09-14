@@ -1,0 +1,71 @@
+.backup-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 17px;
+}
+
+.export-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 23px 19px;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+}
+
+.file-icon {
+  display: grid;
+  place-items: center;
+  width: 47px;
+  height: 47px;
+  background: var(--pink-light);
+  color: #b96b90;
+  border-radius: 10px;
+  margin-bottom: 17px;
+}
+
+.export-card code {
+  font-size: 9px;
+  color: var(--muted);
+  margin-bottom: 13px;
+}
+
+.export-card h3 {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.export-card p {
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.9;
+  margin-bottom: 21px;
+  flex: 1;
+}
+
+.export-card .button {
+  font-size: 10px;
+  min-height: 34px;
+  padding: 7px 12px;
+}
+
+.help-note {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  padding: 24px 3px;
+  color: var(--muted);
+}
+
+.help-note p {
+  font-size: 10px;
+  line-height: 1.9;
+  max-width: 670px;
+}

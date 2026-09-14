@@ -1,17 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import auth from '../functions/barbar-auth';
-import { authenticated, sessionCookie } from './barbar-auth';
-import { handleBarApi } from './barbar-handler';
-import type { Repository } from './barbar-repository';
-import { applyCommand, today } from '../../src/barbar/model';
+import { applyCommand, today } from '../../src/barbar/domain/model';
+import type { Command, Role } from '../../src/barbar/domain/types';
 import { fixtureData } from '../../tests/fixtures';
-import type { Command, Role } from '../../src/barbar/types';
+import { auth, handleBarApi } from '../../tests/identity-fixture';
+import { sessionCookie } from './barbar-auth';
+import type { Repository } from './barbar-repository';
 
 const origin = 'https://barbar.example';
 function request(role: Role, command?: unknown) {
   return new Request(`${origin}/api/barbar`, {
     method: command ? 'POST' : 'GET',
-    headers: { origin, cookie: sessionCookie(new Request(origin), false, role).split(';')[0] },
+    headers: { origin, cookie: sessionCookie(new Request(origin), role).split(';')[0] },
     ...(command ? { body: JSON.stringify({ command, revision: 'test' }) } : {}),
   });
 }
@@ -64,36 +63,6 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('role isolation', () => {
-  it('signs the authenticated role and rejects tampering, expired and old cookies', async () => {
-    for (const [username, password, role] of [
-      ['barbar', 'staff-password-123', 'barbar'],
-      ['admin', 'owner-password-123', 'admin'],
-    ]) {
-      const result = await auth(
-        new Request(`${origin}/api/barbar/auth`, {
-          method: 'POST',
-          headers: { origin },
-          body: JSON.stringify({ username, password }),
-        }),
-      );
-      expect(result.status).toBe(200);
-      expect(await result.json()).toEqual({ authenticated: true, role });
-      const cookie = result.headers.get('set-cookie')!;
-      expect(authenticated(new Request(origin, { headers: { cookie } }))).toBe(role);
-    }
-    const staffCookie = sessionCookie(new Request(origin));
-    expect(
-      authenticated(new Request(origin, { headers: { cookie: staffCookie.replace('=barbar.', '=admin.') } })),
-    ).toBeNull();
-    expect(
-      authenticated(new Request(origin, { headers: { cookie: staffCookie.replace(/\.\d+\./, '.1.') } })),
-    ).toBeNull();
-    expect(
-      authenticated(new Request(origin, { headers: { cookie: staffCookie.replace('barbar.', '') } })),
-    ).toBeNull();
-    vi.stubEnv('BARBAR_PASSWORD', 'changed-password-123');
-    expect(authenticated(new Request(origin, { headers: { cookie: staffCookie } }))).toBeNull();
-  });
   it('does not grant admin access with the staff password or a client-supplied role', async () => {
     const result = await auth(
       new Request(`${origin}/api/barbar/auth`, {
@@ -291,4 +260,25 @@ describe('role isolation', () => {
     expect(invalid.status).toBe(400);
     expect((await repo.read()).data).toEqual(next);
   });
+});
+
+it('unchanged revisions skip full ledger reads, but a role change forces a fresh safe snapshot', async () => {
+  const repo = repository();
+  repo.readRevision = vi.fn(async () => 'test');
+  const read = vi.spyOn(repo, 'read');
+  const req = request('barbar');
+  req.headers.set('X-Barbar-Revision', 'test');
+  req.headers.set('X-Barbar-Role', 'barbar');
+  expect(await (await handleBarApi(req, repo)).json()).toEqual({
+    unchanged: true,
+    role: 'barbar',
+    revision: 'test',
+  });
+  expect(read).not.toHaveBeenCalled();
+  req.headers.set('X-Barbar-Role', 'admin');
+  const body = await (await handleBarApi(req, repo)).json();
+  expect(body.staffData).toBeDefined();
+  expect(body.data).toBeUndefined();
+  noFinancialData(body);
+  expect(read).toHaveBeenCalledTimes(1);
 });

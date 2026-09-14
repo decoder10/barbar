@@ -1,0 +1,31 @@
+.settings-root {
+  min-height: 100vh;
+}
+
+.preference-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preference-controls select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  min-height: 36px;
+}
+
+.rate-note {
+  font-size: 10px;
+  line-height: 1.5;
+  max-width: 210px;
+}
+
+.rate-note a {
+  color: #a84473;
+}

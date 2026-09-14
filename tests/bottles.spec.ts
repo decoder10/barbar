@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { migrateBottleCatalog } from '../src/barbar/bottles';
-import { applyCommand, initialData, stock } from '../src/barbar/model';
 import { staffData } from '../netlify/lib/barbar-access';
+import { migrateBottleCatalog } from '../src/barbar/bottles';
+import { applyCommand, initialData, stock } from '../src/barbar/domain/model';
 
 test('stock brands, bottle sizes, purchases, staff sales and wine servings', async ({ page }) => {
   let data = migrateBottleCatalog(initialData());
@@ -54,7 +54,7 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   role = 'barbar';
   await page.goto('/');
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true, level: 1 })).toBeVisible();
   await page.getByRole('button', { name: 'Пиво', exact: true }).click();
   await page.getByRole('button', { name: /Test lager 330/ }).click();
   await page.getByLabel('Количество бутылок').fill('2');
@@ -67,11 +67,13 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   await page.getByRole('button', { name: 'Вино', exact: true }).click();
   await page.getByRole('textbox', { name: 'Поиск напитка' }).fill('Test wine');
   await page.getByRole('button', { name: /Test wine · бокал/ }).click();
-  await page.getByLabel('Количество бокалов').fill('6');
+  await page.getByLabel('Объём одного бокала, мл').fill('150');
+  await page.getByLabel('Количество бокалов').fill('5');
+  await expect(page.getByRole('dialog')).toContainText('750 мл');
   await page.getByRole('button', { name: 'Записать продажу', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
   expect(stock(data, data.alcohol.find((a) => a.name === 'Test wine')!.id)).toBe(0);
-  await expect(page.locator('.day-receipt')).toContainText('6 бок.');
+  await expect(page.locator('.day-receipt')).toContainText('5 бок.');
   await page.getByRole('link', { name: 'Склад Наличие и остатки' }).click();
   await expect(page.getByRole('heading', { name: 'Остатки на складе' })).toBeVisible();
   const staffTable = page.locator('.staff-inventory-table');

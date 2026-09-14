@@ -1,0 +1,114 @@
+@use 'mixins' as *;
+
+.user-role-guide {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.user-role-guide > div {
+  display: flex;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.user-role-guide svg {
+  flex-shrink: 0;
+  color: #ae466b;
+}
+
+.user-role-guide strong,
+.user-role-guide small {
+  display: block;
+}
+
+.user-role-guide small {
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.6;
+}
+
+.users-panel {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.users-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table th,
+.users-table td {
+  padding: 20px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.users-table th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.user-name {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.user-name small,
+.user-contacts small {
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.user-name .user-self {
+  display: inline;
+}
+
+.user-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 6px;
+  padding: 7px 10px;
+  background: var(--surface);
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.user-role.owner {
+  background: var(--pink-light);
+  color: #a83f66;
+}
+
+.user-form {
+  display: grid;
+  gap: 16px;
+}
+
+@include below(700px) {
+  .user-role-guide {
+    grid-template-columns: 1fr;
+  }
+  .users-panel {
+    padding: 14px;
+  }
+  .users-table {
+    min-width: 600px;
+  }
+}

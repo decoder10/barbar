@@ -1,0 +1,65 @@
+.page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.page-heading .eyebrow {
+  font-size: 8px;
+  margin-bottom: 9px;
+}
+
+.page-heading h1 {
+  font-family: var(--serif);
+  font-size: 29px;
+  line-height: 1.25;
+  letter-spacing: -0.8px;
+  font-weight: 500;
+}
+
+.page-heading p {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 10px;
+  line-height: 1.7;
+}
+
+.heading-actions {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.date-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  min-height: 40px;
+  border-radius: 7px;
+  padding: 6px 10px;
+  color: var(--muted);
+}
+
+.date-control input {
+  border: 0;
+  background: transparent;
+  font-size: 10px;
+  max-width: 143px;
+  min-height: 25px;
+  color: var(--text);
+}
+
+.date-control button {
+  display: grid;
+  place-items: center;
+  padding: 3px;
+}
+
+.date-control button:hover {
+  color: var(--pink);
+}

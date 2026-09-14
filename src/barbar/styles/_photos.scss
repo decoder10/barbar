@@ -1,0 +1,98 @@
+@use 'mixins' as *;
+
+.real-photo {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background: var(--surface);
+}
+
+.real-photo::before {
+  display: none;
+}
+
+.real-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.real-photo.packshot {
+  background: var(--surface);
+}
+
+.real-photo.packshot img {
+  object-fit: contain;
+  padding: 12px;
+}
+
+.photo-example {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  border-radius: 4px;
+  padding: 3px 5px;
+  background: #ffffffdc;
+  color: #777;
+  font-size: 8px;
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+.photo-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+}
+
+.photo-pending small {
+  font-size: 10px;
+}
+
+.table-product > .bottle-art,
+.staff-stock-art {
+  width: 88px;
+  height: 112px;
+  flex: 0 0 88px;
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.staff-stock-art .bottle-art {
+  width: 100%;
+  height: 100%;
+}
+
+.table-product .real-photo img {
+  padding: 5px;
+  object-fit: contain;
+}
+
+.table-product .photo-example {
+  display: none;
+}
+
+.table-product {
+  gap: 16px;
+}
+
+.table-product strong {
+  font-size: 13px;
+}
+
+@include below(700px) {
+  .table-product > .bottle-art,
+  .staff-stock-art {
+    width: 68px;
+    height: 92px;
+    flex-basis: 68px;
+  }
+  .table-product {
+    gap: 10px;
+  }
+}

@@ -1,7 +1,11 @@
-import { portions, stock } from '../../src/barbar/model';
-import type { BarData, Role, StaffData } from '../../src/barbar/types';
+import { stockTotals } from '../../src/barbar/domain/model';
+import { isGlassServing } from '../../src/barbar/domain/serving';
+import type { BarData, Role, StaffData } from '../../src/barbar/domain/types';
 
 export function staffData(data: BarData): StaffData {
+  const quantities = stockTotals(data);
+  const remaining = (id: string) => quantities.get(id) || 0;
+  const alcohol = new Map(data.alcohol.map((a) => [a.id, a]));
   return {
     recipes: data.cocktails.map((c) => ({
       id: c.id,
@@ -19,7 +23,7 @@ export function staffData(data: BarData): StaffData {
       unit: unit || 'ml',
       category,
       color,
-      available: stock(data, id),
+      available: remaining(id),
       ...(bottleSizeMl ? { bottleSizeMl } : {}),
     })),
     products: [
@@ -29,9 +33,28 @@ export function staffData(data: BarData): StaffData {
         name: c.name,
         category: c.category || ('cocktail' as const),
         image: c.image,
-        ...(c.stockAlcoholId ? { unit: c.serving || ('bottle' as const) } : {}),
-        available: c.ingredients.length ? portions(data, c.ingredients) : null,
-        ready: c.price > 0 && (c.ingredients.length > 0 || !!c.extraCosts?.length),
+        ...(isGlassServing(c)
+          ? { unit: 'glass' as const }
+          : c.stockAlcoholId
+            ? { unit: c.serving || ('bottle' as const) }
+            : {}),
+        ...(c.stockAlcoholId && c.serving === 'glass'
+          ? {
+              glassSizeMl: alcohol.get(c.stockAlcoholId)?.glassSizeMl,
+              bottleSizeMl: alcohol.get(c.stockAlcoholId)?.bottleSizeMl,
+              availableMl: remaining(c.stockAlcoholId) * (alcohol.get(c.stockAlcoholId)?.bottleSizeMl || 0),
+            }
+          : {}),
+        available: c.ingredients.length
+          ? Math.max(
+              0,
+              Math.floor(Math.min(...c.ingredients.map((i) => (remaining(i.alcoholId) + 1e-7) / i.ml))),
+            )
+          : null,
+        ready:
+          (!isGlassServing(c) || !!c.stockAlcoholId) &&
+          c.price > 0 &&
+          (c.ingredients.length > 0 || !!c.extraCosts?.length),
       })),
       ...data.alcohol
         .filter((a) => a.category === 'alcohol')
@@ -40,12 +63,12 @@ export function staffData(data: BarData): StaffData {
           kind: 'alcohol' as const,
           name: a.name,
           category: 'alcohol' as const,
-          available: stock(data, a.id),
+          available: remaining(a.id),
           ready: a.pricePerLiter > 0,
         })),
     ],
     sales: data.sales.map(
-      ({ id, date, createdAt, kind, productId, name, quantity, voided, unit, category }) => ({
+      ({ id, date, createdAt, kind, productId, name, quantity, voided, unit, category, servingMl }) => ({
         id,
         date,
         createdAt,
@@ -56,6 +79,7 @@ export function staffData(data: BarData): StaffData {
         voided,
         ...(unit ? { unit } : {}),
         ...(category ? { category } : {}),
+        ...(servingMl ? { servingMl } : {}),
       }),
     ),
     ...(data.archived ? { archivedBefore: data.archived.before } : {}),

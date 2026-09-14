@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { fixtureData } from './fixtures';
-import { applyCommand } from '../src/barbar/model';
-import { migrateBottleCatalog } from '../src/barbar/bottles';
 import { staffData } from '../netlify/lib/barbar-access';
+import { migrateBottleCatalog } from '../src/barbar/bottles';
+import { applyCommand } from '../src/barbar/domain/model';
+import { fixtureData } from './fixtures';
 
 test('staff edits existing recipes and sees stock pictures and shortages without money or stock controls', async ({
   page,

@@ -1,11 +1,11 @@
-import { migrateBottleCatalog } from '../../src/barbar/bottles';
 import { MongoClient } from 'mongodb';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { mongoRepository } from './barbar-mongo';
-import { applyCommand, averageCost, initialData, stock } from '../../src/barbar/model';
-import { handleBarApi } from './barbar-handler';
+import { migrateBottleCatalog } from '../../src/barbar/bottles';
+import { applyCommand, averageCost, initialData, stock } from '../../src/barbar/domain/model';
+import type { Command } from '../../src/barbar/domain/types';
+import { handleBarApi } from '../../tests/identity-fixture';
 import { sessionCookie } from './barbar-auth';
-import type { Command } from '../../src/barbar/types';
+import { mongoRepository } from './barbar-mongo';
 
 const uri = process.env.BARBAR_TEST_MONGODB_URI;
 describe.skipIf(!uri)('MongoDB transactions and migration (isolated test database)', () => {
@@ -41,10 +41,21 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
       method: 'POST',
       headers: {
         origin: 'https://barbar.example',
-        cookie: sessionCookie(new Request('https://barbar.example'), false, 'admin'),
+        cookie: sessionCookie(new Request('https://barbar.example'), 'admin'),
       },
       body: JSON.stringify({ command, revision: null }),
     });
+  it('adds indexes to an existing database without replacing custom records', async () => {
+    const { db, repo } = create();
+    const current = await repo.read();
+    await db.collection('sales').dropIndex('_order_1');
+    const neverImport = vi.fn(async () => initialData());
+    const reopened = mongoRepository(client, db, neverImport);
+    expect(await reopened.readRevision!()).toBe(current.revision);
+    expect((await db.collection('sales').indexes()).some((i) => i.name === '_order_1')).toBe(true);
+    expect((await reopened.read()).data).toEqual(current.data);
+    expect(neverImport).not.toHaveBeenCalled();
+  });
   it('imports the whole ledger once and reads it after reconnecting', async () => {
     let data = applyCommand(initialData(), purchase);
     data = applyCommand(data, sale('old', 20));

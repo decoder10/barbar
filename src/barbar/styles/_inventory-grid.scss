@@ -1,0 +1,141 @@
+@use 'mixins' as *;
+
+/* Readable filters, stable dialogs, and the two warehouse presentations. */
+
+html {
+  scrollbar-gutter: stable;
+}
+
+.segmented button,
+.category-tabs button {
+  font-size: 14px;
+  line-height: 1.45;
+  min-height: 42px;
+  padding: 10px 15px;
+}
+
+.inventory-view-switch {
+  flex-shrink: 0;
+}
+
+.inventory-view-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.staff-summary-row strong small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  margin-top: 4px;
+}
+
+.inventory-grid-view {
+  overflow: visible;
+}
+
+.inventory-grid-view .data-table {
+  display: block;
+  min-width: 0;
+}
+
+.inventory-grid-view thead {
+  display: none;
+}
+
+.inventory-grid-view tbody {
+  display: grid;
+}
+
+.inventory-grid-view tr {
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.inventory-grid-view td {
+  display: block;
+  padding: 8px 0;
+  border: 0;
+  width: auto;
+  white-space: normal;
+}
+
+.inventory-grid-view td:first-child {
+  flex: 1;
+}
+
+.inventory-grid-view .table-product {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.inventory-grid-view .bottle-art,
+.inventory-grid-view .staff-stock-art {
+  width: 100%;
+  flex: none;
+}
+
+.inventory-grid-view .staff-stock-art .bottle-art {
+  height: 100%;
+}
+
+.inventory-grid-view td[data-label]::before {
+  content: attr(data-label);
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.inventory-grid-view .row-actions {
+  flex-wrap: wrap;
+}
+
+.inventory-grid-view .staff-mobile-availability {
+  display: none;
+}
+
+@include below(600px) {
+  .inventory-grid-view tbody {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+  .segmented {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+.card-image > .tincture-composition,
+.drink-card:hover .card-image > .tincture-composition {
+  position: absolute;
+  inset: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+}
+
+.tincture-composition {
+  position: relative;
+  background: var(--surface);
+}
+
+.tincture-composition .tincture-glass {
+  position: absolute;
+  inset: 6% 30% 6% 4%;
+}
+
+.tincture-composition .tincture-glass img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tincture-composition .tincture-fruit {
+  position: absolute;
+}

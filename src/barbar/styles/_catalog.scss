@@ -1,0 +1,324 @@
+.metrics {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 28px;
+}
+
+.metric {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px 19px;
+  min-height: 116px;
+}
+
+.metric.accent {
+  background: var(--pink-light);
+  border-color: var(--line);
+}
+
+.metric-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.metric-label > span {
+  color: var(--muted);
+}
+
+.metric.accent .metric-label > span {
+  color: var(--pink);
+}
+
+.metric > strong {
+  display: block;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.8px;
+  margin: 12px 0 10px;
+  white-space: nowrap;
+}
+
+.metric.accent > strong {
+  color: #974469;
+}
+
+.metric > small {
+  color: var(--muted);
+  font-size: 8px;
+  display: block;
+  line-height: 1.5;
+}
+
+.sales-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 299px;
+  gap: 23px;
+  align-items: start;
+}
+
+.catalog {
+  min-width: 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.section-title h2 {
+  font-size: 17px;
+  letter-spacing: -0.35px;
+}
+
+.section-title p {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 7px;
+  line-height: 1.7;
+}
+
+.catalog-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 19px;
+}
+
+.segmented {
+  display: inline-flex;
+  background: var(--surface-muted);
+  border-radius: 7px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.segmented button {
+  font-size: 9px;
+  padding: 8px 13px;
+  border-radius: 5px;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.segmented button.active {
+  background: var(--surface);
+  color: #a84a73;
+  box-shadow: 0 1px 4px #0000000d;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 7px;
+  padding: 9px 11px;
+  color: var(--muted);
+  max-width: 235px;
+  flex: 1;
+}
+
+.search input {
+  border: 0;
+  outline: none;
+  font-size: 9px;
+  width: 100%;
+  background: transparent;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.search input::placeholder {
+  color: var(--muted);
+}
+
+.drink-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.drink-card {
+  display: block;
+  text-align: left;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 10px;
+  overflow: hidden;
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+
+.drink-card:hover {
+  box-shadow: 0 8px 25px #2323330d;
+  border-color: var(--line);
+}
+
+.card-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.26;
+  overflow: hidden;
+}
+
+.cocktail-art {
+  background-image: url('/barbar/cocktails.jpg');
+  background-size: 200% 200%;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+}
+
+.card-image > .cocktail-art {
+  height: auto;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.card-badge {
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  background: #fffdf0dc;
+  color: #706053;
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 5px 7px;
+  border-radius: 4px;
+  backdrop-filter: blur(6px);
+}
+
+.card-open {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff7edc9;
+  color: var(--text);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+
+.drink-card:hover .card-open {
+  opacity: 1;
+  transform: none;
+}
+
+.card-content {
+  padding: 14px 13px 13px;
+}
+
+.card-content h3 {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.card-content p {
+  font-size: 8px;
+  color: var(--muted);
+  line-height: 1.8;
+  height: 29px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-top: 11px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+}
+
+.card-bottom > strong {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card-bottom > small {
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.stock-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 7px;
+  border-radius: 4px;
+  font-size: 8px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.bottle-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: color-mix(in srgb, var(--bottle-color) 15%, var(--surface-muted));
+  color: var(--bottle-color);
+  overflow: hidden;
+}
+
+.bottle-art:before {
+  content: '';
+  position: absolute;
+  width: 70%;
+  height: 50%;
+  border-radius: 50%;
+  background: #ffffff38;
+  filter: blur(8px);
+  transform: rotate(-30deg) translateY(13px);
+}
+
+.bottle-art svg {
+  position: relative;
+  width: 45%;
+  height: 85%;
+  z-index: 1;
+  filter: drop-shadow(6px 9px 4px #43362e15);
+}
+
+.bottle-watermark {
+  position: absolute;
+  bottom: -9px;
+  left: 5px;
+  right: 5px;
+  text-align: center;
+  letter-spacing: -4px;
+  opacity: 0.1;
+  font-family: var(--serif);
+  font-size: 66px;
+  font-style: italic;
+}
