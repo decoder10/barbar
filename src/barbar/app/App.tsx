@@ -1,3 +1,4 @@
+import { useRouteScroll } from './use-route-scroll';
 import { LoadingStatus } from '../ui/loading';
 import {
   History,
@@ -47,6 +48,7 @@ const navigation = [
 export default function App() {
   const { mode, role, user, notice, logout, refresh, connected, busy, activity, syncing, hasData } = useBar();
   const { pathname } = useLocation();
+  useRouteScroll(pathname);
   const [menu, setMenu] = useState(false);
   if (mode === 'loading') {
     return (
