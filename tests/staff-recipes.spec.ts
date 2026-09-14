@@ -57,9 +57,9 @@ test('staff edits existing recipes and sees stock pictures and shortages without
   await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
   await page.getByRole('link', { name: 'Склад Наличие и остатки' }).click();
   await page.getByRole('button', { name: 'Вино', exact: true }).click();
-  const row = page.locator('.staff-inventory-table tbody tr').first();
+  const row = page.locator('.inventory-table tbody tr').first();
   await expect(row.getByRole('img')).toBeVisible();
-  await expect(row).toHaveClass('staff-stock-missing');
+  await expect(row).toHaveClass('inventory-shortage');
   await expect(row).toContainText('Нет в наличии');
   await expect(page.getByRole('button', { name: /Закупка|Добавить|Изменить|Сброс|Скачать/ })).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText(/֏|Себестоимость|Закупочная|Продажная/);

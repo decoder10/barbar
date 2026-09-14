@@ -38,8 +38,7 @@ textarea {
   color: var(--danger);
 }
 .inventory-grid-view .inventory-table .inventory-shortage,
-.inventory-table .inventory-shortage td,
-.staff-inventory-table .staff-stock-missing td {
+.inventory-table .inventory-shortage td {
   background: var(--danger-surface);
 }
 .inventory-grid-view .inventory-table .inventory-shortage td {

@@ -49,8 +49,12 @@ for (const worker of [false, true])
     const receipt = page.locator('.day-receipt');
     await expect(receipt).toContainText('55');
     await expect(receipt).toContainText('550');
-    await receipt.getByRole('button', { name: 'Далее', exact: true }).click();
-    await expect(receipt.getByRole('button', { name: 'Далее', exact: true })).toBeDisabled();
+    if (!worker) {
+      await receipt.getByRole('button', { name: 'Далее', exact: true }).click();
+      await expect(receipt.getByRole('button', { name: 'Далее', exact: true })).toBeDisabled();
+    } else {
+      await expect(receipt.getByRole('button', { name: 'Далее', exact: true })).toHaveCount(0);
+    }
     await expect(receipt).toContainText('55');
     await expect(receipt).toContainText('550');
     if (worker) {

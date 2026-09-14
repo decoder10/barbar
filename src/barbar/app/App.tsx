@@ -1,5 +1,4 @@
 import { StockNotifications } from '../features/notifications/StockNotifications';
-import { SalesFullscreen } from '../features/sales/SalesFullscreen';
 import { useRouteScroll } from './use-route-scroll';
 import { LoadingStatus } from '../ui/loading';
 import {
@@ -193,17 +192,12 @@ export default function App() {
                 </button>
               ),
             )}
-            {t(
-              role === 'admin' && (
-                <span className="currency-tag">
-                  <PreferenceControls />
-                </span>
-              ),
-            )}
+            <span className="currency-tag">
+              <PreferenceControls />
+            </span>
           </div>
         </header>
         <main id="content" className="page-content" inert={busy} aria-busy={busy}>
-          {pathname === '/' && role === 'barbar' && hasData && <SalesFullscreen />}
           {!hasData ? (
             connected ? (
               <LoadingStatus label="Открываем ваш бар…" />

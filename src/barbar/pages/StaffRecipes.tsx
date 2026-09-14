@@ -3,6 +3,7 @@ import { useSessionFilter } from '../presentation/use-session-filter';
 import { Plus, Search, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { CocktailArt } from '../features/catalog/art';
+import { CatalogCard } from '../features/catalog/cards';
 import { Empty, PageHeading } from '../ui/layout';
 import { categories, categoryLabel, unitLabel } from '../domain/model';
 import type { StaffRecipe } from '../domain/types';
@@ -90,42 +91,42 @@ export default function StaffRecipes() {
               (i) => (staffData.ingredients.find((a) => a.id === i.alcoholId)?.available || 0) + 1e-7 < i.ml,
             );
             return (
-              <button key={c.id} className="drink-card" onClick={() => setSelected(c)}>
-                <div className="card-image">
-                  <CocktailArt image={menuImage(c)} name={c.name} category={c.category} />
-                  <span className="card-badge">{t(categoryLabel(c.category))}</span>
-                </div>
-                <div className="card-content">
-                  <h3>{t(c.name)}</h3>
-                  <p>
+              <CatalogCard
+                key={c.id}
+                name={c.name}
+                action={() => setSelected(c)}
+                art={<CocktailArt image={menuImage(c)} name={c.name} category={c.category} />}
+                badge={categoryLabel(c.category)}
+                detail={
+                  <>
+                    <p>
+                      {t(
+                        c.ingredients
+                          .map((i) => {
+                            const ingredient = staffData.ingredients.find((a) => a.id === i.alcoholId);
+                            return `${ingredient?.name || 'Ингредиент'} · ${new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 }).format(i.ml)} ${unitLabel(ingredient?.unit)}`;
+                          })
+                          .join(' / ') || 'Ингредиенты пока не добавлены',
+                      )}
+                    </p>
                     {t(
-                      c.ingredients
-                        .map((i) => {
-                          const ingredient = staffData.ingredients.find((a) => a.id === i.alcoholId);
-                          return `${ingredient?.name || 'Ингредиент'} · ${new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 }).format(i.ml)} ${unitLabel(ingredient?.unit)}`;
-                        })
-                        .join(' / ') || 'Ингредиенты пока не добавлены',
+                      missing.length > 0 && (
+                        <p className="staff-recipe-missing">
+                          <TriangleAlert size={14} aria-hidden="true" />
+                          {t('Не хватает:')}
+                          {t(' ')}
+                          {t(
+                            missing
+                              .map((i) => staffData.ingredients.find((a) => a.id === i.alcoholId)?.name)
+                              .join(', '),
+                          )}
+                        </p>
+                      ),
                     )}
-                  </p>
-                  {t(
-                    missing.length > 0 && (
-                      <p className="staff-recipe-missing">
-                        <TriangleAlert size={14} aria-hidden="true" />
-                        {t('Не хватает:')}
-                        {t(' ')}
-                        {t(
-                          missing
-                            .map((i) => staffData.ingredients.find((a) => a.id === i.alcoholId)?.name)
-                            .join(', '),
-                        )}
-                      </p>
-                    ),
-                  )}
-                  <div className="card-bottom">
-                    <span>{t(c.editable ? 'Редактировать рецепт' : 'Посмотреть состав')}</span>
-                  </div>
-                </div>
-              </button>
+                  </>
+                }
+                footer={<span>{t(c.editable ? 'Редактировать рецепт' : 'Посмотреть состав')}</span>}
+              />
             );
           }),
         )}

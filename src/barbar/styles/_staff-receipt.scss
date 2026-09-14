@@ -103,68 +103,6 @@
   margin: 12px 0 20px;
 }
 
-.staff-history > button {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 9px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  border-radius: 7px;
-  padding: 12px;
-  color: var(--text);
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.staff-history > button span {
-  flex: 1;
-  text-align: left;
-}
-
-.staff-history .expanded {
-  transform: rotate(180deg);
-}
-
-.staff-history-lines {
-  max-height: 300px;
-  overflow: auto;
-  padding: 0 4px;
-}
-
-.staff-history-row {
-  display: flex;
-  gap: 14px;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.staff-history-row time {
-  color: var(--muted);
-  font-size: 10px;
-  padding-top: 2px;
-}
-
-.staff-history-row strong {
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.staff-history-row small {
-  display: block;
-  color: var(--muted);
-  margin-top: 4px;
-  font-size: 10px;
-}
-
-.staff-history-row.voided strong {
-  text-decoration: line-through;
-}
-
-.staff-history-row.voided {
-  opacity: 0.6;
-}
-
 .business-day-hint {
   margin: -14px 0 24px;
   color: var(--muted);

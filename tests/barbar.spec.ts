@@ -351,9 +351,7 @@ test('barbar can create a cocktail with a gram recipe without seeing or setting 
     });
   });
   await page.goto('/');
-  const createButton = page
-    .locator('.page-heading')
-    .getByRole('button', { name: 'Добавить коктейль', exact: true });
+  const createButton = page.locator('.section-title').getByRole('button', { name: 'Коктейль', exact: true });
   await expect(createButton).toBeInViewport();
   await createButton.click();
   await expect(page.getByRole('dialog')).not.toContainText(/֏|Себестоимость|Цена|Выручка/);

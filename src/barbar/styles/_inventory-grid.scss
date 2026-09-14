@@ -74,14 +74,9 @@ html {
   align-items: stretch;
 }
 
-.inventory-grid-view .bottle-art,
-.inventory-grid-view .staff-stock-art {
+.inventory-grid-view .bottle-art {
   width: 100%;
   flex: none;
-}
-
-.inventory-grid-view .staff-stock-art .bottle-art {
-  height: 100%;
 }
 
 .inventory-grid-view td[data-label]::before {
@@ -94,10 +89,6 @@ html {
 
 .inventory-grid-view .row-actions {
   flex-wrap: wrap;
-}
-
-.inventory-grid-view .staff-mobile-availability {
-  display: none;
 }
 
 @include below(600px) {

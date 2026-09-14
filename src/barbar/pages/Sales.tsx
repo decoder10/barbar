@@ -1,4 +1,4 @@
-import { SalesFullscreen } from '../features/sales/SalesFullscreen';
+import { SalesDayToolbar } from '../features/sales/SalesDayToolbar';
 import { AutoReveal } from '../ui/auto-reveal';
 import { BusyButton } from '../ui/loading';
 import { useHistory } from '../features/sales/use-history';
@@ -10,9 +10,6 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Banknote,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
   GlassWater,
   Plus,
   ReceiptText,
@@ -27,7 +24,7 @@ import { Empty, Metric } from '../ui/layout';
 import { ExportButton } from '../ui/export';
 import { Modal } from '../ui/modal';
 import { formatMoney as money } from '../presentation/currency/format-money';
-import { businessDayHint, businessToday } from '../domain/business-day';
+import { businessDayHint } from '../domain/business-day';
 import { activeSales, categories, round, saleUnit, volume } from '../domain/model';
 import type { Alcohol, Cocktail, Sale } from '../domain/types';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
@@ -108,44 +105,10 @@ export default function Sales() {
     month: 'long',
     weekday: 'long',
   });
-  function changeDate(offset: number) {
-    const next = new Date(`${date}T12:00:00Z`);
-    next.setUTCDate(next.getUTCDate() + offset);
-    const value = next.toISOString().slice(0, 10);
-    if (value <= businessToday()) {
-      setDate(value);
-    }
-  }
   return (
     <>
       <h1 className="visually-hidden">{t('Продажи за день')}</h1>
-      <SalesFullscreen>
-        <div className="date-control">
-          <button aria-label={t('Предыдущий день')} onClick={() => changeDate(-1)}>
-            <ChevronLeft size={16} />
-          </button>
-          <CalendarDays size={17} />
-          <input
-            aria-label={t('Дата продаж')}
-            type="date"
-            value={date}
-            max={businessToday()}
-            required
-            onChange={(e) => {
-              if (e.target.value && e.target.value <= businessToday()) {
-                setDate(e.target.value);
-              }
-            }}
-          />
-          <button
-            aria-label={t('Следующий день')}
-            disabled={date >= businessToday()}
-            onClick={() => changeDate(1)}
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </SalesFullscreen>
+      <SalesDayToolbar date={date} onChange={setDate} />
       <p className="business-day-hint">{t(businessDayHint)}</p>
       <section className="metrics">
         <Metric

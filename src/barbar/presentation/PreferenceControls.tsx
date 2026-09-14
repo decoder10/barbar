@@ -43,25 +43,23 @@ export function PreferenceControls() {
         </select>
       </label>
       {t(
-        role === 'admin' && (
-          <label>
-            <span className="visually-hidden">{t('Валюта отображения')}</span>
-            <select
-              aria-label={t('Валюта отображения')}
-              disabled={settings.pending || busy}
-              value={settings.currency}
-              onChange={(e) => void settings.update(settings.language, e.target.value as Currency)}
-            >
-              {t(
-                ['AMD', 'RUB', 'USD', 'EUR'].map((value) => (
-                  <option value={value} key={value}>
-                    {t(value)}
-                  </option>
-                )),
-              )}
-            </select>
-          </label>
-        ),
+        <label>
+          <span className="visually-hidden">{t('Валюта отображения')}</span>
+          <select
+            aria-label={t('Валюта отображения')}
+            disabled={settings.pending || busy}
+            value={settings.currency}
+            onChange={(e) => void settings.update(settings.language, e.target.value as Currency)}
+          >
+            {t(
+              ['AMD', 'RUB', 'USD', 'EUR'].map((value) => (
+                <option value={value} key={value}>
+                  {t(value)}
+                </option>
+              )),
+            )}
+          </select>
+        </label>,
       )}
       {t(
         role === 'admin' && settings.currency !== 'AMD' && (

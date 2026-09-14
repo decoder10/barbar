@@ -76,7 +76,7 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   await expect(page.locator('.day-receipt')).toContainText('5 бок.');
   await page.getByRole('link', { name: 'Склад Наличие и остатки' }).click();
   await expect(page.getByRole('heading', { name: 'Остатки на складе' })).toBeVisible();
-  const staffTable = page.locator('.staff-inventory-table');
+  const staffTable = page.locator('.inventory-table');
   await page.getByLabel('Поиск на складе').fill('Test lager');
   await expect(staffTable.getByRole('row').filter({ hasText: 'Test lager' })).toContainText('10 бут.');
   await page.getByRole('button', { name: 'Нет в наличии', exact: true }).click();

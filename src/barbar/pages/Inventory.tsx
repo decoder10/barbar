@@ -1,3 +1,4 @@
+import { InventoryCategories } from '../features/inventory/InventoryCategories';
 import { useNearViewport } from '../ui/use-near-viewport';
 import { useHistory } from '../features/sales/use-history';
 import { Pagination } from '../ui/pagination';
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BottleArt } from '../features/catalog/art';
+import { InventoryProduct, InventoryStock } from '../features/inventory/InventoryProduct';
 import { Empty, Metric, PageHeading } from '../ui/layout';
 import { ExportButton } from '../ui/export';
 import { InventoryViewSwitch, useInventoryView } from '../features/inventory/view-switch';
@@ -167,27 +168,7 @@ export default function Inventory() {
           <ExportButton name="alcohol.json" value={data.alcohol} />
         </div>
         <div className="catalog-tools">
-          <div className="segmented inventory-categories">
-            {t(
-              [
-                ['all', 'Все'],
-                ['alcohol', 'Алкоголь в розлив'],
-                ['beer', 'Пиво'],
-                ['wine', 'Вино'],
-                ['cognac', 'Коньяк'],
-                ['mixer', 'Продукты и миксеры'],
-              ].map(([id, label]) => (
-                <button
-                  key={id}
-                  className={category === id ? 'active' : ''}
-                  aria-pressed={category === id}
-                  onClick={() => setCategory(id)}
-                >
-                  {t(label)}
-                </button>
-              )),
-            )}
-          </div>
+          <InventoryCategories value={category} onChange={setCategory} />
           <CatalogSortControl
             value={sort}
             onChange={(value) => {
@@ -228,66 +209,43 @@ export default function Inventory() {
                     className={shortages.has(a.id) || remaining(a.id) <= 0 ? 'inventory-shortage' : undefined}
                   >
                     <td>
-                      <div className="table-product">
-                        <BottleArt drink={a} />
-                        <span>
-                          <strong>{t(a.name)}</strong>
-                          <small>
-                            {t(
-                              a.category === 'beer'
-                                ? 'Пиво'
-                                : a.category === 'wine'
-                                  ? 'Вино'
-                                  : a.category === 'cognac'
-                                    ? 'Коньяк'
-                                    : a.category === 'mixer'
-                                      ? 'Продукт / миксер'
-                                      : 'Алкоголь',
-                            )}
-                            {t(a.bottleSizeMl ? ` · ${a.bottleSizeMl} мл/бут.` : '')}
-                          </small>
-                        </span>
-                      </div>
+                      <InventoryProduct drink={a} />
                     </td>
                     <td>
-                      <span
-                        className={`stock-pill ${shortages.has(a.id) || remaining(a.id) <= 0 ? 'low' : ''}`}
+                      <InventoryStock
+                        quantity={ingredientVolume(data, a.id, remaining(a.id))}
+                        unavailable={remaining(a.id) <= 0}
+                        low={shortages.has(a.id) || remaining(a.id) <= 0}
                       >
-                        {t(ingredientVolume(data, a.id, remaining(a.id)))}
-                      </span>
-                      {t(
-                        remaining(a.id) <= 0 && (
-                          <span className="stock-unavailable-label">{t('Нет в наличии')}</span>
-                        ),
-                      )}
-                      {t(
-                        shortages.has(a.id) && (
-                          <details className="inventory-shortage-details">
-                            <summary>
-                              <TriangleAlert size={13} aria-hidden="true" />
-                              {t(' Не хватает для рецептов:')}
-                              {t(' ')}
-                              {t(shortages.get(a.id)!.length)}
-                            </summary>
-                            <ul>
-                              {t(
-                                shortages.get(a.id)!.map((recipe) => (
-                                  <li key={recipe.id}>
-                                    <strong>{t(recipe.name)}</strong>
-                                    <span>
-                                      {t('На порцию нужно ')}
-                                      {t(ingredientVolume(data, a.id, recipe.required))}
-                                      {t('; не хватает')}
-                                      {t(' ')}
-                                      {t(ingredientVolume(data, a.id, recipe.missing))}.
-                                    </span>
-                                  </li>
-                                )),
-                              )}
-                            </ul>
-                          </details>
-                        ),
-                      )}
+                        {t(
+                          shortages.has(a.id) && (
+                            <details className="inventory-shortage-details">
+                              <summary>
+                                <TriangleAlert size={13} aria-hidden="true" />
+                                {t(' Не хватает для рецептов:')}
+                                {t(' ')}
+                                {t(shortages.get(a.id)!.length)}
+                              </summary>
+                              <ul>
+                                {t(
+                                  shortages.get(a.id)!.map((recipe) => (
+                                    <li key={recipe.id}>
+                                      <strong>{t(recipe.name)}</strong>
+                                      <span>
+                                        {t('На порцию нужно ')}
+                                        {t(ingredientVolume(data, a.id, recipe.required))}
+                                        {t('; не хватает')}
+                                        {t(' ')}
+                                        {t(ingredientVolume(data, a.id, recipe.missing))}.
+                                      </span>
+                                    </li>
+                                  )),
+                                )}
+                              </ul>
+                            </details>
+                          ),
+                        )}
+                      </InventoryStock>
                     </td>
                     <td data-label="Ср. закупочная цена">
                       {t(money(round(inventory.averageCost(a.id))))}

@@ -52,7 +52,7 @@ test('one auth request, user language persists, currency converts display only',
   await page.screenshot({ path: '/tmp/barbar-dark-final.png' });
 });
 
-test('worker has workflow sorting without monetary controls', async ({ page }) => {
+test('worker has workflow sorting and shared preferences without prices', async ({ page }) => {
   const data = fixtureData();
   await page.route('**/api/barbar/auth', (r) =>
     r.fulfill({
@@ -65,7 +65,7 @@ test('worker has workflow sorting without monetary controls', async ({ page }) =
   await page.goto('/');
   await page.getByLabel('Сортировка', { exact: true }).selectOption('available');
   await expect(page.getByLabel('Сортировка', { exact: true })).toHaveValue('available');
-  await expect(page.getByLabel('Валюта отображения', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Валюта отображения', { exact: true })).toBeVisible();
   expect(
     await page.getByLabel('Сортировка', { exact: true }).locator('option').allTextContents(),
   ).not.toContain('Цена по возрастанию');

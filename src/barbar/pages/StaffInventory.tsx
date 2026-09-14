@@ -1,21 +1,13 @@
+import { InventoryCategories } from '../features/inventory/InventoryCategories';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { Boxes, Search, TriangleAlert } from 'lucide-react';
-import { BottleArt } from '../features/catalog/art';
+import { InventoryProduct, InventoryStock } from '../features/inventory/InventoryProduct';
 import { Empty, Metric, PageHeading } from '../ui/layout';
 import { InventoryViewSwitch, useInventoryView } from '../features/inventory/view-switch';
 import { unitLabel } from '../domain/model';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
 import { locale, t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
-
-const categories = [
-  ['all', 'Все'],
-  ['beer', 'Пиво'],
-  ['wine', 'Вино'],
-  ['cognac', 'Коньяк'],
-  ['alcohol', 'Алкоголь в розлив'],
-  ['mixer', 'Продукты и миксеры'],
-];
 
 export default function StaffInventory() {
   const { staffData } = useBar();
@@ -59,20 +51,7 @@ export default function StaffInventory() {
       </section>
       <section className="panel">
         <div className="catalog-tools">
-          <div className="segmented inventory-categories">
-            {t(
-              categories.map(([id, label]) => (
-                <button
-                  key={id}
-                  className={category === id ? 'active' : ''}
-                  aria-pressed={category === id}
-                  onClick={() => setCategory(id)}
-                >
-                  {t(label)}
-                </button>
-              )),
-            )}
-          </div>
+          <InventoryCategories value={category} onChange={setCategory} />
           <CatalogSortControl
             value={sort}
             onChange={(value) => {
@@ -108,46 +87,27 @@ export default function StaffInventory() {
           </button>
         </div>
         <div className={`table-scroll inventory-layout ${view === 'grid' ? 'inventory-grid-view' : ''}`}>
-          <table className="data-table staff-inventory-table">
+          <table className="data-table inventory-table">
             <thead>
               <tr>
                 <th>{t('Марка / ингредиент')}</th>
                 <th>{t('Остаток')}</th>
-                <th>{t('Наличие')}</th>
               </tr>
             </thead>
             <tbody>
               {t(
                 filtered.map((a) => {
                   return (
-                    <tr key={a.id} className={a.available <= 0 ? 'staff-stock-missing' : ''}>
+                    <tr key={a.id} className={a.available <= 0 ? 'inventory-shortage' : ''}>
                       <td>
-                        <div className="table-product">
-                          <div className="staff-stock-art">
-                            <BottleArt drink={a} />
-                          </div>
-                          <span>
-                            <strong>{t(a.name)}</strong>
-                            <small className="table-subtitle">
-                              {t(categories.find(([id]) => id === a.category)?.[1])}
-                              {t(a.bottleSizeMl ? ` · ${a.bottleSizeMl} мл/бут.` : '')}
-                            </small>
-                            <small className="staff-mobile-availability">
-                              {t(a.available <= 0 ? 'Нет в наличии' : 'В наличии')}
-                            </small>
-                          </span>
-                        </div>
+                        <InventoryProduct drink={a} />
                       </td>
                       <td>
-                        {t(new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 }).format(a.available))}
-                        {t(' ')}
-                        {t(unitLabel(a.unit))}
-                      </td>
-                      <td>
-                        <span className={`stock-pill ${a.available <= 0 ? 'low' : ''}`}>
-                          {t(a.available <= 0 && <TriangleAlert size={13} aria-hidden="true" />)}
-                          {t(a.available <= 0 ? 'Нет в наличии' : 'В наличии')}
-                        </span>
+                        <InventoryStock
+                          quantity={`${new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 }).format(a.available)} ${unitLabel(a.unit)}`}
+                          unavailable={a.available <= 0}
+                          low={a.available <= 0}
+                        />
                       </td>
                     </tr>
                   );
