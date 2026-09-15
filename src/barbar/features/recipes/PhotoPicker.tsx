@@ -1,11 +1,17 @@
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
-import { menuImage, menuPhotos, photoGroups, photoGroupsFor } from '../../domain/catalog/legacy-images';
+import {
+  categoryPhotosFor,
+  menuImage,
+  menuPhotos,
+  photoGroups,
+  photoGroupsFor,
+} from '../../domain/catalog/legacy-images';
 import type { Cocktail } from '../../domain/types';
 import { t } from '../../presentation/i18n/runtime';
 import { CocktailArt } from '../catalog/art';
 
-/** Collapsed photo choice limited to the category's own sheets. Read-only shows the current photo only. */
+/** Collapsed photo choice limited to the category's own photos. Read-only shows the current photo only. */
 export function PhotoPicker({
   value,
   onChange,
@@ -18,7 +24,11 @@ export function PhotoPicker({
   const [photoGroup, setPhotoGroup] = useState(() => Math.floor((menuImage(value) - 12) / 16));
   const allowedGroups = photoGroupsFor(value.category);
   const activeGroup = allowedGroups.includes(photoGroup) ? photoGroup : allowedGroups[0];
-  const currentPhoto = menuPhotos.find((photo) => photo.id === menuImage(value));
+  // Name-matched categories list their own photos; the first tile keeps matching by name.
+  const ownPhotos = categoryPhotosFor(value.category);
+  const options = ownPhotos.length ? ownPhotos : menuPhotos.filter((photo) => photo.sheet === activeGroup);
+  const currentPhoto = options.find((photo) => photo.id === menuImage(value));
+  const byName = ownPhotos.length > 0 && !currentPhoto;
   const summary = (
     <>
       <span className="photo-picker-preview" aria-hidden="true">
@@ -44,12 +54,12 @@ export function PhotoPicker({
       </summary>
       <p className="form-help">
         {t(
-          (value.category || 'cocktail') === 'cocktail'
-            ? 'Фотографии напитков. Выберите форму бокала и пример подачи.'
-            : 'Для этой категории фото обычно подбирается по названию. Выбор ниже используется, если подходящего фото нет.',
+          ownPhotos.length
+            ? 'Выберите фото из этой категории или оставьте подбор по названию.'
+            : 'Фотографии напитков. Выберите форму бокала и пример подачи.',
         )}
       </p>
-      {allowedGroups.length > 1 && (
+      {allowedGroups.length > 1 && !ownPhotos.length && (
         <div className="photo-group-tabs">
           {allowedGroups.map((index) => (
             <button
@@ -65,22 +75,33 @@ export function PhotoPicker({
         </div>
       )}
       <div className="image-options">
-        {menuPhotos
-          .filter((photo) => photo.sheet === activeGroup)
-          .map((photo) => (
-            <button
-              type="button"
-              key={photo.id}
-              aria-label={t(`Изображение: ${photo.name}`)}
-              title={t(photo.name)}
-              aria-pressed={menuImage(value) === photo.id}
-              className={menuImage(value) === photo.id ? 'selected' : ''}
-              onClick={() => onChange(photo.id)}
-            >
-              <CocktailArt image={photo.id} name={photo.name} />
-              <span>{t(photo.name)}</span>
-            </button>
-          ))}
+        {ownPhotos.length > 0 && (
+          <button
+            type="button"
+            aria-label={t('Изображение: По названию')}
+            title={t('По названию')}
+            aria-pressed={byName}
+            className={byName ? 'selected' : ''}
+            onClick={() => onChange(0)}
+          >
+            <CocktailArt image={0} name={value.name} category={value.category} serving={value.serving} />
+            <span>{t('По названию')}</span>
+          </button>
+        )}
+        {options.map((photo) => (
+          <button
+            type="button"
+            key={photo.id}
+            aria-label={t(`Изображение: ${photo.name}`)}
+            title={t(photo.name)}
+            aria-pressed={menuImage(value) === photo.id}
+            className={menuImage(value) === photo.id ? 'selected' : ''}
+            onClick={() => onChange(photo.id)}
+          >
+            <CocktailArt image={photo.id} name={photo.name} category={value.category} />
+            <span>{t(photo.name)}</span>
+          </button>
+        ))}
       </div>
     </details>
   );

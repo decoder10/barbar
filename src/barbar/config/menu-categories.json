@@ -43,7 +43,6 @@
       "recipes": false,
       "extraCosts": false,
       "foodRecipe": false,
-      "photoSheets": [3],
       "guestTitle": { "ru": "Пиво", "en": "Beer", "hy": "Գարեջուր" }
     },
     {
@@ -52,7 +51,6 @@
       "recipes": false,
       "extraCosts": false,
       "foodRecipe": false,
-      "photoSheets": [3],
       "guestTitle": { "ru": "Вино", "en": "Wine", "hy": "Գինի" }
     },
     {
@@ -61,7 +59,6 @@
       "recipes": false,
       "extraCosts": false,
       "foodRecipe": false,
-      "photoSheets": [3],
       "guestTitle": { "ru": "Коньяк", "en": "Brandy", "hy": "Կոնյակ" }
     },
     {
@@ -70,7 +67,6 @@
       "recipes": true,
       "extraCosts": true,
       "foodRecipe": false,
-      "photoSheets": [3],
       "guestTitle": { "ru": "Горячие напитки", "en": "Hot drinks", "hy": "Տաք ըմպելիքներ" }
     },
     {
@@ -79,7 +75,6 @@
       "recipes": true,
       "extraCosts": true,
       "foodRecipe": false,
-      "photoSheets": [3],
       "guestTitle": { "ru": "Безалкогольные", "en": "Soft drinks", "hy": "Զովացուցիչ ըմպելիքներ" }
     },
     {
@@ -88,7 +83,6 @@
       "recipes": true,
       "extraCosts": true,
       "foodRecipe": true,
-      "photoSheets": [3],
       "guestTitle": { "ru": "Закуски", "en": "Snacks", "hy": "Խորտիկներ" }
     }
   ]

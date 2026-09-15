@@ -35,7 +35,8 @@ export interface MenuCategoryConfig {
   extraCosts: boolean;
   /** Picks kitchen products instead of bar ingredients. */
   foodRecipe: boolean;
-  photoSheets: number[];
+  /** Legacy photo sheets; categories without them pick from `categoryPhotos`. */
+  photoSheets?: number[];
   guestTitle: Localized;
 }
 export interface MenuCategoriesConfig {
@@ -159,10 +160,7 @@ export function validateConfig(config: BarConfig = barConfig, ledgerMenuCategori
   for (const category of config.menu.categories) {
     if (!localizedValid(category.guestTitle))
       problems.push(`menu ${category.id}: guestTitle needs ru, en and hy`);
-    if (
-      !category.photoSheets.length ||
-      category.photoSheets.some((s) => !Number.isInteger(s) || s < 0 || s > 3)
-    )
+    if (category.photoSheets?.some((s) => !Number.isInteger(s) || s < 0 || s > 3))
       problems.push(`menu ${category.id}: photoSheets must be sheet numbers 0–3`);
   }
   const sets = config.menu.sets;

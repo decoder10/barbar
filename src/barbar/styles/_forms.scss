@@ -236,6 +236,26 @@
   border-color: var(--line);
 }
 
+// Picker tiles stay large enough to recognise the photo, and wrap on narrow modals.
+.photo-picker .image-options {
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
+}
+
+// Square photo above its caption; a full-height photo would push the caption out of the tile.
+.photo-picker .image-options button .cocktail-art {
+  height: auto;
+  max-height: none;
+}
+
+.photo-picker .image-options .real-photo img {
+  padding: 4px;
+}
+
+.photo-picker .image-options button span {
+  font-size: 11px;
+}
+
 .ingredient-label {
   display: flex;
   justify-content: space-between;

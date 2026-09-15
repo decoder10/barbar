@@ -94,10 +94,77 @@ export const photoGroups = [
 export const menuPhotos = photoGroups.flatMap((group, sheet) =>
   group.names.map((name, tile) => ({ id: 12 + sheet * 16 + tile, name, sheet, tile, file: group.file })),
 );
-export const maxMenuImage = 11 + menuPhotos.length;
+/**
+ * Photos a name-matched category can pick directly instead of sheet tiles.
+ * Append only: the position is the saved image ID, starting right after the sheets.
+ */
+export const categoryPhotos: { key: string; name: string; category: MenuCategory }[] = [
+  { category: 'snack', key: 'snack-sandwich', name: 'Сэндвич' },
+  { category: 'snack', key: 'snack-barbar-sandwich', name: 'Сэндвич BarBar' },
+  { category: 'snack', key: 'snack-sujuck-sandwich', name: 'Сэндвич с суджуком' },
+  { category: 'snack', key: 'snack-brtuch', name: 'Бртуч' },
+  { category: 'snack', key: 'snack-cheese-honey', name: 'Сыр с мёдом' },
+  { category: 'snack', key: 'snack-cheese-small', name: 'Сыр Микаелян, малый' },
+  { category: 'snack', key: 'snack-cheese-large', name: 'Сыр Микаелян, большой' },
+  { category: 'snack', key: 'snack-assortment', name: 'Ассорти закусок' },
+  { category: 'snack', key: 'snack-sausages-pickles', name: 'Сосиски с соленьями' },
+  { category: 'snack', key: 'snack-beer-set', name: 'Пивной сет' },
+  { category: 'snack', key: 'snack-sujuck', name: 'Суджук' },
+  { category: 'snack', key: 'snack-jerky', name: 'Вяленое мясо' },
+  { category: 'snack', key: 'snack-anchovy', name: 'Анчоусы' },
+  { category: 'snack', key: 'snack-olives', name: 'Оливки' },
+  { category: 'snack', key: 'snack-nuts', name: 'Орехи' },
+  { category: 'snack', key: 'snack-pistachios', name: 'Фисташки' },
+  { category: 'snack', key: 'snack-chips', name: 'Чипсы' },
+  { category: 'snack', key: 'snack-crackers', name: 'Сухарики' },
+  { category: 'snack', key: 'snack-lemon', name: 'Лимон' },
+  { category: 'snack', key: 'snack-honey', name: 'Мёд' },
+  { category: 'wine', key: 'red-wine-glass', name: 'Красное вино' },
+  { category: 'wine', key: 'white-wine-glass', name: 'Белое вино' },
+  { category: 'wine', key: 'rose-wine-glass', name: 'Розовое вино' },
+  { category: 'wine', key: 'mulled-wine', name: 'Глинтвейн' },
+  { category: 'beer', key: 'beer-glass', name: 'Светлое пиво' },
+  { category: 'beer', key: 'guinness', name: 'Стаут' },
+  { category: 'beer', key: 'cider-bottle', name: 'Сидр' },
+  { category: 'cognac', key: 'brandy-glass', name: 'Коньяк' },
+  { category: 'hot', key: 'coffee-black', name: 'Чёрный кофе' },
+  { category: 'hot', key: 'coffee-armenian', name: 'Армянский кофе' },
+  { category: 'hot', key: 'cappuccino', name: 'Капучино' },
+  { category: 'hot', key: 'coffee-milk', name: 'Кофе с молоком' },
+  { category: 'hot', key: 'coffee-iced', name: 'Холодный кофе' },
+  { category: 'hot', key: 'coffee-milk-iced', name: 'Холодный кофе с молоком' },
+  { category: 'hot', key: 'coffee-irish', name: 'Ирландский кофе' },
+  { category: 'hot', key: 'tea-black', name: 'Чёрный чай' },
+  { category: 'hot', key: 'tea-green', name: 'Зелёный чай' },
+  { category: 'hot', key: 'tea-mint', name: 'Чай с мятой' },
+  { category: 'hot', key: 'tea-hibiscus', name: 'Каркаде' },
+  { category: 'hot', key: 'tea-fruit', name: 'Фруктовый чай' },
+  { category: 'hot', key: 'tea-cinnamon', name: 'Чай с корицей' },
+  { category: 'hot', key: 'cocoa-cup', name: 'Какао' },
+  { category: 'hot', key: 'mulled-wine', name: 'Глинтвейн' },
+  { category: 'soft', key: 'lemonade', name: 'Лимонад' },
+  { category: 'soft', key: 'juice-glass', name: 'Сок' },
+  { category: 'soft', key: 'water-glass', name: 'Вода' },
+  { category: 'soft', key: 'water-bottle', name: 'Вода в бутылке' },
+  { category: 'soft', key: 'jermuk', name: 'Джермук' },
+  { category: 'soft', key: 'cola-bottle', name: 'Кола' },
+  { category: 'soft', key: 'fanta', name: 'Фанта' },
+  { category: 'soft', key: 'sprite', name: 'Спрайт' },
+  { category: 'soft', key: 'tonic', name: 'Тоник' },
+  { category: 'soft', key: 'energy-drink', name: 'Энергетик' },
+];
+const firstCategoryPhoto = 12 + menuPhotos.length;
+export const maxMenuImage = firstCategoryPhoto + categoryPhotos.length - 1;
+/** The photo key of a direct category choice, or undefined for sheet and legacy IDs. */
+export const choicePhotoKey = (image: number): string | undefined =>
+  categoryPhotos[image - firstCategoryPhoto]?.key;
+export const categoryPhotosFor = (category?: MenuCategory) =>
+  categoryPhotos
+    .map((photo, index) => ({ ...photo, id: firstCategoryPhoto + index }))
+    .filter((photo) => photo.category === (category || 'cocktail'));
 /** Photo sheets relevant to one menu category: cocktails have classic and signature sheets. */
 export const photoGroupsFor = (category?: MenuCategory): number[] =>
-  barConfig.menu.categories.find((c) => c.id === (category || 'cocktail'))?.photoSheets || [3];
+  barConfig.menu.categories.find((c) => c.id === (category || 'cocktail'))?.photoSheets || [];
 
 // Legacy 0–11 choices get a matching photo without rewriting saved recipes or sales.
 export function menuImage(cocktail: Pick<Cocktail, 'name' | 'image' | 'category'>): number {

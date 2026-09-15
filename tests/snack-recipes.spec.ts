@@ -27,8 +27,19 @@ test('snack recipes use snack products, their units and a collapsed own-category
   await expect(picker).not.toHaveAttribute('open', '');
   await picker.locator('summary').click();
   await expect(picker.locator('.photo-group-tabs')).toHaveCount(0);
-  await expect(picker.getByRole('button', { name: 'Изображение: Сэндвич', exact: true })).toBeVisible();
-  await expect(picker.getByRole('button', { name: /Изображение: Negroni/ })).toHaveCount(0);
+  await expect(picker.getByRole('button', { name: 'Изображение: По названию', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(
+    picker.getByRole('button', { name: 'Изображение: Сэндвич BarBar', exact: true }),
+  ).toBeVisible();
+  // Only snack photos: no cocktails, wine or cafe drinks.
+  await expect(
+    picker.getByRole('button', { name: /Изображение: (Negroni|Красное вино|Капучино)/ }),
+  ).toHaveCount(0);
+  await picker.getByRole('button', { name: 'Изображение: Сыр с мёдом', exact: true }).click();
+  await expect(picker.locator('summary')).toContainText('Сыр с мёдом');
 
   await dialog.getByRole('button', { name: 'Добавить ингредиент', exact: true }).click();
   const first = dialog.getByLabel('Ингредиент 1', { exact: true });

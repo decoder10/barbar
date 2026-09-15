@@ -1,3 +1,4 @@
+import { choicePhotoKey } from '../../../domain/catalog/legacy-images';
 import sources from './photo-manifest.json';
 export interface Photo {
   file: string;
@@ -245,6 +246,16 @@ export const servingPhotos = [
   'cheese',
 ];
 export function menuPhoto(name: string, image: number, category?: string, serving?: string): PhotoChoice {
+  // A photo picked from the category's own list wins over matching by name.
+  const chosen = choicePhotoKey(image);
+  if (chosen && photos[chosen]) {
+    const product = ['cola-bottle', 'fanta', 'sprite', 'jermuk', 'tonic'].includes(chosen);
+    return {
+      key: chosen,
+      bottle: product || ['water-bottle', 'energy-drink', 'cider-bottle'].includes(chosen),
+      example: !product,
+    };
+  }
   const n = name.toLowerCase();
   const glass = serving === 'glass' || /·\s*бокал/.test(n);
   const bottle = serving === 'bottle' || /·\s*бутылка/.test(n) || category === 'beer';
