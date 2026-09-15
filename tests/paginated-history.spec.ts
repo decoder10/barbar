@@ -34,7 +34,9 @@ for (const worker of [false, true])
         json: { role, revision: 'paged', ...(worker ? { staffData: staffData(data) } : { data }) },
       }),
     );
+    const historyUrls: string[] = [];
     await page.route('**/api/barbar/history?*', (r) => {
+      historyUrls.push(r.request().url());
       const second = new URL(r.request().url()).searchParams.has('cursor');
       const rows = [...full.sales].reverse().slice(second ? 50 : 0, second ? 55 : 50);
       return r.fulfill({
@@ -58,6 +60,8 @@ for (const worker of [false, true])
     }
     await expect(receipt).toContainText('55');
     await expect(receipt).toContainText('550');
+    // Each history page is read once, even when the screen remounts while loading.
+    expect(new Set(historyUrls).size).toBe(historyUrls.length);
     if (worker) {
       await expect(receipt).not.toContainText(/Себестоимость|Прибыль/);
       await page.goto('/operations');
@@ -66,8 +70,10 @@ for (const worker of [false, true])
       await expect(page).toHaveURL(/\/$/);
     } else {
       const performance = aggregatedPerformance(data, groups);
-      await page.route('**/api/barbar/report?*', (r) =>
-        r.fulfill({
+      let reportCalls = 0;
+      await page.route('**/api/barbar/report?*', (r) => {
+        reportCalls++;
+        return r.fulfill({
           json: {
             performance,
             analytics: aggregatedAnalytics(performance, 0),
@@ -81,11 +87,13 @@ for (const worker of [false, true])
             cancellations: 0,
             forecast: [],
           },
-        }),
-      );
+        });
+      });
       await page.goto('/reports');
       await expect(page.getByRole('heading', { name: 'Операционный результат' })).toBeVisible();
       await expect(page.locator('.metrics')).toContainText('6 930');
       await expect(page.getByRole('heading', { name: 'Прогноз закупок' })).toBeVisible();
+      // The period report and the purchasing forecast share one request for the same period.
+      expect(reportCalls).toBe(1);
     }
   });

@@ -1,5 +1,5 @@
 import { handlePush } from '../netlify/lib/notifications/subscriptions';
-import { safelyDeliverStockAlerts } from '../netlify/lib/notifications/deliver';
+import { safelyDeliverNotifications } from '../netlify/lib/notifications/deliver';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -9,6 +9,10 @@ import { handleHistory } from '../netlify/lib/queries/history';
 import { handleAudit } from '../netlify/lib/audit/handler';
 import { handleBarApi } from '../netlify/lib/barbar-handler';
 import { mongoConnection, mongoRepository } from '../netlify/lib/barbar-mongo';
+import { json } from '../netlify/lib/barbar-auth';
+import { handleGuestMenu } from '../netlify/lib/guest-menu-handler';
+import { handleBatches } from '../netlify/lib/queries/batches';
+import { localDatabaseProfile, productionDatabaseError } from './database-profile';
 import { handleRates } from '../netlify/lib/barbar-rates';
 import { readSnapshot, type Storage } from '../netlify/lib/barbar-repository';
 import { handleAuth, handleUsers } from '../netlify/lib/barbar-user-handler';
@@ -18,7 +22,7 @@ export function localApi(): Plugin {
   return {
     name: 'barbar-node-api',
     apply: 'serve',
-    configureServer(server) {
+    async configureServer(server) {
       // Development secrets are loaded from a Git-ignored .env file.
       if (existsSync('.env.push')) process.loadEnvFile('.env.push');
       const environment = loadEnv('development', process.cwd(), 'BARBAR_');
@@ -43,24 +47,70 @@ export function localApi(): Plugin {
           throw new Error('Legacy storage is read-only');
         },
       };
-      const { client, db } = mongoConnection(true);
-      const users = mongoUsers(db);
-      const repository = mongoRepository(client, db, async () => (await readSnapshot(legacy)).data);
+      const profile = localDatabaseProfile();
+      const { client, db } = mongoConnection(
+        true,
+        undefined,
+        profile.production ? { uri: profile.uri!, database: profile.database! } : undefined,
+      );
+      if (profile.production) {
+        try {
+          await client.connect();
+          const meta = await db.collection('state').findOne({ _id: 'state' as never });
+          if (meta?.readModelVersion !== 1) {
+            await client.close();
+            throw new Error('BARBAR_DATABASE_NOT_READY');
+          }
+        } catch (error) {
+          await client.close();
+          throw new Error(
+            error instanceof Error && error.message === 'BARBAR_DATABASE_NOT_READY'
+              ? 'Рабочая база не найдена или требует миграции. Проверьте имя базы; миграции выполняет опубликованное приложение.'
+              : productionDatabaseError(error),
+          );
+        }
+        server.config.logger.warn(
+          `\n  ВНИМАНИЕ: локальный сервер подключён к рабочей БД Production (${profile.database}). Все операции реальные.\n`,
+        );
+      }
+      const users = mongoUsers(db, { bootstrap: !profile.production });
+      const repository = profile.production
+        ? mongoRepository(
+            client,
+            db,
+            async () => {
+              throw new Error('Production database is never initialised from local files');
+            },
+            { migrations: false },
+          )
+        : mongoRepository(client, db, async () => (await readSnapshot(legacy)).data);
       server.httpServer?.once('close', () => {
         void client.close();
       });
       server.middlewares.use(async (request, response, next) => {
+        if ((request.url || '').split('?')[0] === '/api/barbar/environment') {
+          const result = json({
+            database: profile.production ? 'production' : 'local',
+            name: db.databaseName,
+          });
+          response.writeHead(result.status, Object.fromEntries(result.headers));
+          response.end(await result.text());
+          return;
+        }
         if (
           ![
+            '/api/menu',
             '/api/barbar',
             '/api/barbar/catalog',
             '/api/barbar/catalog/alcohol',
             '/api/barbar/catalog/cocktails',
+            '/api/barbar/catalog/cards',
             '/api/barbar/auth',
             '/api/barbar/users',
             '/api/barbar/rates',
             '/api/barbar/audit',
             '/api/barbar/history',
+            '/api/barbar/batches',
             '/api/barbar/report',
             '/api/barbar/push',
           ].includes((request.url || '').split('?')[0])
@@ -93,23 +143,27 @@ export function localApi(): Plugin {
             headers,
             ...(!['GET', 'HEAD'].includes(request.method || 'GET') ? { body: Buffer.concat(chunks) } : {}),
           });
-          const result = request.url?.startsWith('/api/barbar/push')
-            ? await handlePush(input, db, users)
-            : request.url?.startsWith('/api/barbar/report')
-              ? await handleReport(input, db, users)
-              : request.url?.startsWith('/api/barbar/history')
-                ? await handleHistory(input, db, users)
-                : request.url?.startsWith('/api/barbar/audit')
-                  ? await handleAudit(input, db, users)
-                  : request.url?.startsWith('/api/barbar/rates')
-                    ? await handleRates(input)
-                    : request.url?.startsWith('/api/barbar/auth')
-                      ? await handleAuth(input, users)
-                      : request.url?.startsWith('/api/barbar/users')
-                        ? await handleUsers(input, users)
-                        : await handleBarApi(input, repository, users);
+          const result = request.url?.startsWith('/api/menu')
+            ? await handleGuestMenu(input, repository)
+            : request.url?.startsWith('/api/barbar/batches')
+              ? await handleBatches(input, db, users)
+              : request.url?.startsWith('/api/barbar/push')
+                ? await handlePush(input, db, users)
+                : request.url?.startsWith('/api/barbar/report')
+                  ? await handleReport(input, db, users)
+                  : request.url?.startsWith('/api/barbar/history')
+                    ? await handleHistory(input, db, users)
+                    : request.url?.startsWith('/api/barbar/audit')
+                      ? await handleAudit(input, db, users)
+                      : request.url?.startsWith('/api/barbar/rates')
+                        ? await handleRates(input)
+                        : request.url?.startsWith('/api/barbar/auth')
+                          ? await handleAuth(input, users)
+                          : request.url?.startsWith('/api/barbar/users')
+                            ? await handleUsers(input, users)
+                            : await handleBarApi(input, repository, users);
           if (input.method === 'POST' && new URL(input.url).pathname === '/api/barbar' && result.ok)
-            await safelyDeliverStockAlerts(db);
+            await safelyDeliverNotifications(db);
           response.writeHead(result.status, Object.fromEntries(result.headers));
           response.end(Buffer.from(await result.arrayBuffer()));
         } catch {

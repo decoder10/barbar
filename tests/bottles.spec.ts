@@ -23,8 +23,9 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   await page.getByRole('button', { name: 'Новое пиво', exact: true }).click();
   await page.getByLabel('Марка и название').fill('Test lager 330');
   for (const size of ['300', '330', '700', '750'])
-    await expect(page.getByLabel('Объём бутылки, мл').locator(`option[value="${size}"]`)).toHaveCount(1);
-  await page.getByLabel('Объём бутылки, мл').selectOption('330');
+    await expect(page.getByRole('button', { name: `${size} мл`, exact: true })).toHaveCount(1);
+  await page.getByRole('button', { name: '330 мл', exact: true }).click();
+  await expect(page.getByLabel('Объём бутылки, мл')).toHaveValue('330');
   await page.getByLabel('Закупка за 1 бутылку, ֏').fill('500');
   await page.getByLabel('Продажа за 1 бутылку, ֏').fill('1500');
   await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
@@ -39,7 +40,7 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   await expect(beerRow).toContainText('12 бут.');
   await page.getByRole('button', { name: 'Новое вино', exact: true }).click();
   await page.getByLabel('Марка и название').fill('Test wine');
-  await page.getByLabel('Объём бутылки, мл').selectOption('750');
+  await page.getByLabel('Объём бутылки, мл').fill('750');
   await page.getByLabel('Объём бокала, мл').fill('125');
   await page.getByLabel('Продажа за бокал, ֏').fill('1500');
   await page.getByLabel('Закупка за 1 бутылку, ֏').fill('3000');
@@ -103,7 +104,7 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   await page.goto('/inventory');
   await page.reload();
   await page.getByRole('button', { name: 'Новый коньяк', exact: true }).click();
-  await page.getByLabel('Объём бутылки, мл').selectOption('700');
+  await page.getByLabel('Объём бутылки, мл').fill('700');
   await page.getByLabel('Объём порции, мл').fill('50');
   await expect(page.getByRole('dialog')).toContainText('50 мл из бутылки 700 мл');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

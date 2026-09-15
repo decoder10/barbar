@@ -3,6 +3,7 @@ import type { AuditEvent } from './audit/store';
 import type { UserProfile } from '../../src/barbar/domain/identity/user';
 import type { BarData, Command, Sale } from '../../src/barbar/domain/types';
 
+export type SalesPopularity = (date: string) => Promise<Map<string, number>>;
 export interface Storage {
   read: (key: string) => Promise<{ value: unknown; etag: string } | null>;
   write: (
@@ -131,6 +132,8 @@ export interface Repository {
     unchanged?: boolean;
   }>;
   readSale?: (id: string) => Promise<Sale | undefined>;
+  /** Active sale operations per `kind:productId` for one business day. */
+  salesPopularity?: SalesPopularity;
   readWorking?: () => Promise<Snapshot>;
   execute?: (command: Command, actor: UserProfile) => Promise<Snapshot | null>;
   readRevision?: () => Promise<string | null>;

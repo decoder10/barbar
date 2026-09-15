@@ -1,0 +1,49 @@
+.guest-qr-card {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  color: #1f1a1d;
+  text-align: center;
+
+  .catalog-picture img {
+    width: 170px;
+    height: auto;
+  }
+  svg {
+    width: min(240px, 70vw);
+    height: auto;
+  }
+  small {
+    color: #5f5a5d;
+    overflow-wrap: anywhere;
+  }
+}
+
+.guest-qr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .guest-qr-card,
+  .guest-qr-card * {
+    visibility: visible !important;
+  }
+  .guest-qr-card {
+    position: fixed;
+    top: 20mm;
+    left: 50%;
+    width: 90mm;
+    transform: translateX(-50%);
+    border: 1px solid #999;
+  }
+}

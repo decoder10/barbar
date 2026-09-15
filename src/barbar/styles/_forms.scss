@@ -371,3 +371,180 @@
   color: #a96150;
   border: 1px solid var(--line);
 }
+
+.ingredient-mismatch {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: -4px 0 12px;
+  color: var(--warning);
+}
+
+.photo-picker {
+  margin: 0 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.photo-picker > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.photo-picker > summary::-webkit-details-marker {
+  display: none;
+}
+
+// Worker view of a saved item: the same summary row without the choice.
+.photo-picker-readonly {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+.photo-picker-preview {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.photo-picker-preview .cocktail-art {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+
+.photo-picker-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.photo-picker-text small {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-picker-chevron {
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+.photo-picker[open] .photo-picker-chevron {
+  transform: rotate(180deg);
+}
+
+.photo-picker[open] > :not(summary) {
+  margin-inline: 12px;
+}
+
+.photo-picker .image-options {
+  padding-bottom: 12px;
+}
+
+// Tiny tiles have no room for the example label; the full card still shows it.
+.photo-picker .photo-example {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-picker-chevron {
+    transition: none;
+  }
+}
+
+.guest-visibility {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+}
+
+.extra-costs {
+  margin: 18px 0 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.extra-costs > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.extra-costs > summary::-webkit-details-marker {
+  display: none;
+}
+
+.extra-costs[open] .photo-picker-chevron {
+  transform: rotate(180deg);
+}
+
+// Dialogs: main text at least 14px, secondary text at least 12px.
+.modal {
+  font-size: 14px;
+}
+
+.modal p,
+.modal .field,
+.modal .field > label,
+.modal .field input,
+.modal .field select,
+.modal .field textarea,
+.modal .ingredient-inputs select,
+.modal .ingredient-inputs input,
+.modal .ingredient-label,
+.modal .modal-text,
+.modal .cost-box,
+.modal .form-total,
+.modal .suggestion,
+.modal .quick-values button,
+.modal .photo-group-tabs button,
+.modal .photo-picker-text,
+.modal .extra-costs > summary,
+.modal .text-link,
+.modal .button,
+.modal label.form-help {
+  font-size: 14px;
+}
+
+.modal small,
+.modal .form-help,
+.modal .form-warning,
+.modal .field small,
+.modal .ingredient-label small,
+.modal .modal-heading p,
+.modal .modal-heading .eyebrow,
+.modal .image-options button span,
+.modal .photo-picker-text small,
+.modal .recipe-shortage,
+.modal .cost-box p,
+.modal .form-total small,
+.modal .recipe-breakdown,
+.modal .recipe-breakdown .eyebrow,
+.modal .ingredient-inputs > label > span {
+  font-size: 12px;
+}
+
+.modal label.form-help {
+  line-height: 1.5;
+}

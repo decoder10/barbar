@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useBar } from '../../app/providers/BarProvider';
-import { api } from '../../services/api-client';
+import { snapshotRead } from '../../services/api-client';
 import type { HistoryPage, SalesGroup } from '../../domain/reports/server-types';
 import type { Sale } from '../../domain/types';
 export function useHistory<T = Sale>(
@@ -28,7 +28,8 @@ export function useHistory<T = Sale>(
       to,
       ...(pageCursor ? { cursor: pageCursor } : {}),
     });
-    void api(`/api/barbar/history?${params}`)
+    // Worker pages read the worker snapshot, owner pages the owner ledger.
+    void snapshotRead(staffData?.paged ? staffData : data, `/api/barbar/history?${params}`)
       .then((result) => {
         if (!stopped)
           setState((previous) => ({

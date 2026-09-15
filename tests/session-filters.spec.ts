@@ -47,13 +47,14 @@ test('worker stock remembers missing items, category, search, sort and grid', as
     r.fulfill({ json: { staffData: staffData(data), role: 'barbar', revision: 'filters' } }),
   );
   await page.goto('/inventory');
-  await page.getByRole('button', { name: 'Вино', exact: true }).click();
+  // Tabs follow product groups present in stock.
+  await page.getByRole('button', { name: 'Фрукты и ягоды', exact: true }).click();
   await page.getByRole('button', { name: 'Нет в наличии', exact: true }).click();
   await page.getByRole('button', { name: 'Сетка', exact: true }).click();
-  await page.getByPlaceholder('Марка или ингредиент…').fill('Voskeni');
+  await page.getByPlaceholder('Найти на полке…').fill('Лимон');
   await page.getByLabel('Сортировка', { exact: true }).selectOption('name');
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Вино', exact: true })).toHaveClass(/active/);
+  await expect(page.getByRole('button', { name: 'Фрукты и ягоды', exact: true })).toHaveClass(/active/);
   await expect(page.getByRole('button', { name: 'Нет в наличии', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -62,7 +63,7 @@ test('worker stock remembers missing items, category, search, sort and grid', as
     'aria-pressed',
     'true',
   );
-  await expect(page.getByPlaceholder('Марка или ингредиент…')).toHaveValue('Voskeni');
+  await expect(page.getByPlaceholder('Найти на полке…')).toHaveValue('Лимон');
   await expect(page.getByLabel('Сортировка', { exact: true })).toHaveValue('name');
   await expect(page.locator('main')).not.toContainText('֏');
 });

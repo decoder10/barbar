@@ -6,6 +6,11 @@ interface ApiResponses {
   '/api/barbar/catalog/alcohol': CatalogPartResponse;
   '/api/barbar/catalog/cocktails': CatalogPartResponse;
   '/api/barbar/push': { publicKey: string | null; ok?: boolean };
+  '/api/barbar/batches': { batches: import('../domain/batches').BatchStock[] };
+  [path: `/api/barbar/catalog/cards?${string}`]: import('../domain/catalog/cards').CardPage & {
+    catalogRevision: string;
+    revision: string | null;
+  };
   [path: `/api/barbar/report${string}`]: import('../domain/reports/server-types').ServerReport;
   '/api/barbar?view=full': { data: BarData; revision: string };
   [path: `/api/barbar/history${string}`]: import('../domain/reports/server-types').HistoryPage;
@@ -75,5 +80,24 @@ export function api<P extends keyof ApiResponses>(path: P, options?: RequestInit
     inflight.delete(key);
   });
   inflight.set(key, pending);
+  return pending;
+}
+
+const snapshots = new WeakMap<object, Map<string, Promise<unknown>>>();
+/**
+ * Reuse a read for one loaded data snapshot. Screens that remount while loading, or two hooks asking for the same
+ * report, do not refetch until the ledger changes (a new snapshot object). Failed reads are retried next time.
+ */
+export function snapshotRead<P extends keyof ApiResponses>(
+  snapshot: object,
+  path: P,
+): Promise<ApiResponses[P]> {
+  let reads = snapshots.get(snapshot);
+  if (!reads) snapshots.set(snapshot, (reads = new Map()));
+  const cached = reads.get(path);
+  if (cached) return cached as Promise<ApiResponses[P]>;
+  const pending = api(path);
+  reads.set(path, pending);
+  pending.catch(() => reads.delete(path));
   return pending;
 }

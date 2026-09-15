@@ -1,4 +1,5 @@
-import type { Cocktail } from '../types';
+import { barConfig } from '../../config';
+import type { Cocktail, MenuCategory } from '../types';
 
 export const photoGroups = [
   {
@@ -94,6 +95,9 @@ export const menuPhotos = photoGroups.flatMap((group, sheet) =>
   group.names.map((name, tile) => ({ id: 12 + sheet * 16 + tile, name, sheet, tile, file: group.file })),
 );
 export const maxMenuImage = 11 + menuPhotos.length;
+/** Photo sheets relevant to one menu category: cocktails have classic and signature sheets. */
+export const photoGroupsFor = (category?: MenuCategory): number[] =>
+  barConfig.menu.categories.find((c) => c.id === (category || 'cocktail'))?.photoSheets || [3];
 
 // Legacy 0–11 choices get a matching photo without rewriting saved recipes or sales.
 export function menuImage(cocktail: Pick<Cocktail, 'name' | 'image' | 'category'>): number {

@@ -37,7 +37,7 @@ export async function backupDatabase(db, key, path) {
     .filter(
       (n) =>
         !n.startsWith('system.') &&
-        !['sessions', 'pushDevices', 'stockAlertEvents', 'appMigrations'].includes(n),
+        !['sessions', 'pushDevices', 'stockAlertEvents', 'purchaseEvents', 'appMigrations'].includes(n),
     )
     .sort();
   const indexes = {};
@@ -175,7 +175,9 @@ export async function restoreDatabase(client, target, path, key) {
   await readBackup(path, key, async (record) => {
     if (record.kind !== 'document') return;
     if (
-      ['sessions', 'pushDevices', 'stockAlertEvents', 'appMigrations'].includes(record.collection) ||
+      ['sessions', 'pushDevices', 'stockAlertEvents', 'purchaseEvents', 'appMigrations'].includes(
+        record.collection,
+      ) ||
       record.collection.startsWith('system.') ||
       record.collection === '_restore_in_progress'
     )

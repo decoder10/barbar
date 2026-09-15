@@ -3,7 +3,15 @@ import { Pagination } from '../ui/pagination';
 import { useState } from 'react';
 import { useBar } from '../app/providers/BarProvider';
 import { PageHeading } from '../ui/layout';
-import { OperationForm, expenseCategories, type OperationKind } from '../features/operations/OperationForm';
+import {
+  OperationForm,
+  expenseCategories,
+  type OperationKind,
+  type OperationPrefill,
+} from '../features/operations/OperationForm';
+import { useBatches } from '../features/operations/use-batches';
+import { batchStatus } from '../domain/batches';
+import { businessToday } from '../domain/business-day';
 import { formatMoney } from '../presentation/currency/format-money';
 import { unitLabel } from '../domain/model';
 import { t } from '../presentation/i18n/runtime';
@@ -24,6 +32,11 @@ export default function Operations() {
   const stockMovements = movements.enabled ? movements.rows : data.stockMovements || [];
   const barExpenses = expenses.enabled ? expenses.rows : data.expenses || [];
   const [form, setForm] = useState<OperationKind | null>(null);
+  const [prefill, setPrefill] = useState<OperationPrefill | undefined>();
+  const batches = useBatches();
+  const today = businessToday();
+  const quantity = (n: number) => new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(n);
+  const statusLabel = { expired: 'Просрочена', soon: 'Скоро истекает', ok: 'В норме', none: 'Без срока' };
   return (
     <>
       <PageHeading
@@ -33,7 +46,14 @@ export default function Operations() {
       />
       <div className="operation-toolbar">
         {(Object.keys(labels) as OperationKind[]).map((kind) => (
-          <button key={kind} className="button secondary" onClick={() => setForm(kind)}>
+          <button
+            key={kind}
+            className="button secondary"
+            onClick={() => {
+              setPrefill(undefined);
+              setForm(kind);
+            }}
+          >
             {t(labels[kind])}
           </button>
         ))}
@@ -93,6 +113,95 @@ export default function Operations() {
         </div>
       </section>
       <section className="panel">
+        <h2>{t('Партии заготовок')}</h2>
+        <p className="muted">
+          {t(
+            'Остаток по партиям рассчитан по FEFO: первой расходуется партия с ближайшим сроком годности. Себестоимость в учёте остаётся средневзвешенной.',
+          )}
+        </p>
+        {batches.error && <p role="alert">{t(batches.error)}</p>}
+        {batches.loading ? (
+          <p className="muted" role="status">
+            {t('Загружаем партии…')}
+          </p>
+        ) : (
+          <div className="table-scroll">
+            <table className="data-table operations-table batches-table">
+              <thead>
+                <tr>
+                  <th>{t('Заготовка')}</th>
+                  <th>{t('Партия')}</th>
+                  <th>{t('Выпуск')}</th>
+                  <th>{t('Годен до')}</th>
+                  <th>{t('Остаток')}</th>
+                  <th>{t('Статус')}</th>
+                  <th>{t('Действия')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {batches.batches.flatMap((item) => {
+                  const product = data.alcohol.find((a) => a.id === item.outputId);
+                  const unit = unitLabel(product?.unit);
+                  return [
+                    ...item.batches.map((b) => {
+                      const status = batchStatus(b, today);
+                      return (
+                        <tr key={b.id} className={`batch-${status}`}>
+                          <td>{product?.name || item.outputId}</td>
+                          <td>{b.reason}</td>
+                          <td>{b.date}</td>
+                          <td>{b.expiresOn || '—'}</td>
+                          <td>
+                            {quantity(b.remaining)} / {quantity(b.produced)} {t(unit)}
+                          </td>
+                          <td>
+                            <span className={`batch-status ${status}`}>{t(statusLabel[status])}</span>
+                          </td>
+                          <td>
+                            {(status === 'expired' || status === 'soon') && (
+                              <button
+                                className="button secondary"
+                                disabled={busy}
+                                onClick={() => {
+                                  setPrefill({
+                                    productId: item.outputId,
+                                    amount: String(b.remaining),
+                                    reason: `Срок партии «${b.reason}» до ${b.expiresOn}`,
+                                  });
+                                  setForm('writeoff');
+                                }}
+                              >
+                                {t('Списать')}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    }),
+                    ...(item.unassigned > 0
+                      ? [
+                          <tr key={`${item.outputId}-unassigned`}>
+                            <td>{product?.name || item.outputId}</td>
+                            <td>{t('Без партии (закупка или излишек)')}</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>
+                              {quantity(item.unassigned)} {t(unit)}
+                            </td>
+                            <td>—</td>
+                            <td />
+                          </tr>,
+                        ]
+                      : []),
+                  ];
+                })}
+              </tbody>
+            </table>
+            {!batches.batches.length && <p className="muted">{t('Готовых заготовок с остатком нет.')}</p>}
+          </div>
+        )}
+      </section>
+      <section className="panel">
         <h2>{t('Расходы бара')}</h2>
         <Pagination page={expenses} />
         <p className="muted">
@@ -139,7 +248,7 @@ export default function Operations() {
           </table>
         </div>
       </section>
-      {form && <OperationForm kind={form} close={() => setForm(null)} />}
+      {form && <OperationForm kind={form} prefill={prefill} close={() => setForm(null)} />}
     </>
   );
 }

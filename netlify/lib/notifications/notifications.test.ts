@@ -6,8 +6,8 @@ import { identity } from '../../../tests/identity-fixture';
 import { mongoRepository } from '../barbar-mongo';
 import { businessToday } from '../../../src/barbar/domain/business-day';
 import { handlePush, hash, type Device } from './subscriptions';
-import { deliverStockAlerts } from './deliver';
-import type { AlertEvent } from './events';
+import { deliverPurchaseNotices, deliverStockAlerts } from './deliver';
+import type { AlertEvent, PurchaseEvent } from './events';
 vi.mock('web-push', () => ({
   default: { sendNotification: vi.fn().mockResolvedValue({ statusCode: 201 }) },
 }));
@@ -103,5 +103,64 @@ describe.skipIf(!uri)('transactional alerts and push security in isolated MongoD
     await deliverStockAlerts(db);
     expect(webpush.sendNotification).toHaveBeenCalledTimes(1);
     expect(await db.collection('pushDevices').countDocuments()).toBe(0);
+  });
+  it('queues one purchase notice only after the write and delivers it to owner devices, even in foreground', async () => {
+    vi.mocked(webpush.sendNotification).mockClear();
+    const actor = (await identity.resolve('admin'))!;
+    const purchase = {
+      type: 'purchase' as const,
+      id: 'purchase-command',
+      value: { id: 'purchase-row', alcoholId: 'gin', date: businessToday(), ml: 700, costPerLiter: 9200 },
+    };
+    await Promise.all([repo.execute!(purchase, actor), repo.execute!(purchase, actor)]);
+    await expect(
+      repo.execute!(
+        { ...purchase, id: 'rejected-purchase', value: { ...purchase.value, id: 'rejected-row', ml: -1 } },
+        actor,
+      ),
+    ).rejects.toThrow();
+    const events = await db.collection<PurchaseEvent>('purchaseEvents').find().toArray();
+    expect(events).toHaveLength(1);
+    expect(events[0].purchase).toMatchObject({
+      name: 'Gin Beefeater',
+      quantity: 700,
+      unit: 'ml',
+      amount: 6440,
+    });
+    const now = Date.now();
+    await db.collection<{ _id: string; userId: string; expiresAt: Date }>('sessions').insertMany([
+      { _id: 'owner-session', userId: 'admin', expiresAt: new Date(now + 3600000) },
+      { _id: 'worker-session', userId: 'barbar', expiresAt: new Date(now + 3600000) },
+    ]);
+    const users = db.collection<{ _id: string; active: boolean; role: string }>('users');
+    await users.updateOne({ _id: 'admin' }, { $set: { active: true, role: 'owner' } }, { upsert: true });
+    await users.updateOne({ _id: 'barbar' }, { $set: { active: true, role: 'worker' } }, { upsert: true });
+    const device = (id: string, userId: string, sessionId: string): Device => ({
+      _id: id,
+      userId,
+      sessionId,
+      endpoint: `https://fcm.googleapis.com/fcm/send/${id}`,
+      keys: subscription.keys,
+      expiresAt: new Date(now + 3600000),
+      updatedAt: new Date(now - 1000),
+      foregroundUntil: new Date(now + 60000),
+      language: 'ru',
+    });
+    await db
+      .collection<Device>('pushDevices')
+      .insertMany([
+        device('owner-device', 'admin', 'owner-session'),
+        device('worker-device', 'barbar', 'worker-session'),
+      ]);
+    await Promise.all([deliverPurchaseNotices(db), deliverPurchaseNotices(db)]);
+    expect(webpush.sendNotification).toHaveBeenCalledTimes(1);
+    const [target, body] = vi.mocked(webpush.sendNotification).mock.calls[0];
+    expect(target.endpoint).toContain('owner-device');
+    const payload = JSON.parse(body as string);
+    expect(payload.title).toBe('Barbar · Закупка');
+    expect(payload.body).toMatch(/^Gin Beefeater · 700 мл · 6\s440 ֏ · \d{2}:\d{2}$/);
+    expect((await db.collection<PurchaseEvent>('purchaseEvents').findOne())!.done).toBe(true);
+    await deliverPurchaseNotices(db);
+    expect(webpush.sendNotification).toHaveBeenCalledTimes(1);
   });
 });

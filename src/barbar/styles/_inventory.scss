@@ -92,25 +92,13 @@
   overflow-wrap: anywhere;
 }
 
-.staff-metrics {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.staff-recipe-preview {
-  width: 150px;
-  height: 130px;
-  overflow: hidden;
-  border-radius: 12px;
-  margin: 0 auto 20px;
-}
-
 .inventory-categories {
   flex-wrap: wrap;
   max-width: 100%;
 }
 
-.staff-recipe-missing,
-.card-content p.staff-recipe-missing {
+.recipe-shortage,
+.card-content p.recipe-shortage {
   color: var(--danger);
   font-size: 11px;
   line-height: 1.6;
@@ -119,11 +107,14 @@
   display: block;
 }
 
-.staff-recipe-missing svg {
+.recipe-shortage svg {
   vertical-align: middle;
   margin-right: 5px;
 }
 
-.staff-recipe-ingredient {
-  margin-bottom: 14px;
+.inventory-category-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
 }

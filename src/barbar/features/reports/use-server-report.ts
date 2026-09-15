@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { businessToday } from '../../domain/business-day';
-import { api } from '../../services/api-client';
+import { snapshotRead } from '../../services/api-client';
 import { useBar } from '../../app/providers/BarProvider';
 import type { ServerReport } from '../../domain/reports/server-types';
 export function useServerReport(from: string, to: string, lead = 3, reserve = 4) {
@@ -15,7 +15,8 @@ export function useServerReport(from: string, to: string, lead = 3, reserve = 4)
     let cancelled = false;
     setError('');
     setLoading(true);
-    void api(
+    void snapshotRead(
+      data,
       `/api/barbar/report?${new URLSearchParams({ from, to, lead: String(lead), reserve: String(reserve) })}`,
     )
       .then((report) => {

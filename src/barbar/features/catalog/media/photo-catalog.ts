@@ -14,11 +14,23 @@ export interface PhotoChoice {
   bottle?: boolean;
   template?: 'beer' | 'wine';
 }
-export function bottlePhoto(name: string, category = ''): PhotoChoice {
+export function bottlePhoto(name: string, category = '', menuCategory?: string): PhotoChoice {
+  // Goods show the real product: packaged snacks reuse product photos, drinks their menu packshot.
+  if (category === 'goods') {
+    const product = (menuCategory || 'soft') === 'snack' ? goodsSnackPhoto(name) : undefined;
+    return product && photos[product] ? { key: product } : menuPhoto(name, 0, menuCategory || 'soft');
+  }
+  // Snack products show the raw product; unknown ones fall back to an illustrative serving.
+  if (category === 'food') {
+    const key = foodPhoto(name);
+    return key && photos[key] ? { key } : { key: snackPhoto(name), example: true };
+  }
   const n = name.toLowerCase();
   let key = '';
   if (/379/.test(n)) {
     if (/pilsner/.test(n)) key = '379-pilsner';
+    else if (/вишн|cherry/.test(n)) key = '379-cherry';
+    else if (/citrus|цитрус|american|wheat ale/.test(n)) key = '379-citrus';
     else if (/weizen/.test(n)) key = '379-weizen';
     else if (/dankel|dunkel/.test(n)) key = '379-dunkel';
   } else if (/voskeni/.test(n)) {
@@ -59,6 +71,20 @@ export function bottlePhoto(name: string, category = ''): PhotoChoice {
           : /white|kangun/.test(n)
             ? 'tushpa-white'
             : 'tushpa-red';
+  } else if (/vayk|zakare|kars city/.test(n)) {
+    key = /zakare.*pomegranate.*reserve/.test(n)
+      ? 'vayk-zakare-pomegranate-reserve'
+      : /zakare.*pomegranate/.test(n)
+        ? 'vayk-zakare-pomegranate'
+        : /zakare.*apricot/.test(n)
+          ? 'vayk-zakare-apricot'
+          : /zakare.*cherry/.test(n)
+            ? 'vayk-zakare-cherry'
+            : /kars.*white/.test(n)
+              ? 'vayk-kars-white'
+              : /kars.*red/.test(n)
+                ? 'vayk-kars-red'
+                : '';
   } else if (/ararat.*brandy|ararat.*coffee|ararat.*honey|ararat.*cherry/.test(n) || category === 'cognac') {
     key = /coffee/.test(n)
       ? 'ararat-coffee'
@@ -89,10 +115,15 @@ export function bottlePhoto(name: string, category = ''): PhotoChoice {
       [/guinness/, 'guinness'],
       [/kozel/, 'kozel'],
       [/blanc/, 'blanc'],
+      [/volkov|волков/, 'volkovskaya-ipa'],
+      [/cider|сидр/, 'cider-bottle'],
+      [/german beer|немецк/, 'german-beer'],
     ];
     key = brands.find(([match]) => match.test(n))?.[1] || '';
   }
-  if (key && photos[key]) return { key, bottle: true };
+  // Generic entries show a typical bottle, not necessarily the bar's brand.
+  if (key && photos[key])
+    return { key, bottle: true, ...(['cider-bottle', 'german-beer'].includes(key) ? { example: true } : {}) };
   if (['beer', 'wine', 'cognac'].includes(category) || /379|voskeni|tushpa|vayk/.test(n))
     return { key: '', bottle: true, template: category === 'beer' || /379/.test(n) ? 'beer' : 'wine' };
   const ingredients: [RegExp, string][] = [
@@ -132,7 +163,7 @@ export function bottlePhoto(name: string, category = ''): PhotoChoice {
     [/конфет/, 'candy'],
     [/барбарис/, 'barberry'],
     [/кола/, 'cola-bottle'],
-    [/тоник/, 'tonic-bottle'],
+    [/тоник/, 'tonic'],
     [/содов/, 'water-bottle'],
     [/vodka/, 'vodka-bottle'],
     [/tequila/, 'tequila-bottle'],
@@ -264,28 +295,28 @@ export function menuPhoto(name: string, image: number, category?: string, servin
     return { key, example: true };
   }
   if (category === 'soft') {
-    const key = /lemonade/.test(n)
+    const key = /lemonade|лимонад/.test(n)
       ? 'lemonade'
       : /juice/.test(n)
         ? 'juice-glass'
-        : /^cola$/.test(n)
+        : /^(cola|кола)$/.test(n)
           ? 'cola-bottle'
-          : /fanta/.test(n)
+          : /fanta|фанта/.test(n)
             ? 'fanta'
-            : /sprite/.test(n)
+            : /sprite|спрайт/.test(n)
               ? 'sprite'
-              : /tonic/.test(n)
+              : /tonic|тоник/.test(n)
                 ? 'tonic'
-                : /jermuk/.test(n)
+                : /jermuk|джермук/.test(n)
                   ? 'jermuk'
-                  : /energy/.test(n)
+                  : /energy|энергет|red bull/.test(n)
                     ? 'energy-drink'
                     : 'water-bottle';
     if (photos[key])
       return {
         key,
         bottle: !['lemonade', 'juice-glass'].includes(key),
-        example: !['cola-bottle', 'fanta', 'sprite', 'jermuk'].includes(key),
+        example: !['cola-bottle', 'fanta', 'sprite', 'jermuk', 'tonic'].includes(key),
       };
   }
   const key = servingPhotos[image - 12] || 'gin-tonic';
@@ -316,7 +347,41 @@ const snackPhotos: [RegExp, string][] = [
   [/oliv|олив|маслин/i, 'snack-olives'],
   [/lemon|лимон/i, 'snack-lemon'],
   [/honey|м[её]д/i, 'snack-honey'],
+  [/lavash|лаваш/i, 'snack-brtuch'],
+  [/bread|хлеб/i, 'snack-sandwich'],
 ];
+
+const foodPhotos: [RegExp, string][] = [
+  [/лаваш|lavash/i, 'food-lavash'],
+  [/хлеб|bread/i, 'food-bread'],
+  [/микаел|лори|mikayel|lori/i, 'food-mikayelyan'],
+  [/сыр|cheese/i, 'food-cheese'],
+  [/судж|sujuk|sucuk/i, 'food-sujuk'],
+  [/колбас|сосис|sausage/i, 'food-sausages'],
+  [/вялен|jerky/i, 'food-jerky'],
+  [/анчоус|anchov/i, 'food-anchovy'],
+  [/олив|маслин|olive/i, 'food-olives'],
+  [/маринов|солён|солен|корнишон|pickle/i, 'food-pickles'],
+  [/помидор|томат|tomato/i, 'food-tomato'],
+  [/огур|cucumber/i, 'food-cucumber'],
+  [/зелен|петрушк|укроп|кинз|herb|greens/i, 'food-greens'],
+  [/соус|кетчуп|sauce|ketchup/i, 'food-sauce'],
+  [/масло|butter/i, 'food-butter'],
+  [/чипс|chips|crisps/i, 'food-chips'],
+  [/фисташ|pistach/i, 'food-pistachios'],
+  [/орех|nuts/i, 'food-nuts'],
+  [/крекер|сухар|cracker/i, 'food-crackers'],
+];
+export const foodPhoto = (name: string) => foodPhotos.find(([pattern]) => pattern.test(name))?.[1];
+/** Packaged or portioned snacks sold whole: real product photos instead of serving illustrations. */
+export const goodsSnackPhoto = (name: string) =>
+  /lemon|лимон/i.test(name)
+    ? 'lemon'
+    : /honey|м[её]д/i.test(name)
+      ? 'honey'
+      : /pistach|фисташ/i.test(name)
+        ? 'food-pistachios'
+        : foodPhoto(name);
 
 export function snackPhoto(name: string): string {
   return snackPhotos.find(([pattern]) => pattern.test(name))?.[1] || 'snack-assortment';

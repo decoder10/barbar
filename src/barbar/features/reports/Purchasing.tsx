@@ -66,7 +66,7 @@ export function Purchasing({ from, to }: { from: string; to: string }) {
         {remote.error && <p role="alert">{t(remote.error)}</p>}
         <p className="muted">
           {t(
-            'По среднему расходу за выбранный период, включая дни без продаж. Остаток — текущий. Это ориентир, сезонность и будущие мероприятия не учитываются.',
+            'По среднему расходу за рабочие дни, когда позиция была в наличии. Рабочий день — день хотя бы с одной продажей. Остаток — текущий. Сезонность и мероприятия не учитываются.',
           )}
         </p>
         <div className="form-grid">
@@ -95,6 +95,7 @@ export function Purchasing({ from, to }: { from: string; to: string }) {
               <tr>
                 <th>{t('Позиция')}</th>
                 <th>{t('Средний расход / день')}</th>
+                <th>{t('Дней без остатка')}</th>
                 <th>{t('Хватит на дней')}</th>
                 <th>{t('Пополнить')}</th>
                 <th>{t('Рекомендация')}</th>
@@ -109,6 +110,7 @@ export function Purchasing({ from, to }: { from: string; to: string }) {
                     <td>
                       {r.daily.toFixed(2)} {unitLabel(r.unit)}
                     </td>
+                    <td>{r.workedDays === null ? '—' : `${r.stockoutDays} / ${r.workedDays}`}</td>
                     <td>{r.daysLeft?.toFixed(1) ?? '—'}</td>
                     <td>
                       {r.suggested} {unitLabel(r.unit)}

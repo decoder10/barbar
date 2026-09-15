@@ -1,9 +1,10 @@
 import { publicStock, publicCatalog, publicCatalogPart, mutationResponse } from './barbar-sync';
 import { commandAudit } from './audit/store';
-import { applyCommand } from '../../src/barbar/domain/model';
+import { applyCommand, stockTotals } from '../../src/barbar/domain/model';
 import type { BarData, Command } from '../../src/barbar/domain/types';
 import type { UserProfile } from '../../src/barbar/domain/identity/user';
 import { publicSnapshot } from './barbar-access';
+import { cardPage, parseCardQuery } from '../../src/barbar/domain/catalog/cards';
 import { authenticated, json, roleFor, sameOrigin } from './barbar-auth';
 import type { Repository } from './barbar-repository';
 import type { IdentityStore } from './barbar-users';
@@ -27,6 +28,33 @@ export const handleBarApi = async (
   }
   try {
     const split = request.headers.get('X-Barbar-Protocol') === '2' && !!repository.readStock;
+    if (new URL(request.url).pathname === '/api/barbar/catalog/cards') {
+      if (request.method !== 'GET') return json({ error: 'Метод не поддерживается.' }, 405);
+      let query: ReturnType<typeof parseCardQuery>;
+      try {
+        query = parseCardQuery(new URL(request.url).searchParams);
+      } catch (error) {
+        return json({ error: (error as Error).message }, 400);
+      }
+      // Server-side search and order over the whole catalog; the page carries IDs and stock only.
+      const catalog = repository.readCatalog
+        ? await repository.readCatalog(undefined, query.resource)
+        : { catalogRevision: '', data: (await repository.read()).data };
+      const stockSnapshot = repository.readStock ? await repository.readStock() : undefined;
+      const stock = stockSnapshot?.stock
+        ? new Map(stockSnapshot.stock.map((b) => [b.alcoholId, b.ml]))
+        : stockTotals((await repository.read()).data);
+      const popularity =
+        query.sort === 'popular' && query.date && repository.salesPopularity
+          ? await repository.salesPopularity(query.date)
+          : undefined;
+      return json({
+        ...cardPage(catalog.data!, stock, query, popularity),
+        catalogRevision: catalog.catalogRevision,
+        revision: stockSnapshot?.revision || null,
+        role,
+      });
+    }
     const catalogRoute = new URL(request.url).pathname.match(
       /^\/api\/barbar\/catalog(?:\/(alcohol|cocktails))?$/,
     );

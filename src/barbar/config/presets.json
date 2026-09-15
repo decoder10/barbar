@@ -1,0 +1,15 @@
+{
+  "bottleSizesMl": [300, 330, 500, 700, 750, 1000],
+  "glassSizesMl": [30, 50, 100, 125, 150, 175, 200],
+  "purchaseQuickAmounts": {
+    "pcs": [1, 5, 10, 20, 50],
+    "bottle": [1, 6, 12, 24, 48],
+    "volume": [500, 700, 1000, 2000, 5000]
+  },
+  "batchExpirySoonDays": 2,
+  "cardPageSize": 24,
+  "storage": {
+    "limitMb": 512,
+    "warningPercent": 70
+  }
+}

@@ -18,3 +18,4 @@ playwright-report/
 *.backup-key
 
 !.env.backup.example
+!.env.production-db.example

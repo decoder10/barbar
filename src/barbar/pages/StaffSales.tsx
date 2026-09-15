@@ -1,27 +1,30 @@
 import { formatMoney as money } from '../presentation/currency/format-money';
 import { LoadingStatus } from '../ui/loading';
 import { SalesDayToolbar } from '../features/sales/SalesDayToolbar';
-import { AutoReveal } from '../ui/auto-reveal';
+import { LoadMore } from '../ui/auto-reveal';
+import { useCardPages } from '../features/catalog/use-card-pages';
+import { staffCardPage } from '../domain/catalog/cards';
+import { expandRecipe } from '../domain/catalog/sets';
 import { useHistory } from '../features/sales/use-history';
+import { CategoryTabs } from '../ui/category-tabs';
 import { useSessionFilter } from '../presentation/use-session-filter';
-import { CheckCircle2, GlassWater, Plus, ReceiptText, Search, ShoppingBag } from 'lucide-react';
+import { menuQuantitySummary } from '../domain/quantity-summary';
+import { ArrowDownRight, Banknote, GlassWater, Plus, ReceiptText, Search, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
-import { BottleArt, CocktailArt } from '../features/catalog/art';
-import { CatalogCard } from '../features/catalog/cards';
+import { AlcoholCard, CocktailCard, compositionText, stockPill } from '../features/catalog/cards';
 import { Empty, Metric } from '../ui/layout';
-import { Field, GlassVolumeField } from '../ui/fields';
-import { Modal, Submit } from '../ui/modal';
 import { businessDayHint } from '../domain/business-day';
-import { categories, categoryLabel, saleUnit, volume } from '../domain/model';
+import { categories, ingredientVolume, round, saleUnit, volume } from '../domain/model';
 import { isGlassServing } from '../domain/serving';
 import type { StaffProduct } from '../domain/types';
-import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
+import { CatalogSortControl, useCatalogSort } from '../features/catalog/sort';
 import StaffCocktailForm from '../features/recipes/StaffCocktailForm';
+import { SaleDialog, saleQuantityLabel } from '../features/sales/SaleDialog';
 import { locale, t } from '../presentation/i18n/runtime';
-import { menuImage } from '../domain/catalog/legacy-images';
 import { useBar } from '../app/providers/BarProvider';
 import { useBusinessDate } from '../features/sales/use-business-date';
 
+/** Worker sales: the owner's screen without costs, profit, voids, exports or the operation log. */
 export default function StaffSales() {
   const { staffData, run } = useBar();
   const [creating, setCreating] = useState(false);
@@ -29,18 +32,41 @@ export default function StaffSales() {
   const [category, setCategory] = useSessionFilter<string>('category', 'all');
   const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('worker-sales');
-  const [visible, setVisible] = useState(24);
   const [selected, setSelected] = useState<StaffProduct | null>(null);
   const [quantity, setQuantity] = useState('1');
   const [glassMl, setGlassMl] = useState('150');
   const history = useHistory<import('../domain/types').StaffSale>('sales', date);
+  const pages = useCardPages({
+    resources:
+      category === 'alcohol' ? ['alcohol'] : category === 'all' ? ['cocktails', 'alcohol'] : ['cocktails'],
+    category,
+    search,
+    sort,
+    date,
+    revision: staffData,
+    local: staffData?.paged
+      ? undefined
+      : {
+          key: date,
+          page: (_resource, query) => {
+            const popularity = new Map<string, number>();
+            for (const s of staffData?.sales.filter((sale) => sale.date === date && !sale.voided) || [])
+              popularity.set(
+                `${s.kind}:${s.productId}`,
+                (popularity.get(`${s.kind}:${s.productId}`) || 0) + 1,
+              );
+            return staffCardPage(staffData?.products || [], query, popularity);
+          },
+        },
+  });
   if (!staffData) return <p className="muted">{t('Загружаем продажи…')}</p>;
   const day = history.enabled ? history.rows : staffData.sales.filter((sale) => sale.date === date);
   const sales = history.enabled ? history.groups : day.filter((sale) => !sale.voided);
-  const revenue = sales.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
+  const revenue = round(sales.reduce((sum, sale) => sum + (sale.revenue || 0), 0));
   const operationCount = history.enabled
     ? history.groups.reduce((n, g) => n + g.operations, 0)
     : sales.length;
+  // Workers see what was sold, grouped by position, not each operation.
   const summary = new Map<
     string,
     {
@@ -70,45 +96,18 @@ export default function StaffSales() {
     item.revenue += sale.revenue || 0;
     summary.set(key, item);
   }
-  const prettyDate = new Intl.DateTimeFormat(locale(), {
-    weekday: 'long',
+  const dayLabel = new Date(`${date}T12:00:00`).toLocaleDateString(locale(), {
     day: 'numeric',
     month: 'long',
-  }).format(new Date(`${date}T12:00:00`));
-  const totalUnits = new Map<string, number>();
-  for (const sale of sales) {
-    const unit = saleUnit(sale);
-    totalUnits.set(unit, (totalUnits.get(unit) || 0) + sale.quantity);
-  }
-  const count = sales.filter((s) => s.kind === 'cocktail').reduce((n, s) => n + s.quantity, 0);
+    weekday: 'long',
+  });
   const ml = sales.filter((s) => s.kind === 'alcohol').reduce((n, s) => n + s.quantity, 0);
-  const products = staffData.products.filter(
-    (p) =>
-      (category === 'all' || p.category === category) &&
-      p.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
-  );
-  const popularity = new Map<string, number>();
-  sales.forEach((s) =>
-    popularity.set(
-      `${s.kind}:${s.productId}`,
-      (popularity.get(`${s.kind}:${s.productId}`) || 0) + ('operations' in s ? s.operations : 1),
-    ),
-  );
-  products.sort((a, b) =>
-    compareCatalog(
-      {
-        name: a.name,
-        available: a.ready ? (a.available ?? Infinity) : 0,
-        popularity: popularity.get(`${a.kind}:${a.id}`),
-      },
-      {
-        name: b.name,
-        available: b.ready ? (b.available ?? Infinity) : 0,
-        popularity: popularity.get(`${b.kind}:${b.id}`),
-      },
-      sort,
-    ),
-  );
+  const productByKey = new Map(staffData.products.map((p) => [`${p.kind}:${p.id}`, p]));
+  const recipeById = new Map(staffData.recipes.map((r) => [r.id, r]));
+  const ingredientName = (id: string) => staffData.ingredients.find((a) => a.id === id)?.name;
+  const products = pages.items
+    .map(({ resource, id }) => productByKey.get(`${resource === 'cocktails' ? 'cocktail' : 'alcohol'}:${id}`))
+    .filter((p): p is StaffProduct => !!p);
   const label = (n: number, item: { kind: string; unit?: StaffProduct['unit']; category?: string }) =>
     `${n} ${saleUnit({ ...item, category: item.category === 'alcohol' ? undefined : (item.category as import('../domain/types').MenuCategory) })}`;
   // Availability can change while the form is open on another device.
@@ -123,6 +122,15 @@ export default function StaffSales() {
       ? Math.floor((current.availableMl + 1e-6) / servingMl)
       : current?.available;
   const totalPrice = (current?.price || 0) * amount * (variableGlass ? servingMl / current.glassSizeMl! : 1);
+  const currentRecipe = current?.kind === 'cocktail' ? recipeById.get(current.id) : undefined;
+  const deducted =
+    variableGlass && current?.stockAlcoholId
+      ? [{ alcoholId: current.stockAlcoholId, ml: servingMl / current.bottleSizeMl! }]
+      : currentRecipe
+        ? expandRecipe(currentRecipe, staffData.recipes)
+        : current
+          ? [{ alcoholId: current.id, ml: 1 }]
+          : [];
   return (
     <>
       <h1 className="visually-hidden">{t('Продажи за день')}</h1>
@@ -137,19 +145,25 @@ export default function StaffSales() {
         }
       />
       <p className="business-day-hint">{t(businessDayHint)}</p>
-      <section className="metrics staff-metrics">
+      <section className="metrics">
+        <Metric
+          label="Выручка за день"
+          value={money(revenue)}
+          hint={dayLabel}
+          icon={<Banknote size={18} />}
+          accent
+        />
         <Metric
           label="Продано из меню"
-          value={`${count} шт.`}
-          hint="Бутылки, бокалы и порции за день"
+          value={`${sales.filter((s) => s.kind === 'cocktail').reduce((n, s) => n + s.quantity, 0)} ед.`}
+          hint={menuQuantitySummary(sales)}
           icon={<GlassWater size={18} />}
-          accent
         />
         <Metric
           label="Алкоголь в розлив"
           value={volume(ml)}
-          hint="За выбранный день"
-          icon={<ShoppingBag size={18} />}
+          hint="Продажи без коктейлей"
+          icon={<ArrowDownRight size={18} />}
         />
       </section>
       {t(
@@ -166,30 +180,20 @@ export default function StaffSales() {
             </div>
           </div>
           <div className="catalog-tools sales-catalog-tools">
-            <div className="menu-categories">
-              {t(
-                [['all', 'Всё'], ...categories.map((c) => [c.id, c.label]), ['alcohol', 'В розлив']].map(
-                  ([key, name]) => (
-                    <button
-                      key={key}
-                      aria-pressed={category === key}
-                      className={category === key ? 'active' : ''}
-                      onClick={() => {
-                        setCategory(key);
-                        setVisible(24);
-                      }}
-                    >
-                      {t(name)}
-                    </button>
-                  ),
-                ),
-              )}
-            </div>
+            <CategoryTabs
+              className="menu-categories"
+              value={category}
+              onChange={setCategory}
+              options={[
+                ['all', 'Всё'] as const,
+                ...categories.map((c) => [c.id, c.label] as const),
+                ['alcohol', 'В розлив'] as const,
+              ]}
+            />
             <CatalogSortControl
               value={sort}
               onChange={(value) => {
                 setSort(value);
-                setVisible(24);
               }}
               options={['original', 'popular', 'available', 'name', 'name-desc']}
             />
@@ -201,296 +205,214 @@ export default function StaffSales() {
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
-                  setVisible(24);
                 }}
               />
             </label>
           </div>
           <div className="drink-grid">
-            {t(
-              products.slice(0, visible).map((p) => (
-                <CatalogCard
-                  key={`${p.kind}:${p.id}`}
-                  name={p.name}
-                  action={() => {
-                    setSelected(p);
-                    setQuantity(p.kind === 'cocktail' ? '1' : '50');
-                    setGlassMl(String(p.glassSizeMl || 150));
+            {products.map((p) => {
+              const open = () => {
+                setSelected(p);
+                setQuantity(p.kind === 'cocktail' ? '1' : '50');
+                setGlassMl(String(p.glassSizeMl || 150));
+              };
+              if (p.kind === 'alcohol')
+                return (
+                  <AlcoholCard
+                    key={`alcohol:${p.id}`}
+                    drink={{
+                      name: p.name,
+                      category: 'alcohol',
+                      color: '',
+                      pricePerLiter: (p.price || 0) * 1000,
+                    }}
+                    ml={p.available || 0}
+                    action={open}
+                  />
+                );
+              const recipe = recipeById.get(p.id);
+              const lines = recipe ? expandRecipe(recipe, staffData.recipes).length : 0;
+              const pill = stockPill({
+                portions: p.available,
+                lines,
+                costLines: recipe?.managedIngredientIds.length || 0,
+                noIngredients: recipe?.noIngredients,
+              });
+              return (
+                <CocktailCard
+                  key={`cocktail:${p.id}`}
+                  cocktail={{
+                    name: p.name,
+                    image: p.image || 0,
+                    category: p.category === 'alcohol' ? undefined : p.category,
+                    serving: p.serving,
+                    price: p.price || 0,
                   }}
-                  art={
-                    p.kind === 'alcohol' ? (
-                      <BottleArt drink={{ name: p.name, category: 'alcohol', color: '' }} />
-                    ) : (
-                      <CocktailArt
-                        image={menuImage({
-                          name: p.name,
-                          image: p.image || 0,
-                          category: p.category === 'alcohol' ? undefined : p.category,
-                        })}
-                        name={p.name}
-                        category={p.category}
-                        serving={p.unit}
-                      />
-                    )
-                  }
-                  badge={
-                    p.category === 'alcohol' ? 'В РОЗЛИВ' : categoryLabel(p.category).toLocaleUpperCase()
-                  }
-                  detail={
-                    !p.ready
-                      ? 'Попросите владельца настроить позицию'
-                      : p.available === null
-                        ? 'Доступно к продаже'
-                        : `Доступно: ${label(p.available, p)}`
-                  }
-                  footer={
-                    <>
-                      <strong>
-                        {t(p.price ? money(p.price * (p.kind === 'alcohol' ? 50 : 1)) : 'Цена не задана')}
-                      </strong>
-                      <span className={`stock-pill ${p.ready && p.available !== 0 ? '' : 'low'}`}>
-                        {t(p.ready && p.available !== 0 ? 'Записать продажу' : 'Недоступно')}
-                      </span>
-                      {p.kind === 'alcohol' && <small>{t('за 50 мл')}</small>}
-                    </>
-                  }
+                  detail={compositionText(
+                    [
+                      ...(recipe?.ingredients || []).map((i) => ingredientName(i.alcoholId)),
+                      ...(recipe?.managedIngredientIds || []).map(ingredientName),
+                      ...(recipe?.components || []).map(
+                        (c) => `${recipeById.get(c.cocktailId)?.name || c.cocktailId} × ${c.quantity}`,
+                      ),
+                    ],
+                    recipe?.noIngredients,
+                  )}
+                  footer={<span className={`stock-pill ${pill.low ? 'low' : ''}`}>{t(pill.label)}</span>}
+                  action={open}
                 />
-              )),
-            )}
+              );
+            })}
           </div>
-          {t(
-            products.length > visible && (
-              <AutoReveal total={products.length} visible={visible} setVisible={setVisible} />
-            ),
+          {pages.error && <p role="alert">{t(pages.error)}</p>}
+          {pages.hasMore && (
+            <LoadMore remaining={pages.remaining} loading={pages.loading} onMore={pages.more} />
           )}
           {t(
-            !products.length && (
-              <Empty title={t('Позиции не найдены')} text="Измените поиск или категорию." />
+            pages.ready && !products.length && (
+              <Empty title={t('Напитки не найдены')} text="Попробуйте другое название или измените фильтр." />
             ),
           )}
         </section>
-        <aside className="day-receipt staff-day-receipt" aria-label={t('Сводка продаж за день')}>
+        <aside className="day-receipt" aria-label={t('Сводка продаж за день')}>
           <div className="receipt-heading">
-            <span className="staff-receipt-icon">
-              <ReceiptText size={22} />
+            <span className="receipt-icon">
+              <ReceiptText size={20} />
             </span>
             <div>
               <h2>{t('Продажи за день')}</h2>
-              <p>{t(prettyDate)}</p>
+              <p>{t(dayLabel)}</p>
             </div>
-            <span className="count-badge" title={t('Разных позиций')}>
-              {t(summary.size)}
-            </span>
+            <span className="count-badge">{t(summary.size)}</span>
           </div>
-          {t(
-            history.loading ? (
+          <div className="receipt-lines">
+            {history.loading ? (
               <LoadingStatus />
             ) : history.error ? (
               <p role="alert">{t(history.error)}</p>
-            ) : sales.length > 0 ? (
-              <>
-                <div className="staff-summary-label">
-                  <span>{t('Позиция')}</span>
-                  <span>
-                    {t('Количество')} · {t('Сумма')}
-                  </span>
-                </div>
-                <div className="receipt-lines staff-summary-lines">
-                  {t(
-                    [...summary.entries()].map(([key, item]) => {
-                      const product = staffData.products.find(
-                        (p) => p.id === item.productId && p.kind === item.kind,
-                      );
-                      return (
-                        <div className="staff-summary-row" key={key}>
-                          <span className="staff-summary-thumb">
-                            <CocktailArt
-                              image={
-                                product?.image
-                                  ? menuImage({
-                                      name: item.name,
-                                      image: product.image,
-                                      category: item.category,
-                                    })
-                                  : 12
-                              }
-                              name={item.name}
-                              category={item.category}
-                              serving={item.unit}
-                            />
-                          </span>
-                          <strong>
-                            {t(item.name)}
-                            {t(
-                              item.servingMl ? (
-                                <small>
-                                  {t('По')}
-                                  {t(item.servingMl)}
-                                  {t(' мл')}
-                                </small>
-                              ) : null,
-                            )}
-                          </strong>
-                          <span className="staff-summary-quantity">
-                            {t(label(item.quantity, item))}
-                            <strong className="staff-sale-amount">{t(money(item.revenue))}</strong>
-                          </span>
-                        </div>
-                      );
-                    }),
-                  )}
-                </div>
-                <div className="receipt-total">
-                  <span>{t('Итого за день')}</span>
-                  <strong>{t(money(revenue))}</strong>
-                </div>
-                <div className="staff-receipt-total">
-                  <span>{t('Количество')}</span>
-                  <div>
-                    {t(
-                      [...totalUnits].map(([unit, quantity]) => (
-                        <strong key={unit}>
-                          {t(new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 }).format(quantity))}
-                          {t(' ')}
-                          <small>{t(unit)}</small>
-                        </strong>
-                      )),
-                    )}
-                  </div>
-                </div>
-                <p className="staff-receipt-meta">
-                  <CheckCircle2 size={14} />
-                  {t(operationCount)}
-                  {t(' записей ·')}
-                  {t(summary.size)}
-                  {t(' позиций')}
-                </p>
-              </>
+            ) : !summary.size ? (
+              <Empty
+                title={t('День только начинается')}
+                text="Добавьте первую продажу — она появится здесь."
+              />
             ) : (
-              <Empty title={t('Продаж пока нет')} text="Выберите напиток слева и запишите первую продажу." />
-            ),
-          )}
-          <div className="receipt-note">
-            {t('Остатки списываются автоматически.')}
-            <br />
-            {t('Для исправления продажи обратитесь к владельцу.')}
+              [...summary.entries()].map(([key, item]) => (
+                <div className="receipt-line" key={key}>
+                  <span className="receipt-drink">
+                    <GlassWater size={18} />
+                  </span>
+                  <div>
+                    <strong>{t(item.name)}</strong>
+                    <small>
+                      {t(label(item.quantity, item))}
+                      {t(item.servingMl ? ` · по ${item.servingMl} мл` : '')}
+                    </small>
+                  </div>
+                  <b>{t(money(item.revenue))}</b>
+                </div>
+              ))
+            )}
           </div>
+          <div className="receipt-total">
+            <span>
+              {t('Итого за день')}
+              <strong>{t(money(revenue))}</strong>
+            </span>
+            <small>
+              <ShoppingBag size={14} /> {t(operationCount)}
+              {t(' операций · ')}
+              {t(menuQuantitySummary(sales))}
+              {ml > 0 ? ` · ${volume(ml)}` : ''}
+            </small>
+          </div>
+          <div className="receipt-note">
+            <span />
+            {t(' Остатки списываются автоматически')}
+          </div>
+          <div className="receipt-note">{t('Для исправления продажи обратитесь к владельцу.')}</div>
         </aside>
       </div>
       {t(creating && <StaffCocktailForm close={() => setCreating(false)} />)}
-      {t(
-        selected && (
-          <Modal title={t(selected.name)} subtitle={`Продажа за ${date}`} close={() => setSelected(null)}>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (
-                  await run(
-                    {
-                      type: 'sale',
-                      value: {
-                        kind: selected.kind,
-                        productId: selected.id,
-                        quantity: amount,
-                        date,
-                        businessDay: currentShift,
-                        ...(variableGlass ? { servingMl } : {}),
-                      },
-                    },
-                    'Продажа записана.',
-                  )
-                )
-                  setSelected(null);
-              }}
-            >
-              {t(
-                glassServing && (
-                  <GlassVolumeField
-                    value={glassMl}
-                    onChange={setGlassMl}
-                    max={current?.bottleSizeMl}
-                    hint={`Спишется: ${Math.round((servingMl || 0) * (amount || 0))} мл`}
-                  />
-                ),
-              )}
-              {glassServing && !variableGlass && (
-                <p className="form-warning">
-                  {t('Попросите владельца указать объём бутылки и стандартного бокала на складе.')}
-                </p>
-              )}
-              <Field
-                label={
-                  selected.unit === 'bottle'
-                    ? 'Количество бутылок'
-                    : selected.unit === 'glass' && selected.category === 'wine'
-                      ? 'Количество бокалов'
-                      : selected.kind === 'cocktail'
-                        ? 'Количество порций'
-                        : 'Объём продажи, мл'
+      {selected && current && (
+        <SaleDialog
+          title={selected.name}
+          date={date}
+          close={() => setSelected(null)}
+          kind={selected.kind}
+          quantity={quantity}
+          setQuantity={setQuantity}
+          quantityLabel={saleQuantityLabel(selected.kind, selected.unit)}
+          quantityHint={
+            available === null || available === undefined
+              ? 'Продукты учитываются по стоимости, без контроля количества'
+              : `Сейчас доступно: ${current.kind === 'cocktail' ? label(available, current) : volume(available)}`
+          }
+          glass={
+            glassServing
+              ? {
+                  value: glassMl,
+                  onChange: setGlassMl,
+                  max: current.bottleSizeMl,
+                  hint: `Стоимость пропорциональна объёму. Спишется: ${Math.round((servingMl || 0) * (amount || 0))} мл.`,
+                  setup: !variableGlass && (
+                    <p className="form-warning">
+                      {t('Попросите владельца указать объём бутылки и стандартного бокала на складе.')}
+                    </p>
+                  ),
                 }
-              >
-                <input
-                  type="number"
-                  required
-                  min={selected.kind === 'cocktail' ? 1 : 0.01}
-                  step={selected.kind === 'cocktail' ? 1 : 0.01}
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                />
-              </Field>
-              <div className="quick-values">
-                {t(
-                  (selected.kind === 'cocktail' ? [1, 2, 3, 5] : [30, 50, 100, 150, 500]).map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      className={amount === n ? 'selected' : ''}
-                      onClick={() => setQuantity(String(n))}
-                    >
-                      {t(n)}
-                      {t(selected.kind === 'alcohol' ? ' мл' : '')}
-                    </button>
-                  )),
-                )}
-              </div>
-              {t(
-                !current?.ready && (
-                  <p className="form-warning">{t('Попросите владельца настроить эту позицию.')}</p>
-                ),
+              : undefined
+          }
+          deducted={deducted.map((i) => ({
+            id: i.alcoholId,
+            name: ingredientName(i.alcoholId),
+            amount: ingredientVolume(
+              { alcohol: staffData.ingredients },
+              i.alcoholId,
+              round(i.ml * (amount || 0)),
+            ),
+          }))}
+          noIngredients={currentRecipe?.noIngredients}
+          total={totalPrice}
+          notices={
+            <>
+              {!current.ready && (
+                <p className="form-warning">{t('Попросите владельца настроить эту позицию.')}</p>
               )}
-              {t(
-                available !== null && available !== undefined && current && (
-                  <p className="form-help">
-                    {t('Доступно:')}
-                    {t(label(available, current))}
-                  </p>
-                ),
+              {available !== null && available !== undefined && available < amount && (
+                <p className="form-warning">{t('Недостаточно ингредиентов на складе.')}</p>
               )}
-              <div className="form-total">
-                <span>
-                  {t('К оплате')}
-                  <strong>{t(money(Number.isFinite(totalPrice) ? totalPrice : 0))}</strong>
-                </span>
-              </div>
-              <Submit
-                disabled={
-                  !current?.ready ||
-                  amount <= 0 ||
-                  !Number.isFinite(amount) ||
-                  (available !== null && available !== undefined && available < amount) ||
-                  (variableGlass &&
-                    (!Number.isInteger(servingMl) ||
-                      servingMl <= 0 ||
-                      servingMl > (current?.bottleSizeMl || 0))) ||
-                  (current.kind === 'cocktail' && !Number.isInteger(amount)) ||
-                  (!!staffData.archivedBefore && date < staffData.archivedBefore)
-                }
-              >
-                {t('Записать продажу')}
-              </Submit>
-            </form>
-          </Modal>
-        ),
+            </>
+          }
+          disabled={
+            !current.ready ||
+            amount <= 0 ||
+            !Number.isFinite(amount) ||
+            (available !== null && available !== undefined && available < amount) ||
+            (variableGlass &&
+              (!Number.isInteger(servingMl) || servingMl <= 0 || servingMl > (current.bottleSizeMl || 0))) ||
+            (current.kind === 'cocktail' && !Number.isInteger(amount)) ||
+            (!!staffData.archivedBefore && date < staffData.archivedBefore)
+          }
+          submit={async () => {
+            if (
+              await run(
+                {
+                  type: 'sale',
+                  value: {
+                    kind: selected.kind,
+                    productId: selected.id,
+                    quantity: amount,
+                    date,
+                    businessDay: currentShift,
+                    ...(variableGlass ? { servingMl } : {}),
+                  },
+                },
+                'Продажа записана.',
+              )
+            )
+              setSelected(null);
+          }}
+        />
       )}
     </>
   );

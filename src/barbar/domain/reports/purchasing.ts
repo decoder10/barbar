@@ -1,5 +1,6 @@
 import type { BarData } from '../types';
-import { stockTotals } from '../model';
+import { stockTotals, unitBasis } from '../model';
+import { availabilityDays, ledgerChanges, type Availability } from './availability';
 export function purchaseForecast(
   data: BarData,
   from: string,
@@ -17,7 +18,9 @@ export function purchaseForecast(
   const preparations = new Set(
     data.stockMovements?.filter((m) => m.kind === 'prepare').map((m) => m.outputId),
   );
-  return forecastFromUsage(data, from, to, leadDays, reserveDays, use, preparations);
+  const { changes, workedDates } = ledgerChanges(data, from);
+  const availability = availabilityDays({ from, to, current: stockTotals(data), changes, workedDates });
+  return forecastFromUsage(data, from, to, leadDays, reserveDays, use, preparations, availability);
 }
 export function forecastFromUsage(
   data: BarData,
@@ -27,13 +30,17 @@ export function forecastFromUsage(
   reserveDays: number,
   use: Map<string, number>,
   preparations: Set<string | undefined>,
+  availability?: Map<string, Availability>,
 ) {
   const days = Math.max(1, Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1);
   const quantities = stockTotals(data);
   return data.alcohol
     .map((a) => {
       const consumed = use.get(a.id) || 0;
-      const daily = consumed / days;
+      const known = availability?.get(a.id);
+      // Demand per open day with stock; calendar days only when no sale days are known.
+      const basisDays = known?.workedDays ? Math.max(1, known.availableDays) : days;
+      const daily = consumed / basisDays;
       const available = Math.max(0, quantities.get(a.id) || 0);
       const raw = Math.max(0, daily * (Math.max(0, leadDays) + Math.max(0, reserveDays)) - available);
       return {
@@ -44,10 +51,13 @@ export function forecastFromUsage(
         daily,
         available,
         daysLeft: daily > 0 ? available / daily : null,
-        suggested: a.unit === 'bottle' ? Math.ceil(raw) : Math.ceil(raw * 100) / 100,
+        suggested: unitBasis(a.unit) === 1 ? Math.ceil(raw) : Math.ceil(raw * 100) / 100,
         preparation: preparations.has(a.id),
         days,
-        insufficientHistory: days < 7 || consumed === 0,
+        workedDays: known?.workedDays ?? null,
+        availableDays: known?.availableDays ?? null,
+        stockoutDays: known?.stockoutDays ?? 0,
+        insufficientHistory: basisDays < 7 || consumed === 0,
       };
     })
     .sort((a, b) => (a.daysLeft ?? Infinity) - (b.daysLeft ?? Infinity) || a.name.localeCompare(b.name));

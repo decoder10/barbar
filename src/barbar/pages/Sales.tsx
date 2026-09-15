@@ -1,8 +1,11 @@
 import { SalesDayToolbar } from '../features/sales/SalesDayToolbar';
-import { AutoReveal } from '../ui/auto-reveal';
+import { LoadMore } from '../ui/auto-reveal';
+import { useCardPages } from '../features/catalog/use-card-pages';
+import { cardPage } from '../domain/catalog/cards';
 import { BusyButton } from '../ui/loading';
 import { useHistory } from '../features/sales/use-history';
 import { Pagination } from '../ui/pagination';
+import { CategoryTabs } from '../ui/category-tabs';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { menuQuantitySummary } from '../domain/quantity-summary';
 import { useInventoryCalculations } from '../features/inventory/use-inventory-calculations';
@@ -19,15 +22,16 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlcoholCard, CocktailCard } from '../features/catalog/cards';
+import { AlcoholCard, CocktailCard, compositionText, stockPill } from '../features/catalog/cards';
 import { Empty, Metric } from '../ui/layout';
 import { ExportButton } from '../ui/export';
 import { Modal } from '../ui/modal';
 import { formatMoney as money } from '../presentation/currency/format-money';
 import { businessDayHint } from '../domain/business-day';
 import { activeSales, categories, round, saleUnit, volume } from '../domain/model';
+import { expandRecipe } from '../domain/catalog/sets';
 import type { Alcohol, Cocktail, Sale } from '../domain/types';
-import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
+import { CatalogSortControl, useCatalogSort } from '../features/catalog/sort';
 import { SaleForm } from '../features/sales/SaleForm';
 import { locale, t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
@@ -39,7 +43,6 @@ export default function Sales() {
   const [category, setCategory] = useSessionFilter<string>('category', 'cocktail');
   const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('owner-sales');
-  const [visible, setVisible] = useState(24);
   const [selected, setSelected] = useState<{ kind: Sale['kind']; product: Alcohol | Cocktail } | null>(null);
   const [voiding, setVoiding] = useState<Sale | null>(null);
   const history = useHistory('sales', date);
@@ -53,18 +56,6 @@ export default function Sales() {
   const cost = round(totals.reduce((n, s) => n + (s.cost || 0), 0));
   const count = totals.filter((s) => s.kind === 'cocktail').reduce((n, s) => n + s.quantity, 0);
   const ml = totals.filter((s) => s.kind === 'alcohol').reduce((n, s) => n + s.quantity, 0);
-  const query = search.trim().toLocaleLowerCase();
-  const cocktails =
-    category !== 'alcohol'
-      ? data.cocktails.filter(
-          (c) =>
-            (category === 'all' || (c.category || 'cocktail') === category) &&
-            c.name.toLocaleLowerCase().includes(query),
-        )
-      : [];
-  const alcohol = ['all', 'alcohol'].includes(category)
-    ? data.alcohol.filter((a) => a.category === 'alcohol' && a.name.toLocaleLowerCase().includes(query))
-    : [];
   const popularity = new Map<string, number>();
   totals.forEach((s) =>
     popularity.set(
@@ -72,34 +63,25 @@ export default function Sales() {
       (popularity.get(`${s.kind}:${s.productId}`) || 0) + ('operations' in s ? s.operations : 1),
     ),
   );
-  const cocktailSortData = new Map(
-    cocktails.map((c) => [
-      c.id,
-      {
-        name: c.name,
-        price: c.price,
-        available: c.ingredients.length
-          ? inventory.portions(c.ingredients)
-          : c.extraCosts?.length
-            ? Infinity
-            : 0,
-        popularity: popularity.get(`cocktail:${c.id}`),
-      },
-    ]),
-  );
-  cocktails.sort((a, b) => compareCatalog(cocktailSortData.get(a.id)!, cocktailSortData.get(b.id)!, sort));
-  const alcoholSortData = new Map(
-    alcohol.map((a) => [
-      a.id,
-      {
-        name: a.name,
-        price: a.pricePerLiter,
-        available: inventory.stock(a.id),
-        popularity: popularity.get(`alcohol:${a.id}`),
-      },
-    ]),
-  );
-  alcohol.sort((a, b) => compareCatalog(alcoholSortData.get(a.id)!, alcoholSortData.get(b.id)!, sort));
+  // Card order and search come from server pages; a complete in-memory ledger pages locally.
+  const pages = useCardPages({
+    resources:
+      category === 'alcohol' ? ['alcohol'] : category === 'all' ? ['cocktails', 'alcohol'] : ['cocktails'],
+    category,
+    search,
+    sort,
+    date,
+    revision: data,
+    local: data.opening
+      ? undefined
+      : {
+          // Stable key: the ledger object and the day's popularity, not a new array per render.
+          key: JSON.stringify([...popularity]),
+          page: (_resource, query) => cardPage(data, inventory.quantities, query, popularity),
+        },
+  });
+  const cocktailById = new Map(data.cocktails.map((c) => [c.id, c]));
+  const alcoholById = new Map(data.alcohol.map((a) => [a.id, a]));
   const dayLabel = new Date(`${date}T12:00:00`).toLocaleDateString(locale(), {
     day: 'numeric',
     month: 'long',
@@ -155,30 +137,20 @@ export default function Sales() {
             </div>
           </div>
           <div className="catalog-tools sales-catalog-tools">
-            <div className="menu-categories">
-              {t(
-                [['all', 'Всё'], ...categories.map((c) => [c.id, c.label]), ['alcohol', 'В розлив']].map(
-                  ([key, label]) => (
-                    <button
-                      aria-pressed={category === key}
-                      key={key}
-                      className={category === key ? 'active' : ''}
-                      onClick={() => {
-                        setCategory(key);
-                        setVisible(24);
-                      }}
-                    >
-                      {t(label)}
-                    </button>
-                  ),
-                ),
-              )}
-            </div>
+            <CategoryTabs
+              className="menu-categories"
+              value={category}
+              onChange={setCategory}
+              options={[
+                ['all', 'Всё'] as const,
+                ...categories.map((c) => [c.id, c.label] as const),
+                ['alcohol', 'В розлив'] as const,
+              ]}
+            />
             <CatalogSortControl
               value={sort}
               onChange={(value) => {
                 setSort(value);
-                setVisible(24);
               }}
               options={['original', 'popular', 'available', 'name', 'name-desc', 'price', 'price-desc']}
             />
@@ -190,61 +162,60 @@ export default function Sales() {
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
-                  setVisible(24);
                 }}
               />
             </label>
           </div>
           <div className="drink-grid">
-            {t(
-              cocktails
-                .slice(0, visible)
-                .map((c) => (
+            {pages.items.map(({ resource, id }) => {
+              const c = resource === 'cocktails' ? cocktailById.get(id) : undefined;
+              const a = resource === 'alcohol' ? alcoholById.get(id) : undefined;
+              if (c) {
+                const lines = expandRecipe(c, data.cocktails);
+                const pill = stockPill({
+                  portions: lines.length ? inventory.portions(lines) : null,
+                  lines: lines.length,
+                  costLines: c.extraCosts?.length || 0,
+                  noIngredients: c.noIngredients,
+                });
+                return (
                   <CocktailCard
                     key={c.id}
                     cocktail={c}
-                    detail={
-                      [...c.ingredients, ...(c.extraCosts || [])]
-                        .map((i) => data.alcohol.find((a) => a.id === i.alcoholId)?.name)
-                        .join(' · ') || 'Добавьте состав в редакторе'
-                    }
-                    footer={
-                      <span
-                        className={`stock-pill ${inventory.portions(c.ingredients) || (!c.ingredients.length && c.extraCosts?.length) ? '' : 'low'}`}
-                      >
-                        {t(
-                          !c.ingredients.length && c.extraCosts?.length
-                            ? 'По стоимости'
-                            : inventory.portions(c.ingredients)
-                              ? `${inventory.portions(c.ingredients)} порц.`
-                              : c.ingredients.length || c.extraCosts?.length
-                                ? 'Нет запаса'
-                                : 'Нет состава',
-                        )}
-                      </span>
-                    }
+                    detail={compositionText(
+                      [
+                        ...[...c.ingredients, ...(c.extraCosts || [])].map(
+                          (i) => alcoholById.get(i.alcoholId)?.name,
+                        ),
+                        ...(c.components || []).map(
+                          (p) => `${cocktailById.get(p.cocktailId)?.name || p.cocktailId} × ${p.quantity}`,
+                        ),
+                      ],
+                      c.noIngredients,
+                    )}
+                    footer={<span className={`stock-pill ${pill.low ? 'low' : ''}`}>{t(pill.label)}</span>}
                     action={() => setSelected({ kind: 'cocktail', product: c })}
                   />
-                )),
-            )}
-            {t(
-              alcohol.map((a) => (
-                <AlcoholCard
-                  key={a.id}
-                  drink={a}
-                  ml={inventory.stock(a.id)}
-                  action={() => setSelected({ kind: 'alcohol', product: a })}
-                />
-              )),
-            )}
+                );
+              }
+              if (a)
+                return (
+                  <AlcoholCard
+                    key={a.id}
+                    drink={a}
+                    ml={inventory.stock(a.id)}
+                    action={() => setSelected({ kind: 'alcohol', product: a })}
+                  />
+                );
+              return null;
+            })}
           </div>
-          {t(
-            cocktails.length > visible && (
-              <AutoReveal total={cocktails.length} visible={visible} setVisible={setVisible} />
-            ),
+          {pages.error && <p role="alert">{t(pages.error)}</p>}
+          {pages.hasMore && (
+            <LoadMore remaining={pages.remaining} loading={pages.loading} onMore={pages.more} />
           )}
           {t(
-            !cocktails.length && !alcohol.length && (
+            pages.ready && !pages.items.length && (
               <Empty title={t('Напитки не найдены')} text="Попробуйте другое название или измените фильтр." />
             ),
           )}

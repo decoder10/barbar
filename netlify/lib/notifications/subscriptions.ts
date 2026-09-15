@@ -44,12 +44,14 @@ export function ensurePushIndexes(db: Db) {
   if (!ready.has(db))
     ready.set(
       db,
-      oncePerDatabase(db, 'push-indexes-v1', () =>
+      oncePerDatabase(db, 'push-indexes-v2', () =>
         Promise.all([
           db.collection('pushDevices').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
           db.collection('pushDevices').createIndex({ userId: 1 }),
-          db.collection('stockAlertEvents').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
-          db.collection('stockAlertEvents').createIndex({ done: 1, nextAttempt: 1 }),
+          ...['stockAlertEvents', 'purchaseEvents'].flatMap((name) => [
+            db.collection(name).createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+            db.collection(name).createIndex({ done: 1, nextAttempt: 1 }),
+          ]),
         ]),
       ).catch((error) => {
         ready.delete(db);

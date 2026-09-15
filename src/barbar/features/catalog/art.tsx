@@ -101,9 +101,13 @@ export function CocktailArt({
 export function BottleArt({
   drink,
 }: {
-  drink: Pick<Alcohol, 'name' | 'color'> & Partial<Pick<Alcohol, 'category'>>;
+  drink: Pick<Alcohol, 'name' | 'color'> & Partial<Pick<Alcohol, 'category' | 'menuCategory'>>;
 }) {
   return (
-    <RealPhoto choice={bottlePhoto(drink.name, drink.category)} name={drink.name} className="bottle-art" />
+    <RealPhoto
+      choice={bottlePhoto(drink.name, drink.category, drink.menuCategory)}
+      name={drink.name}
+      className="bottle-art"
+    />
   );
 }

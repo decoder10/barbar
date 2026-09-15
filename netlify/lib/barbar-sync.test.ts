@@ -199,7 +199,9 @@ describe.skipIf(!uri)('split catalog and stock API in isolated MongoDB', () => {
     const past = sale('historical-sale');
     if (past.type === 'sale') past.value.date = '2026-01-01';
     const historical = await call('/api/barbar', 'admin', past, now.revision);
-    expect(historical.partial).not.toBe(true);
+    // Historical sales use the incremental path with a chronological stock check, so the response is partial.
+    expect(historical.partial).toBe(true);
+    expect(historical.baseRevision).toBe(now.revision);
     expect(historical.sale.id).toBe('historical-sale');
     expect(historical.catalogRevision).toBe(catalog.catalogRevision);
   });

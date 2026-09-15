@@ -36,3 +36,17 @@
     margin-top: 4px;
   }
 }
+
+.batch-status {
+  font-weight: 600;
+
+  &.expired {
+    color: var(--danger);
+  }
+  &.soon {
+    color: var(--warning);
+  }
+  &.ok {
+    color: var(--success);
+  }
+}

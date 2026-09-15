@@ -1,24 +1,27 @@
-import { expect, test, vi } from 'vitest';
-import { api } from '../api-client';
-test('concurrent session checks share one request, while later reads and writes stay fresh', async () => {
-  const fetchMock = vi.fn(
-    async () =>
-      new Response(JSON.stringify({ authenticated: true }), {
-        headers: { 'Content-Type': 'application/json' },
-      }),
-  );
-  vi.stubGlobal('fetch', fetchMock);
-  try {
-    await Promise.all([api('/api/barbar/auth'), api('/api/barbar/auth')]);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    await api('/api/barbar/auth');
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    await Promise.all([
-      api('/api/barbar/auth', { method: 'PATCH', body: '{}' }),
-      api('/api/barbar/auth', { method: 'PATCH', body: '{}' }),
-    ]);
-    expect(fetchMock).toHaveBeenCalledTimes(4);
-  } finally {
-    vi.unstubAllGlobals();
-  }
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { snapshotRead } from '../api-client';
+
+const json = (value: unknown, status = 200) =>
+  new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } });
+
+describe('snapshotRead', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('reads once per snapshot, again for a new snapshot, and retries after a failure', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(json({ batches: [] }))
+      .mockResolvedValueOnce(json({ error: 'Ошибка' }, 500))
+      .mockResolvedValue(json({ batches: [] }));
+    vi.stubGlobal('fetch', fetch);
+    const first = {};
+    await snapshotRead(first, '/api/barbar/batches');
+    // A remount after the first answer (not only a simultaneous read) reuses it.
+    await snapshotRead(first, '/api/barbar/batches');
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const second = {};
+    await expect(snapshotRead(second, '/api/barbar/batches')).rejects.toThrow('Ошибка');
+    await snapshotRead(second, '/api/barbar/batches');
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
 });

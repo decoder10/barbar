@@ -1,0 +1,14 @@
+.database-banner {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 16px;
+  background: #9d1c3a;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+}

@@ -14,13 +14,26 @@ export const expenseCategories = {
   maintenance: 'Обслуживание',
   other: 'Прочее',
 };
-export function OperationForm({ kind, close }: { kind: OperationKind; close: () => void }) {
+export interface OperationPrefill {
+  productId: string;
+  amount: string;
+  reason: string;
+}
+export function OperationForm({
+  kind,
+  close,
+  prefill,
+}: {
+  kind: OperationKind;
+  close: () => void;
+  prefill?: OperationPrefill;
+}) {
   const { data, run } = useBar();
-  const [productId, setProductId] = useState(data.alcohol[0]?.id || '');
+  const [productId, setProductId] = useState(prefill?.productId || data.alcohol[0]?.id || '');
   const [expected, setExpected] = useState(() => stock(data, productId));
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(prefill?.amount || '');
   const [cost, setCost] = useState(() => String(averageCost(data, productId)));
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(prefill?.reason || '');
   const [date, setDate] = useState(businessToday);
   const [expires, setExpires] = useState('');
   const [category, setCategory] = useState<keyof typeof expenseCategories>('other');

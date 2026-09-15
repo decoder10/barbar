@@ -3,7 +3,7 @@ import { staffData } from '../netlify/lib/barbar-access';
 import { businessToday } from '../src/barbar/domain/business-day';
 import { applyCommand } from '../src/barbar/domain/model';
 import { fixtureData } from './fixtures';
-test('worker sees one grouped summary, selling amounts but no operation history or private costs', async ({
+test('worker sees the owner receipt grouped by position, selling amounts but no operation history or private costs', async ({
   page,
 }) => {
   let data = fixtureData();

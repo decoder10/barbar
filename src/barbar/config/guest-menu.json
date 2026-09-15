@@ -1,0 +1,86 @@
+{
+  "languages": ["en", "ru", "hy"],
+  "sectionOrder": [
+    "cocktail",
+    "tincture",
+    "set",
+    "shot",
+    "beer",
+    "alcohol",
+    "wine",
+    "cognac",
+    "hot",
+    "soft",
+    "snack"
+  ],
+  "pouredAlcohol": {
+    "portionMl": 50,
+    "title": {
+      "ru": "Крепкое · {ml} мл",
+      "en": "Spirits · {ml} ml",
+      "hy": "Թունդ · {ml} մլ"
+    }
+  },
+  "copy": {
+    "tagline": {
+      "ru": "Коктейльный бар и арт-галерея",
+      "en": "Cocktail bar & art gallery",
+      "hy": "Կոկտեյլ բար և արվեստի պատկերասրահ"
+    },
+    "search": {
+      "ru": "Найти в меню",
+      "en": "Search the menu",
+      "hy": "Որոնել ճաշացանկում"
+    },
+    "nothing": {
+      "ru": "Ничего не нашли",
+      "en": "Nothing found",
+      "hy": "Ոչինչ չգտնվեց"
+    },
+    "loading": {
+      "ru": "Открываем меню…",
+      "en": "Opening the menu…",
+      "hy": "Բացում ենք ճաշացանկը…"
+    },
+    "error": {
+      "ru": "Меню сейчас недоступно.",
+      "en": "The menu is unavailable right now.",
+      "hy": "Ճաշացանկը հիմա հասանելի չէ։"
+    },
+    "retry": {
+      "ru": "Повторить",
+      "en": "Try again",
+      "hy": "Կրկնել"
+    },
+    "glass": {
+      "ru": "Бокал",
+      "en": "Glass",
+      "hy": "Բաժակ"
+    },
+    "bottle": {
+      "ru": "Бутылка",
+      "en": "Bottle",
+      "hy": "Շիշ"
+    },
+    "sections": {
+      "ru": "Разделы меню",
+      "en": "Menu sections",
+      "hy": "Ճաշացանկի բաժիններ"
+    },
+    "prices": {
+      "ru": "Цены в драмах",
+      "en": "Prices in AMD",
+      "hy": "Գները՝ դրամով"
+    },
+    "photos": {
+      "ru": "Фото иллюстративные",
+      "en": "Photos are illustrative",
+      "hy": "Լուսանկարները պատկերավոր են"
+    },
+    "service": {
+      "ru": "Обслуживание 0%, чаевые приветствуются",
+      "en": "Service 0%, tips are welcome",
+      "hy": "Սպասարկում 0%, թեյավճարը ողջունելի է"
+    }
+  }
+}

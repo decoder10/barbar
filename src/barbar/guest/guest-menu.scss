@@ -1,0 +1,395 @@
+// Public guest menu: photo cards, sticky search and section chips. Light and dark palettes.
+.guest-menu {
+  --menu-bg: #f7f2ef;
+  --menu-surface: #ffffff;
+  --menu-text: #2a1c23;
+  --menu-muted: #7a6870;
+  --menu-line: #eaded9;
+  --menu-accent: #9c3b5f;
+  --menu-accent-soft: #f5e4eb;
+  --menu-hero: #2a1620;
+  color-scheme: light;
+  min-height: 100vh;
+  background: var(--menu-bg);
+  color: var(--menu-text);
+  font-family: Manrope, Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .guest-menu {
+    --menu-bg: #140d11;
+    --menu-surface: #1f161b;
+    --menu-text: #f5edf0;
+    --menu-muted: #b7a6ae;
+    --menu-line: #33252c;
+    --menu-accent: #e58fb0;
+    --menu-accent-soft: #3a2331;
+    --menu-hero: #0d0709;
+    color-scheme: dark;
+  }
+}
+
+.menu-container {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-inline: 16px;
+}
+
+.menu-hero {
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 0 18px;
+  background: radial-gradient(circle at 20% 0%, #4a2536, transparent 60%), var(--menu-hero);
+  color: #f6e9ee;
+}
+
+.menu-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.menu-hero .catalog-picture img,
+.menu-logo {
+  width: min(190px, 46vw);
+  height: auto;
+  filter: brightness(1.15);
+}
+
+.menu-tagline {
+  margin-block: 10px 0;
+  color: rgba(246, 233, 238, 0.72);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.menu-languages {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+
+  button {
+    min-width: 42px;
+    min-height: 34px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    font:
+      700 12px/1 Manrope,
+      Arial,
+      sans-serif;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  button[aria-pressed='true'] {
+    background: #f6e9ee;
+    color: #2a1620;
+  }
+}
+
+.menu-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 0 0;
+  border-bottom: 1px solid var(--menu-line);
+  background: color-mix(in srgb, var(--menu-bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.menu-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--menu-line);
+  border-radius: 14px;
+  background: var(--menu-surface);
+  color: var(--menu-muted);
+
+  input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--menu-text);
+    font:
+      500 15px Manrope,
+      Arial,
+      sans-serif;
+  }
+  &:focus-within {
+    border-color: var(--menu-accent);
+  }
+}
+
+.menu-chips {
+  display: flex;
+  gap: 8px;
+  padding: 10px 0 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  a {
+    flex: none;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--menu-accent-soft);
+    color: var(--menu-text);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  a[aria-current='true'] {
+    background: var(--menu-accent);
+    color: #fff;
+  }
+  a:focus-visible {
+    outline: 2px solid var(--menu-accent);
+    outline-offset: 2px;
+  }
+}
+
+.menu-sections {
+  padding-bottom: 12px;
+}
+
+.menu-section {
+  padding-top: 26px;
+  scroll-margin-top: 130px;
+}
+
+.menu-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+
+  h2 {
+    margin: 0;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(24px, 6vw, 32px);
+    font-weight: 500;
+  }
+  span {
+    color: var(--menu-muted);
+    font-size: 13px;
+    font-weight: 600;
+  }
+}
+
+.menu-group + .menu-group {
+  margin-top: 18px;
+}
+
+.menu-group h3 {
+  margin: 0 0 10px;
+  color: var(--menu-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 12px;
+}
+
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--menu-line);
+  border-radius: 18px;
+  background: var(--menu-surface);
+}
+
+.menu-card-photo {
+  aspect-ratio: 1;
+  padding: 10px;
+  background: #ffffff;
+
+  .cocktail-art,
+  .bottle-art,
+  .real-photo {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+  }
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  // The footer states that photos are illustrative; labels would cover small tiles.
+  .photo-example {
+    display: none;
+  }
+}
+
+.menu-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px 12px;
+
+  h3 {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
+.menu-card-portion {
+  margin: 0;
+  color: var(--menu-muted);
+  font-size: 12px;
+}
+
+.menu-card-prices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 6px;
+
+  &.single .menu-price b {
+    color: var(--menu-accent);
+    font-size: 17px;
+  }
+}
+
+.menu-price {
+  display: grid;
+  gap: 1px;
+
+  small {
+    color: var(--menu-muted);
+    font-size: 11px;
+  }
+  b {
+    font-size: 15px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
+
+.menu-card-prices:not(.single) .menu-price {
+  flex: 1 1 64px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: var(--menu-accent-soft);
+}
+
+.menu-footer {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding-block: 24px calc(env(safe-area-inset-bottom, 0px) + 28px);
+  color: var(--menu-muted);
+  font-size: 13px;
+  text-align: center;
+
+  strong {
+    color: var(--menu-text);
+  }
+}
+
+.menu-status {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin: 60px 16px;
+  color: var(--menu-muted);
+  text-align: center;
+
+  button {
+    min-height: 42px;
+    padding: 0 20px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--menu-accent);
+    color: #fff;
+    font-weight: 700;
+  }
+}
+
+@media (min-width: 720px) {
+  .menu-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.guest-menu) {
+    scroll-behavior: smooth;
+  }
+}
+
+// The workspace stylesheet styles headings globally; the guest cards use their own typography.
+.guest-menu .menu-card-body h3,
+.guest-menu .menu-group h3 {
+  font-family: Manrope, Arial, sans-serif;
+}
+
+.guest-menu .menu-card-body h3 {
+  color: var(--menu-text);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.guest-menu .menu-section-head h2 {
+  color: var(--menu-text);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+// Every photo tile is the same square; tall bottles are contained, not stretched.
+.guest-menu .menu-card-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.guest-menu .menu-card-photo > *,
+.guest-menu .menu-card-photo .real-photo,
+.guest-menu .menu-card-photo .catalog-picture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  padding: 0;
+}
+
+.guest-menu .menu-card-photo img,
+.guest-menu .menu-card-photo svg {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}

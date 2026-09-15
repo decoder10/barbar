@@ -1,0 +1,61 @@
+{
+  "goodsColor": "#7c8b6a",
+  "goods": {
+    "soft": {
+      "unit": "bottle",
+      "names": ["Cola", "Fanta", "Sprite", "Jermuk", "Water", "Tonic", "Energy drink"]
+    },
+    "snack": {
+      "unit": "pcs",
+      "names": [
+        "Chips",
+        "Nuts",
+        "Jerky",
+        "Crackers",
+        "Sujuck",
+        "Anchovy",
+        "Pistachios",
+        "Lemon",
+        "Honey",
+        "Olives green/black"
+      ]
+    },
+    "hot": {
+      "unit": "pcs",
+      "names": ["Black tea", "Green tea", "Hibiscus tea", "Mint tea", "Cinnamon tea", "Fruit tea"]
+    }
+  },
+  "duplicates": {
+    "лимон": ["lemon"],
+    "мёд": ["honey"],
+    "чай": ["black tea", "green tea", "hibiscus tea", "mint tea", "cinnamon tea", "fruit tea"],
+    "чипсы (пачка)": ["chips"],
+    "орехи": ["nuts"],
+    "фисташки": ["pistachios"],
+    "крекеры": ["crackers"],
+    "вяленое мясо": ["jerky"],
+    "анчоусы": ["anchovy"],
+    "суджук": ["sujuck"],
+    "оливки": ["olives green/black"]
+  },
+  "merges": [
+    {
+      "stock": "тоник",
+      "menu": "tonic",
+      "saleAmount": 330,
+      "group": "soft"
+    },
+    {
+      "stock": "кола",
+      "menu": "cola",
+      "saleAmount": 330,
+      "group": "soft"
+    },
+    {
+      "stock": "содовая",
+      "menu": "water",
+      "saleAmount": 330,
+      "group": "soft"
+    }
+  ]
+}

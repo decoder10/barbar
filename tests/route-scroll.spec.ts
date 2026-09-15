@@ -25,7 +25,9 @@ for (const width of [390, 1440]) {
     };
     await scrollDown();
     await navigate('/inventory');
-    await expect(page.locator('.inventory-categories')).toBeVisible();
+    await expect(
+      page.locator('.inventory-categories:visible, .category-select:visible').first(),
+    ).toBeVisible();
     await scrollDown();
     await navigate('/');
     await scrollDown();

@@ -1,11 +1,11 @@
-import { round, stockTotals } from './model';
+import { round, stockTotals, unitBasis } from './model';
 import type { BarData, Ingredient, PortionExpense } from './types';
 
 /** Derived read model. Rebuild after a ledger revision; never used while applying a mutation. */
 export function inventoryCalculations(data: BarData) {
   const quantities = stockTotals(data);
   const products = new Map(data.alcohol.map((a) => [a.id, a]));
-  const basis = (id: string) => (products.get(id)?.unit === 'bottle' ? 1 : 1000);
+  const basis = (id: string) => unitBasis(products.get(id)?.unit);
   const values = new Map<string, number>();
   const add = (id: string, amount: number) => values.set(id, (values.get(id) || 0) + amount);
   for (const i of data.opening?.ingredients || []) add(i.alcoholId, i.cost);

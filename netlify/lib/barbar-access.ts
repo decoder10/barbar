@@ -1,5 +1,6 @@
-import { stockTotals } from '../../src/barbar/domain/model';
+import { goodsSaleUnit, stockTotals } from '../../src/barbar/domain/model';
 import { isGlassServing } from '../../src/barbar/domain/serving';
+import { expandRecipe } from '../../src/barbar/domain/catalog/sets';
 import type { BarData, Role, StaffData } from '../../src/barbar/domain/types';
 
 export function staffData(data: BarData): StaffData {
@@ -16,18 +17,26 @@ export function staffData(data: BarData): StaffData {
       notes: c.notes || '',
       ingredients: c.ingredients.map((i) => ({ alcoholId: i.alcoholId, ml: i.ml })),
       editable: !c.stockAlcoholId,
+      ...(c.noIngredients ? { noIngredients: true } : {}),
+      ...(c.components?.length
+        ? { components: c.components.map(({ cocktailId, quantity }) => ({ cocktailId, quantity })) }
+        : {}),
       managedIngredientIds: (c.extraCosts || []).map((i) => i.alcoholId),
     })),
-    ingredients: data.alcohol.map(({ id, name, unit, category, bottleSizeMl, glassSizeMl, color }) => ({
-      id,
-      name,
-      unit: unit || 'ml',
-      category,
-      color,
-      available: remaining(id),
-      ...(bottleSizeMl ? { bottleSizeMl } : {}),
-      ...(glassSizeMl ? { glassSizeMl } : {}),
-    })),
+    ingredients: data.alcohol.map(
+      ({ id, name, unit, category, bottleSizeMl, glassSizeMl, color, menuCategory, group }) => ({
+        id,
+        name,
+        unit: unit || 'ml',
+        category,
+        color,
+        available: remaining(id),
+        ...(bottleSizeMl ? { bottleSizeMl } : {}),
+        ...(glassSizeMl ? { glassSizeMl } : {}),
+        ...(menuCategory ? { menuCategory } : {}),
+        ...(group ? { group } : {}),
+      }),
+    ),
     products: [
       ...data.cocktails.map((c) => ({
         id: c.id,
@@ -37,10 +46,14 @@ export function staffData(data: BarData): StaffData {
         name: c.name,
         category: c.category || ('cocktail' as const),
         image: c.image,
+        ...(c.serving ? { serving: c.serving } : {}),
         ...(isGlassServing(c)
           ? { unit: 'glass' as const }
           : c.stockAlcoholId
-            ? { unit: c.serving || ('bottle' as const) }
+            ? (() => {
+                const unit = c.serving || goodsSaleUnit(alcohol.get(c.stockAlcoholId));
+                return unit ? { unit } : {};
+              })()
             : {}),
         ...(c.stockAlcoholId && c.serving === 'glass'
           ? {
@@ -49,16 +62,20 @@ export function staffData(data: BarData): StaffData {
               availableMl: remaining(c.stockAlcoholId) * (alcohol.get(c.stockAlcoholId)?.bottleSizeMl || 0),
             }
           : {}),
-        available: c.ingredients.length
+        available: expandRecipe(c, data.cocktails).length
           ? Math.max(
               0,
-              Math.floor(Math.min(...c.ingredients.map((i) => (remaining(i.alcoholId) + 1e-7) / i.ml))),
+              Math.floor(
+                Math.min(
+                  ...expandRecipe(c, data.cocktails).map((i) => (remaining(i.alcoholId) + 1e-7) / i.ml),
+                ),
+              ),
             )
           : null,
         ready:
           (!isGlassServing(c) || !!c.stockAlcoholId) &&
           c.price > 0 &&
-          (c.ingredients.length > 0 || !!c.extraCosts?.length),
+          (c.ingredients.length > 0 || !!c.extraCosts?.length || !!c.noIngredients || !!c.components?.length),
       })),
       ...data.alcohol
         .filter((a) => a.category === 'alcohol')

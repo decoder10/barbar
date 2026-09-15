@@ -44,6 +44,9 @@ export interface ServerReport {
     suggested: number;
     preparation: boolean;
     days: number;
+    workedDays: number | null;
+    availableDays: number | null;
+    stockoutDays: number;
     insufficientHistory: boolean;
   }[];
 }

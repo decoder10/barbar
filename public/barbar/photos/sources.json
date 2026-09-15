@@ -904,13 +904,15 @@
     "file": "/barbar/photos/coffee-beans.webp"
   },
   "pepper": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Black_Peppercorns_%284422070187%29.jpg/960px-Black_Peppercorns_%284422070187%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Black Peppercorns (4422070187).jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Black_Peppercorns_(4422070187).jpg",
+    "author": "Ryan Snyder",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "kind": "photo",
     "file": "/barbar/photos/pepper.webp",
-    "title": "pepper",
-    "source": "https://openai.com/index/image-generation-api/",
-    "author": "Generated for Barbar Cafe with OpenAI",
-    "license": "AI-generated illustrative image",
-    "licenseUrl": "https://openai.com/policies/terms-of-use/",
-    "kind": "illustration"
+    "modifications": "Black peppercorns: trimmed, padded to a square on white, resized and converted to WebP."
   },
   "pineapple": {
     "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5c/Pineapple_fruit_2.jpg/960px-Pineapple_fruit_2.jpg",
@@ -935,13 +937,15 @@
     "modifications": "Background removed and framing cleaned with AI; resized and converted to WebP."
   },
   "barberry": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/%28ms%29_Berberis_vulgaris_1.jpg/960px-%28ms%29_Berberis_vulgaris_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "(ms) Berberis vulgaris 1.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:(ms)_Berberis_vulgaris_1.jpg",
+    "author": "Hladac",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "kind": "photo",
     "file": "/barbar/photos/barberry.webp",
-    "title": "barberry",
-    "source": "https://openai.com/index/image-generation-api/",
-    "author": "Generated for Barbar Cafe with OpenAI",
-    "license": "AI-generated illustrative image",
-    "licenseUrl": "https://openai.com/policies/terms-of-use/",
-    "kind": "illustration"
+    "modifications": "Barberries: trimmed, padded to a square on white, resized and converted to WebP."
   },
   "celery": {
     "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/Celery_%28177029685%29.jpeg/960px-Celery_%28177029685%29.jpeg",
@@ -1207,44 +1211,48 @@
     "modifications": "Generated studio serving illustration. Not a photograph of the bar’s actual recipe."
   },
   "tea-black": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/Cup_of_black_tea.JPG/960px-Cup_of_black_tea.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Cup of black tea.JPG",
+    "source": "https://commons.wikimedia.org/wiki/File:Cup_of_black_tea.JPG",
+    "author": "AntanO",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "kind": "photo",
     "file": "/barbar/photos/tea-black.webp",
-    "title": "tea-black",
-    "author": "Generated for Barbar Cafe",
-    "source": "https://openai.com/index/image-generation-api/",
-    "license": "AI-generated illustration",
-    "licenseUrl": "",
-    "kind": "illustrative",
-    "modifications": "Generated studio serving illustration. Not a photograph of the bar’s actual recipe."
+    "modifications": "Black tea: trimmed, padded to a square on white, resized and converted to WebP."
   },
   "tea-green": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/White_cup_with_green_tea_in_it.jpg/960px-White_cup_with_green_tea_in_it.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "White cup with green tea in it.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:White_cup_with_green_tea_in_it.jpg",
+    "author": "Douglas P Perkins",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "kind": "photo",
     "file": "/barbar/photos/tea-green.webp",
-    "title": "tea-green",
-    "author": "Generated for Barbar Cafe",
-    "source": "https://openai.com/index/image-generation-api/",
-    "license": "AI-generated illustration",
-    "licenseUrl": "",
-    "kind": "illustrative",
-    "modifications": "Generated studio serving illustration. Not a photograph of the bar’s actual recipe."
+    "modifications": "Green tea: trimmed, padded to a square on white, resized and converted to WebP."
   },
   "tea-hibiscus": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/Flickr_-_cyclonebill_-_Te_med_hyben_og_hibiscus.jpg/960px-Flickr_-_cyclonebill_-_Te_med_hyben_og_hibiscus.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Flickr - cyclonebill - Te med hyben og hibiscus.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Flickr_-_cyclonebill_-_Te_med_hyben_og_hibiscus.jpg",
+    "author": "cyclonebill",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "kind": "photo",
     "file": "/barbar/photos/tea-hibiscus.webp",
-    "title": "tea-hibiscus",
-    "author": "Generated for Barbar Cafe",
-    "source": "https://openai.com/index/image-generation-api/",
-    "license": "AI-generated illustration",
-    "licenseUrl": "",
-    "kind": "illustrative",
-    "modifications": "Generated studio serving illustration. Not a photograph of the bar’s actual recipe."
+    "modifications": "Hibiscus tea: trimmed, padded to a square on white, resized and converted to WebP."
   },
   "tea-mint": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e2/Mint-tea.jpg/960px-Mint-tea.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Mint-tea.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Mint-tea.jpg",
+    "author": "Сок Сыр Чай",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "kind": "photo",
     "file": "/barbar/photos/tea-mint.webp",
-    "title": "tea-mint",
-    "author": "Generated for Barbar Cafe",
-    "source": "https://openai.com/index/image-generation-api/",
-    "license": "AI-generated illustration",
-    "licenseUrl": "",
-    "kind": "illustrative",
-    "modifications": "Generated studio serving illustration. Not a photograph of the bar’s actual recipe."
+    "modifications": "Mint tea: trimmed, padded to a square on white, resized and converted to WebP."
   },
   "tea-cinnamon": {
     "file": "/barbar/photos/tea-cinnamon.webp",
@@ -1378,13 +1386,13 @@
   },
   "tonic": {
     "file": "/barbar/photos/tonic.webp",
-    "title": "tonic",
-    "author": "Brand product photograph",
-    "source": "https://schweppes.com.au/flavour/tonic-water",
-    "license": "Brand promotional image; rights remain with the owner",
+    "title": "Schweppes Indian Tonic bottle",
+    "author": "Barbar Cafe · photo supplied by the owner",
+    "source": "Supplied by the bar owner (15.09.2026)",
+    "license": "Product photograph supplied by the owner; rights remain with the brand / retailer",
     "licenseUrl": "",
     "kind": "product",
-    "modifications": "Resized and converted to WebP."
+    "modifications": "Trimmed, padded to a square on white, resized and converted to WebP. The retailer watermark is part of the supplied image."
   },
   "shot-set-6": {
     "file": "/barbar/photos/shot-set-6.webp",
@@ -1654,5 +1662,388 @@
     "license": "AI-generated illustration",
     "kind": "food",
     "modifications": "Illustrative serving; not a photograph of the actual dish. Generated with the built-in imagegen tool; optimized as WebP. Prompts in docs/image-prompts/snacks.md."
+  },
+  "food-bread": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Fresh_made_bread_05.jpg/960px-Fresh_made_bread_05.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Fresh made bread 05.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Fresh_made_bread_05.jpg",
+    "author": "FranHogan",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-bread.webp",
+    "modifications": "Bread: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-lavash": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/Lavash_arm%C3%A9nien.jpg/960px-Lavash_arm%C3%A9nien.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Lavash arménien.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Lavash_arm%C3%A9nien.jpg",
+    "author": "Combrian",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "kind": "photo",
+    "file": "/barbar/photos/food-lavash.webp",
+    "modifications": "Lavash: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-mikayelyan": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a9/1070282_Lori_Cheese_%28%D4%BC%D5%B8%D5%BC%D5%AB_%D5%BA%D5%A1%D5%B6%D5%AB%D6%80%29_Armenia_260408.jpg/960px-1070282_Lori_Cheese_%28%D4%BC%D5%B8%D5%BC%D5%AB_%D5%BA%D5%A1%D5%B6%D5%AB%D6%80%29_Armenia_260408.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "1070282 Lori Cheese (Լոռի պանիր) Armenia 260408.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:1070282_Lori_Cheese_(%D4%BC%D5%B8%D5%BC%D5%AB_%D5%BA%D5%A1%D5%B6%D5%AB%D6%80)_Armenia_260408.jpg",
+    "author": "Narek75",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-mikayelyan.webp",
+    "modifications": "Lori cheese: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-sujuk": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Sucuk-1.jpg/960px-Sucuk-1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Sucuk-1.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Sucuk-1.jpg",
+    "author": "Rainer Zenz",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "kind": "photo",
+    "file": "/barbar/photos/food-sujuk.webp",
+    "modifications": "Sujuk: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-sausages": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/Cocktail_smokies.jpg/960px-Cocktail_smokies.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Cocktail smokies.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Cocktail_smokies.jpg",
+    "author": "Calgary Reviews",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-sausages.webp",
+    "modifications": "Cocktail sausages: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-jerky": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Beef-jerky.jpg/960px-Beef-jerky.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Beef-jerky.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Beef-jerky.jpg",
+    "author": "Severein",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "kind": "photo",
+    "file": "/barbar/photos/food-jerky.webp",
+    "modifications": "Beef jerky: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-anchovy": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f6/Dried_sea_anchovies.jpg/960px-Dried_sea_anchovies.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Dried sea anchovies.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Dried_sea_anchovies.jpg",
+    "author": "Fumikas Sagisavas",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "kind": "photo",
+    "file": "/barbar/photos/food-anchovy.webp",
+    "modifications": "Dried anchovies: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-pickles": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/Polish_style_pickled_cucumbers_IMGP0413.jpg/960px-Polish_style_pickled_cucumbers_IMGP0413.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Polish style pickled cucumbers IMGP0413.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Polish_style_pickled_cucumbers_IMGP0413.jpg",
+    "author": "Nikodem Nijaki",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-pickles.webp",
+    "modifications": "Pickled cucumbers: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-tomato": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/Red_tomatoes._img_05.jpg/960px-Red_tomatoes._img_05.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Red tomatoes. img 05.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Red_tomatoes._img_05.jpg",
+    "author": "Dmitry Makeev",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-tomato.webp",
+    "modifications": "Tomatoes: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-cucumber": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Og%C3%B3rki...jpg/960px-Og%C3%B3rki...jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Ogórki...jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Og%C3%B3rki...jpg",
+    "author": "Mariuszjbie",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-cucumber.webp",
+    "modifications": "Cucumber: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-greens": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6f/Liat_Portal_for_Foodie_Disorder_-_Fresh_Herb_Bundle_from_San_Francisco_Farmers_Market.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Fresh_Herb_Bundle_from_San_Francisco_Farmers_Market.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Liat Portal for Foodie Disorder - Fresh Herb Bundle from San Francisco Farmers Market.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Fresh_Herb_Bundle_from_San_Francisco_Farmers_Market.jpg",
+    "author": "HaJunkiyada",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-greens.webp",
+    "modifications": "Fresh herbs: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-nuts": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/Spiced_nuts.jpg/960px-Spiced_nuts.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Spiced nuts.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Spiced_nuts.jpg",
+    "author": "Tiia Monto",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-nuts.webp",
+    "modifications": "Spiced nuts: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-crackers": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c5/Thatta.jpg/960px-Thatta.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Thatta.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Thatta.jpg",
+    "author": "Navaneeth Krishnan S",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-crackers.webp",
+    "modifications": "Crackers: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-cheese": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/WikiCheese_-_Gouda_jeune_05.jpg/960px-WikiCheese_-_Gouda_jeune_05.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "WikiCheese - Gouda jeune 05.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:WikiCheese_-_Gouda_jeune_05.jpg",
+    "author": "Pierre-Yves Beaudouin",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-cheese.webp",
+    "modifications": "Cheese: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-olives": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/Olives_in_bowl.jpg/960px-Olives_in_bowl.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Olives in bowl.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Olives_in_bowl.jpg",
+    "author": "Gphoto",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "kind": "photo",
+    "file": "/barbar/photos/food-olives.webp",
+    "modifications": "Olives: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-sauce": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cf/Curry_ketchup.jpg/960px-Curry_ketchup.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Curry ketchup.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Curry_ketchup.jpg",
+    "author": "RudolfSchreier",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "kind": "photo",
+    "file": "/barbar/photos/food-sauce.webp",
+    "modifications": "Sauce: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-butter": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/Butter_block.JPG/960px-Butter_block.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Butter block.JPG",
+    "source": "https://commons.wikimedia.org/wiki/File:Butter_block.JPG",
+    "author": "Meanos",
+    "license": "Public domain",
+    "kind": "photo",
+    "file": "/barbar/photos/food-butter.webp",
+    "modifications": "Butter: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "food-chips": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Tayto_cheese_and_onion_crisps.jpg/960px-Tayto_cheese_and_onion_crisps.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Tayto cheese and onion crisps.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Tayto_cheese_and_onion_crisps.jpg",
+    "author": "Samuel Wiki",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "kind": "photo",
+    "file": "/barbar/photos/food-chips.webp",
+    "modifications": "Potato chips: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "cream": {
+    "file": "/barbar/photos/cream.webp",
+    "title": "Prostokvashino cream 10% carton",
+    "author": "Barbar Cafe · photo supplied by the owner",
+    "source": "Supplied by the bar owner (15.09.2026)",
+    "license": "Product photograph supplied by the owner; rights remain with the brand / retailer",
+    "licenseUrl": "",
+    "kind": "product",
+    "modifications": "Trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "jim-apple": {
+    "file": "/barbar/photos/jim-apple.webp",
+    "title": "Jim Beam Apple bottle",
+    "author": "Barbar Cafe · photo supplied by the owner",
+    "source": "Supplied by the bar owner (15.09.2026)",
+    "license": "Product photograph supplied by the owner; rights remain with the brand",
+    "licenseUrl": "",
+    "kind": "bottle",
+    "modifications": "Trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "vayk-zakare-apricot": {
+    "url": "https://www.vaykwinery.com/media/products/zakare-apricot-semi-dry-normalized.webp",
+    "title": "Zakaré Apricot Semi-Sweet",
+    "source": "https://www.vaykwinery.com/en/wines/zakare-apricot-semi-sweet",
+    "author": "Vayk Winery",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://www.vaykwinery.com/en/wines/zakare-apricot-semi-sweet",
+    "kind": "bottle",
+    "file": "/barbar/photos/vayk-zakare-apricot.webp"
+  },
+  "vayk-zakare-cherry": {
+    "url": "https://www.vaykwinery.com/media/products/zakare-cherry-semi-dry-normalized.webp",
+    "title": "Zakaré Cherry Semi-Sweet",
+    "source": "https://www.vaykwinery.com/en/wines/zakare-cherry-semi-sweet",
+    "author": "Vayk Winery",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://www.vaykwinery.com/en/wines/zakare-cherry-semi-sweet",
+    "kind": "bottle",
+    "file": "/barbar/photos/vayk-zakare-cherry.webp"
+  },
+  "vayk-zakare-pomegranate": {
+    "url": "https://www.vaykwinery.com/media/products/zakare-pomegranate-semi-sweet-normalized.webp",
+    "title": "Zakaré Pomegranate Semi-Sweet",
+    "source": "https://www.vaykwinery.com/en/wines/zakare-pomegranate-semi-sweet",
+    "author": "Vayk Winery",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://www.vaykwinery.com/en/wines/zakare-pomegranate-semi-sweet",
+    "kind": "bottle",
+    "file": "/barbar/photos/vayk-zakare-pomegranate.webp"
+  },
+  "vayk-zakare-pomegranate-reserve": {
+    "url": "https://www.vaykwinery.com/media/products/zakare-pomegranate-reserve-normalized.webp",
+    "title": "Zakaré Pomegranate Reserve",
+    "source": "https://www.vaykwinery.com/en/wines/zakare-pomegranate-reserve",
+    "author": "Vayk Winery",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://www.vaykwinery.com/en/wines/zakare-pomegranate-reserve",
+    "kind": "bottle",
+    "file": "/barbar/photos/vayk-zakare-pomegranate-reserve.webp"
+  },
+  "vayk-kars-red": {
+    "url": "https://www.vaykwinery.com/media/products/kars-red-dry-normalized.webp",
+    "title": "Kars Red Dry",
+    "source": "https://www.vaykwinery.com/en/wines/kars-red-dry",
+    "author": "Vayk Winery",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://www.vaykwinery.com/en/wines/kars-red-dry",
+    "kind": "bottle",
+    "file": "/barbar/photos/vayk-kars-red.webp"
+  },
+  "vayk-kars-white": {
+    "url": "https://www.vaykwinery.com/media/products/kars-white-normalized.webp",
+    "title": "Kars White",
+    "source": "https://www.vaykwinery.com/en/wines/kars-white",
+    "author": "Vayk Winery",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://www.vaykwinery.com/en/wines/kars-white",
+    "kind": "bottle",
+    "file": "/barbar/photos/vayk-kars-white.webp"
+  },
+  "tushpa-koghbeni": {
+    "url": "https://www.tushpalab.am/_next/static/media/pet-nat-koghbeni.c49af02f.webp",
+    "title": "TUSHPA x Lab Pet Nat Koghbeni",
+    "source": "https://www.tushpalab.am/en",
+    "author": "Tushpa Wine Cellar · TUSHPA x Lab",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://www.tushpalab.am/en",
+    "kind": "bottle",
+    "file": "/barbar/photos/tushpa-koghbeni.webp"
+  },
+  "tushpa-jrjruk": {
+    "url": "https://www.tushpalab.am/_next/static/media/pet-nat-jrjruk.7e32d739.webp",
+    "title": "TUSHPA x Lab Pet Nat Jrjruk",
+    "source": "https://www.tushpalab.am/en",
+    "author": "Tushpa Wine Cellar · TUSHPA x Lab",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://www.tushpalab.am/en",
+    "kind": "bottle",
+    "file": "/barbar/photos/tushpa-jrjruk.webp"
+  },
+  "tushpa-tozot-rose": {
+    "url": "https://www.tushpalab.am/_next/static/media/pet-nat-tozot-rose.768ae3ce.png",
+    "title": "TUSHPA x Lab Pet Nat Tozot Rosé",
+    "source": "https://www.tushpalab.am/en",
+    "author": "Tushpa Wine Cellar · TUSHPA x Lab",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://www.tushpalab.am/en",
+    "kind": "bottle",
+    "file": "/barbar/photos/tushpa-tozot-rose.webp"
+  },
+  "food-pistachios": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/2020-06-12_19_15_02_A_sample_of_Gold_Emblem_Roasted_Shelled_Pistachios_with_sea_salt_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg/960px-2020-06-12_19_15_02_A_sample_of_Gold_Emblem_Roasted_Shelled_Pistachios_with_sea_salt_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "2020-06-12 19 15 02 A sample of Gold Emblem Roasted Shelled Pistachios with sea salt in the Franklin Farm section of Oak Hill, Fairfax County, Virginia.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:2020-06-12_19_15_02_A_sample_of_Gold_Emblem_Roasted_Shelled_Pistachios_with_sea_salt_in_the_Franklin_Farm_section_of_Oak_Hill,_Fairfax_County,_Virginia.jpg",
+    "author": "Famartin",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "kind": "photo",
+    "file": "/barbar/photos/food-pistachios.webp",
+    "modifications": "Pistachios: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "cider-bottle": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Bottle_of_cider.jpg/960px-Bottle_of_cider.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Bottle of cider.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Bottle_of_cider.jpg",
+    "author": "Horváth Dávid",
+    "license": "Public domain",
+    "kind": "photo",
+    "file": "/barbar/photos/cider-bottle.webp",
+    "modifications": "Cider bottle — example packaging: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "german-beer": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Paulaner_Oktoberfest_Marzen_11.2oz_bottle_and_beer_mug.jpg/960px-Paulaner_Oktoberfest_Marzen_11.2oz_bottle_and_beer_mug.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "title": "Paulaner Oktoberfest Marzen 11.2oz bottle and beer mug.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Paulaner_Oktoberfest_Marzen_11.2oz_bottle_and_beer_mug.jpg",
+    "author": "Scott A. Miller",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "kind": "photo",
+    "file": "/barbar/photos/german-beer.webp",
+    "modifications": "German beer bottle — example packaging: trimmed, padded to a square on white, resized and converted to WebP."
+  },
+  "379-cherry": {
+    "url": "https://shukayum.am/wp-content/uploads/2025/10/33S-600x600.jpg",
+    "title": "379 Cherry Flavored Beer Drink 0.33L",
+    "source": "https://shukayum.am/en/product/garejur-379-bal-0-33l/",
+    "author": "Shukayum / 379",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://shukayum.am/en/product/garejur-379-bal-0-33l/",
+    "kind": "bottle",
+    "file": "/barbar/photos/379-cherry.webp",
+    "modifications": "Trimmed, padded on white, resized and converted to WebP."
+  },
+  "volkovskaya-ipa": {
+    "url": "https://s2.wine.style/images_gen/879/87909/0_0_695x600.webp",
+    "title": "Volkovskaya Pivovarnya IPA 0.45 L",
+    "source": "https://winestyle.ru/products/Volkovskaya-Pivovarnya-IPA.html",
+    "author": "Winestyle / Volkovskaya Pivovarnya",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://winestyle.ru/products/Volkovskaya-Pivovarnya-IPA.html",
+    "kind": "bottle",
+    "file": "/barbar/photos/volkovskaya-ipa.webp",
+    "modifications": "Trimmed, padded on white, resized and converted to WebP."
+  },
+  "379-citrus": {
+    "url": "https://static.parma.am/origin/product/1024/98076.jpg?v=1789438035",
+    "title": "Beer 379 American Wheat Ale 500 ml",
+    "source": "https://parma.am/en/product/product?slug=beer-379-american-wheat-ale-light-500ml_98076",
+    "author": "PARMA / 379",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://parma.am/en/product/product?slug=beer-379-american-wheat-ale-light-500ml_98076",
+    "kind": "bottle",
+    "file": "/barbar/photos/379-citrus.webp",
+    "modifications": "Trimmed, padded on white, resized and converted to WebP."
+  },
+  "blanc": {
+    "url": "https://aem.lcbo.com/content/dam/lcbo/products/0/3/9/4/039491.jpg.thumb.1280.1280.jpg",
+    "title": "Kronenbourg 1664 Blanc",
+    "source": "https://www.lcbo.com/en/1664-kronenbourg-blanc-6x330ml-39491",
+    "author": "LCBO / Kronenbourg",
+    "license": "Product photograph — rights retained by brand / source",
+    "licenseUrl": "https://www.lcbo.com/en/1664-kronenbourg-blanc-6x330ml-39491",
+    "kind": "bottle",
+    "file": "/barbar/photos/blanc.webp",
+    "modifications": "Trimmed, padded on white, resized and converted to WebP."
   }
 }

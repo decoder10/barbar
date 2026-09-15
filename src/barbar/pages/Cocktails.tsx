@@ -1,14 +1,18 @@
+import { expandExtraCosts, expandRecipe } from '../domain/catalog/sets';
 import { AutoReveal } from '../ui/auto-reveal';
+import { CategoryTabs } from '../ui/category-tabs';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { useInventoryCalculations } from '../features/inventory/use-inventory-calculations';
-import { Calculator, Plus, Search } from 'lucide-react';
+import { Calculator, Plus, QrCode, Search } from 'lucide-react';
+import { GuestMenuQrModal } from '../features/guest/GuestMenuQr';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CocktailCard } from '../features/catalog/cards';
+import { CocktailCard, compositionText } from '../features/catalog/cards';
+import { ShortageNote } from '../features/inventory/InventoryProduct';
 import { Empty, PageHeading } from '../ui/layout';
 import { ExportButton } from '../ui/export';
 import { formatMoney as money } from '../presentation/currency/format-money';
-import { categories, categoryLabel, ingredientVolume } from '../domain/model';
+import { categoryLabel, ingredientVolume, recipeCategories } from '../domain/model';
 import type { Cocktail } from '../domain/types';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
 import { RecipeForm } from '../features/recipes/RecipeForm';
@@ -21,19 +25,24 @@ export default function Cocktails() {
   const [selected, setSelected] = useState<Cocktail | 'new' | null>(
     () => data.cocktails.find((c) => c.id === params.get('edit')) || null,
   );
+  const [qr, setQr] = useState(false);
   const [category, setCategory] = useSessionFilter<string>('category', 'cocktail');
   const [visible, setVisible] = useState(24);
   const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('owner-recipes');
-  const items = data.cocktails.filter(
+  // Stock-linked bottles, glasses and piece goods are sold from stock and have no recipe to edit.
+  const recipeItems = data.cocktails.filter(
+    (c) => !c.stockAlcoholId && recipeCategories.some((k) => k.id === (c.category || 'cocktail')),
+  );
+  const items = recipeItems.filter(
     (c) =>
       (category === 'all' || (c.category || 'cocktail') === category) &&
       c.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
   );
   items.sort((a, b) =>
     compareCatalog(
-      { ...a, recipeMissing: !a.ingredients.length },
-      { ...b, recipeMissing: !b.ingredients.length },
+      { ...a, recipeMissing: !a.ingredients.length && !a.noIngredients && !a.components?.length },
+      { ...b, recipeMissing: !b.ingredients.length && !b.noIngredients && !b.components?.length },
       sort,
     ),
   );
@@ -45,6 +54,10 @@ export default function Cocktails() {
         description="Ваши рецепты, точные пропорции и цены, в которых всё учтено."
       >
         <ExportButton name="cocktails.json" value={data.cocktails} />
+        <button className="button secondary" onClick={() => setQr(true)}>
+          <QrCode size={17} />
+          {t(' Гостевое меню')}
+        </button>
         <button className="button primary" onClick={() => setSelected('new')}>
           <Plus size={17} />
           {t(' Добавить позицию')}
@@ -68,7 +81,7 @@ export default function Cocktails() {
         <div>
           <h2>
             {t('Авторская коллекция ')}
-            <span className="inline-count">{t(data.cocktails.length)}</span>
+            <span className="inline-count">{t(recipeItems.length)}</span>
           </h2>
           <p>{t('Нажмите на коктейль, чтобы открыть рецепт и настроить цену')}</p>
         </div>
@@ -93,22 +106,12 @@ export default function Cocktails() {
           />
         </label>
       </div>
-      <div className="menu-categories">
-        {t(
-          [{ id: 'all', label: 'Всё меню' }, ...categories].map((c) => (
-            <button
-              key={c.id}
-              className={category === c.id ? 'active' : ''}
-              onClick={() => {
-                setCategory(c.id);
-                setVisible(24);
-              }}
-            >
-              {t(c.label)}
-            </button>
-          )),
-        )}
-      </div>
+      <CategoryTabs
+        className="menu-categories"
+        value={category}
+        onChange={setCategory}
+        options={[['all', 'Всё меню'] as const, ...recipeCategories.map((c) => [c.id, c.label] as const)]}
+      />
       <div className="recipe-grid">
         {t(
           items.slice(0, visible).map((c) => (
@@ -116,15 +119,42 @@ export default function Cocktails() {
               <CocktailCard
                 cocktail={c}
                 detail={
-                  [
-                    ...c.ingredients.map(
-                      (i) =>
-                        `${data.alcohol.find((a) => a.id === i.alcoholId)?.name} ${ingredientVolume(data, i.alcoholId, i.ml)}`,
-                    ),
-                    ...(c.extraCosts || []).map(
-                      (i) => `${data.alcohol.find((a) => a.id === i.alcoholId)?.name} ≈ ${money(i.cost)}`,
-                    ),
-                  ].join(' · ') || 'Состав пока не заполнен'
+                  <>
+                    <p>
+                      {t(
+                        compositionText(
+                          [
+                            ...c.ingredients.map(
+                              (i) =>
+                                `${data.alcohol.find((a) => a.id === i.alcoholId)?.name} ${ingredientVolume(data, i.alcoholId, i.ml)}`,
+                            ),
+                            ...(c.extraCosts || []).map(
+                              (i) =>
+                                `${data.alcohol.find((a) => a.id === i.alcoholId)?.name} ≈ ${money(i.cost)}`,
+                            ),
+                            ...(c.components || []).map(
+                              (p) =>
+                                `${data.cocktails.find((x) => x.id === p.cocktailId)?.name || p.cocktailId} × ${p.quantity}`,
+                            ),
+                          ],
+                          c.noIngredients,
+                          'Состав пока не заполнен',
+                        ),
+                      )}
+                    </p>
+                    {c.ingredients.some((i) => inventory.stock(i.alcoholId) + 1e-7 < i.ml) && (
+                      <ShortageNote>
+                        {t('Не хватает:')}
+                        {t(' ')}
+                        {t(
+                          c.ingredients
+                            .filter((i) => inventory.stock(i.alcoholId) + 1e-7 < i.ml)
+                            .map((i) => data.alcohol.find((a) => a.id === i.alcoholId)?.name)
+                            .join(', '),
+                        )}
+                      </ShortageNote>
+                    )}
+                  </>
                 }
                 footer={<span className="edit-recipe">{t('Рецепт ↗')}</span>}
                 action={() => setSelected(c)}
@@ -135,9 +165,16 @@ export default function Cocktails() {
                   {t(' ')}
                   <b>
                     {t(
-                      c.ingredients.length || c.extraCosts?.length
-                        ? money(inventory.recipeCost(c.ingredients, c.extraCosts))
-                        : 'Добавьте состав',
+                      c.noIngredients
+                        ? money(c.portionCost || 0)
+                        : c.ingredients.length || c.extraCosts?.length || c.components?.length
+                          ? money(
+                              inventory.recipeCost(
+                                expandRecipe(c, data.cocktails),
+                                expandExtraCosts(c, data.cocktails),
+                              ),
+                            )
+                          : 'Добавьте состав',
                     )}
                   </b>
                 </span>
@@ -181,6 +218,7 @@ export default function Cocktails() {
           <RecipeForm cocktail={selected === 'new' ? undefined : selected} close={() => setSelected(null)} />
         ),
       )}
+      {qr && <GuestMenuQrModal close={() => setQr(false)} />}
     </>
   );
 }

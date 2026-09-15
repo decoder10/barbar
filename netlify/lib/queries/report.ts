@@ -7,6 +7,8 @@ import type { IdentityStore } from '../barbar-users';
 import { dateFilter, salesGrouping } from './history';
 import { workingData } from '../barbar-working';
 import { forecastFromUsage } from '../../../src/barbar/domain/reports/purchasing';
+import { availabilityDays, type DailyChange } from '../../../src/barbar/domain/reports/availability';
+import { stockTotals } from '../../../src/barbar/domain/model';
 import { businessToday } from '../../../src/barbar/domain/business-day';
 export async function handleReport(request: Request, db: Db, users: IdentityStore) {
   const user = await authenticated(request, users);
@@ -58,7 +60,13 @@ export async function handleReport(request: Request, db: Db, users: IdentityStor
                       $sum: {
                         $divide: [
                           { $multiply: ['$ml', '$costPerLiter'] },
-                          { $cond: [{ $eq: [{ $arrayElemAt: ['$product.unit', 0] }, 'bottle'] }, 1, 1000] },
+                          {
+                            $cond: [
+                              { $in: [{ $arrayElemAt: ['$product.unit', 0] }, ['bottle', 'pcs']] },
+                              1,
+                              1000,
+                            ],
+                          },
                         ],
                       },
                     },
@@ -130,7 +138,77 @@ export async function handleReport(request: Request, db: Db, users: IdentityStor
           const consumed = new Map<string, number>();
           for (const row of [...usage, ...prepared])
             consumed.set(row._id, (consumed.get(row._id) || 0) + row.ml);
-          const forecast = forecastFromUsage(current, from, to, lead, reserve, consumed, new Set(outputs));
+          // Daily net changes since the period start rebuild past balances from today's stock.
+          const since = { date: { $gte: from } };
+          const byDay = (id: string) => ({ date: '$date', id });
+          const dailyChanges = async (name: string, pipeline: object[]) =>
+            (await db.collection(name).aggregate(pipeline, options).toArray()) as {
+              _id: { date: string; id: string };
+              ml: number;
+              used?: number;
+            }[];
+          const changes: DailyChange[] = [
+            ...(
+              await dailyChanges('sales', [
+                { $match: { ...since, voided: false } },
+                { $unwind: '$ingredients' },
+                { $group: { _id: byDay('$ingredients.alcoholId'), ml: { $sum: '$ingredients.ml' } } },
+              ])
+            ).map((r) => ({ date: r._id.date, alcoholId: r._id.id, delta: -r.ml, consumed: r.ml })),
+            ...(
+              await dailyChanges('purchases', [
+                { $match: since },
+                { $group: { _id: byDay('$alcoholId'), ml: { $sum: '$ml' } } },
+              ])
+            ).map((r) => ({ date: r._id.date, alcoholId: r._id.id, delta: r.ml, consumed: 0 })),
+            ...(
+              await dailyChanges('stockMovements', [
+                { $match: since },
+                { $unwind: '$lines' },
+                {
+                  $group: {
+                    _id: byDay('$lines.alcoholId'),
+                    ml: { $sum: '$lines.ml' },
+                    used: {
+                      $sum: {
+                        $cond: [
+                          { $and: [{ $eq: ['$kind', 'prepare'] }, { $lt: ['$lines.ml', 0] }] },
+                          { $multiply: ['$lines.ml', -1] },
+                          0,
+                        ],
+                      },
+                    },
+                  },
+                },
+              ])
+            ).map((r) => ({ date: r._id.date, alcoholId: r._id.id, delta: r.ml, consumed: r.used || 0 })),
+            ...(
+              await dailyChanges('stockResets', [
+                { $match: since },
+                { $group: { _id: byDay('$alcoholId'), ml: { $sum: '$ml' } } },
+              ])
+            ).map((r) => ({ date: r._id.date, alcoholId: r._id.id, delta: -r.ml, consumed: 0 })),
+          ];
+          const workedDates = (await db
+            .collection('sales')
+            .distinct('date', { date: { $gte: from, $lte: to }, voided: false }, options)) as string[];
+          const availability = availabilityDays({
+            from,
+            to,
+            current: stockTotals(current),
+            changes,
+            workedDates,
+          });
+          const forecast = forecastFromUsage(
+            current,
+            from,
+            to,
+            lead,
+            reserve,
+            consumed,
+            new Set(outputs),
+            availability,
+          );
           const performance = aggregatedPerformance(current, groups as unknown as SalesGroup[]);
           return {
             performance,

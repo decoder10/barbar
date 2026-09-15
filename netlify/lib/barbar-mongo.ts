@@ -1,8 +1,16 @@
 import { ensurePushIndexes } from './notifications/subscriptions';
-import { recordStockAlerts } from './notifications/events';
+import { recordPurchaseEvent, recordStockAlerts } from './notifications/events';
 import { MongoClient, type ClientSession, type Db, type Document } from 'mongodb';
 import { migrateBottleCatalog } from '../../src/barbar/domain/catalog/bottles';
-import { applyCommand, initialData, validateData } from '../../src/barbar/domain/model';
+import {
+  applyCommand,
+  initialData,
+  priceBasis,
+  purchaseCorrectionError,
+  quantityRound,
+  validateData,
+} from '../../src/barbar/domain/model';
+import { assertHistoricalStock, purchaseCostTotals } from './history-corrections';
 import type { BarData, Sale } from '../../src/barbar/domain/types';
 import { businessToday } from '../../src/barbar/domain/business-day';
 import { compactData, saveBalances, workingData } from './barbar-working';
@@ -10,6 +18,18 @@ import { commandAudit, appendAudit } from './audit/store';
 import type { Repository, Snapshot } from './barbar-repository';
 
 import { ensureLedgerIndexes, ledgerCollections as collections } from './database/indexes';
+import { seedFoodCatalog } from './database/food-catalog';
+import { convertGoodsCatalog, mergeGoodsCatalog } from './database/goods-catalog';
+
+export interface RepositoryOptions {
+  /** False for an explicitly selected live database: never import, reseed or migrate on start. */
+  migrations?: boolean;
+}
+const migrationBlocked = () =>
+  Object.assign(
+    new Error('Эта база требует миграции. Запустите опубликованную версию приложения, а не локальную.'),
+    { status: 503 },
+  );
 
 type CollectionName = (typeof collections)[number];
 type Row = Document & { _id: string; _order: number; id: string };
@@ -33,7 +53,9 @@ export function mongoRepository(
   client: MongoClient,
   db: Db,
   loadLegacy: () => Promise<BarData> = async () => initialData(),
+  options: RepositoryOptions = {},
 ): Repository {
+  const migrations = options.migrations !== false;
   const state = db.collection<Metadata>('state');
   let ready: Promise<void> | undefined;
   const catalogCaches = new Map<
@@ -74,10 +96,14 @@ export function mongoRepository(
     ...(data.archived ? { archived: data.archived } : {}),
   });
   async function initialize() {
+    const existing = await state.findOne({ _id: 'state' });
+    if (!migrations) {
+      if (existing?.readModelVersion !== 1) throw migrationBlocked();
+      return;
+    }
     // Also upgrade indexes for an existing ledger; never reimport its catalog.
     await ensureLedgerIndexes(db);
     await ensurePushIndexes(db);
-    const existing = await state.findOne({ _id: 'state' });
     if (existing?.readModelVersion === 1) return;
     if (existing) {
       await client.withSession((session) =>
@@ -145,10 +171,18 @@ export function mongoRepository(
     }
   }
   async function ensureReady() {
-    ready ||= initialize().catch((error) => {
-      ready = undefined;
-      throw error;
-    });
+    ready ||= initialize()
+      .then(async () => {
+        // Insert-only catalog upgrades, once per database and never for an explicitly selected live DB.
+        if (!migrations) return;
+        await seedFoodCatalog(client, db);
+        await convertGoodsCatalog(client, db);
+        await mergeGoodsCatalog(client, db);
+      })
+      .catch((error) => {
+        ready = undefined;
+        throw error;
+      });
     await ready;
   }
   return {
@@ -243,6 +277,20 @@ export function mongoRepository(
       }
       return result;
     },
+    async salesPopularity(date) {
+      await ensureReady();
+      const rows = await db
+        .collection('sales')
+        .aggregate<{ _id: { kind: string; productId: string }; operations: number }>(
+          [
+            { $match: { date, voided: false } },
+            { $group: { _id: { kind: '$kind', productId: '$productId' }, operations: { $sum: 1 } } },
+          ],
+          { maxTimeMS: 10000 },
+        )
+        .toArray();
+      return new Map(rows.map((r) => [`${r._id.kind}:${r._id.productId}`, r.operations]));
+    },
     async readSale(id) {
       await ensureReady();
       return ((await db
@@ -271,8 +319,9 @@ export function mongoRepository(
       if (!command || typeof command.id !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(command.id))
         throw Object.assign(new Error('Некорректная операция.'), { status: 400 });
       if (
-        ['restore', 'purge', 'correctPurchase'].includes(command?.type) ||
-        (command?.type === 'sale' && command.value?.date !== businessToday())
+        // Restores and purges replace history and keep the full path; historical sales and
+        // purchase corrections are checked incrementally below.
+        ['restore', 'purge'].includes(command?.type)
       )
         return null;
       await ensureReady();
@@ -335,6 +384,83 @@ export function mongoRepository(
               status: 400,
             });
           }
+          if (command.type === 'correctPurchase') {
+            const purchase = (await db
+              .collection('purchases')
+              .findOne(
+                { _id: command.purchaseId as never },
+                { session, projection: { _id: 0, _order: 0 } },
+              )) as BarData['purchases'][number] | null;
+            const error = purchaseCorrectionError(
+              current,
+              purchase || undefined,
+              command,
+              meta?.archived?.before,
+            );
+            if (error) throw Object.assign(new Error(error), { status: 400 });
+            const id = purchase!.alcoholId;
+            const basis = priceBasis(current, id);
+            const delta = quantityRound(current, id, command.ml - purchase!.ml);
+            const balance = previousBalances.find((b) => b._id === id) || { _id: id, ml: 0, cost: 0 };
+            if (delta < 0)
+              await assertHistoricalStock(
+                db,
+                session,
+                purchase!.date,
+                [{ alcoholId: id, ml: -delta }],
+                previousBalances,
+                current.alcohol,
+                () =>
+                  'Нельзя уменьшить закупку: часть количества уже использована в продажах или списаниях. Сначала исправьте связанные операции.',
+              );
+            const totals = await purchaseCostTotals(db, session, id, purchase!.id, basis, meta?.archived);
+            const bought = totals.boughtOthers + (command.ml * purchase!.costPerLiter) / basis;
+            const ml = quantityRound(current, id, balance.ml + delta);
+            if (bought - totals.used < -0.01 || (ml === 0 && Math.abs(bought - totals.used) > 0.01))
+              throw Object.assign(
+                new Error('Нельзя исправить закупку: её стоимость уже учтена в продажах или списаниях.'),
+                { status: 400 },
+              );
+            const revision = crypto.randomUUID();
+            const operations = [...current.operations.slice(-999), command.id];
+            const saved = await state.updateOne(
+              { _id: 'state', revision: meta!.revision },
+              { $set: { revision, operations } },
+              { session },
+            );
+            if (!saved.matchedCount) throw new Error('Concurrent ledger revision');
+            if (command.ml === 0)
+              await db.collection('purchases').deleteOne({ _id: purchase!.id as never }, { session });
+            else
+              await db
+                .collection('purchases')
+                .updateOne({ _id: purchase!.id as never }, { $set: { ml: command.ml } }, { session });
+            const cost = balance.cost + (delta * purchase!.costPerLiter) / basis;
+            await db
+              .collection<import('./barbar-working').Balance>('stockBalances')
+              .updateOne({ _id: id }, { $set: { ml, cost } }, { upsert: true, session });
+            await appendAudit(db, session, commandAudit(command, current, actor));
+            const next: BarData = {
+              ...current,
+              operations,
+              opening: {
+                mode: 'read-model',
+                ingredients: [
+                  ...current.opening!.ingredients.filter((i) => i.alcoholId !== id),
+                  { alcoholId: id, ml, cost },
+                ],
+              },
+            };
+            const compact = compactData(next);
+            return {
+              data: compact,
+              revision,
+              catalogRevision: meta!.catalogRevision || meta!.revision,
+              baseRevision: meta!.revision,
+              changedStock: compact.opening!.ingredients.filter((b) => b.alcoholId === id),
+              days: {},
+            };
+          }
           if (command.type === 'void') {
             const sale = await db
               .collection('sales')
@@ -362,6 +488,27 @@ export function mongoRepository(
             throw Object.assign(error instanceof Error ? error : new Error('Некорректная операция.'), {
               status: 400,
             });
+          }
+          if (command.type === 'sale' && next !== current) {
+            const saved = next.sales.find((sale) => sale.id === command.id);
+            if (saved && saved.date !== businessToday()) {
+              if (meta?.archived?.before && saved.date < meta.archived.before)
+                throw Object.assign(
+                  new Error('История этого периода удалена. Выберите более позднюю дату.'),
+                  {
+                    status: 400,
+                  },
+                );
+              await assertHistoricalStock(
+                db,
+                session,
+                saved.date,
+                saved.ingredients,
+                previousBalances,
+                current.alcohol,
+                (name, day) => `Недостаточно «${name}» на ${day}. Добавьте закупку или уменьшите количество.`,
+              );
+            }
           }
           if (next === current)
             return {
@@ -404,6 +551,8 @@ export function mongoRepository(
           await saveBalances(db, session, next, previousBalances);
           await appendAudit(db, session, commandAudit(command, next, actor));
           if (command.type === 'sale') await recordStockAlerts(db, session, command.id, current, next);
+          if (command.type === 'purchase')
+            await recordPurchaseEvent(db, session, command.id, next, command.value.id);
           const compact = compactData(next);
           return {
             data: compact,
@@ -457,6 +606,7 @@ export function mongoRepository(
           }
           const migrated = migrateBottleCatalog(data);
           if (migrated !== data) {
+            if (!migrations) throw migrationBlocked();
             validateData(migrated);
             const revision = crypto.randomUUID();
             await state.replaceOne({ _id: 'state', revision: meta.revision }, metadata(migrated, revision), {
@@ -500,6 +650,8 @@ export function mongoRepository(
           await saveBalances(db, session, next);
           if (audit) await appendAudit(db, session, audit);
           if (audit?.action === 'sale') await recordStockAlerts(db, session, audit.id, current.data, next);
+          if (audit?.action === 'purchase')
+            await recordPurchaseEvent(db, session, audit.id, next, audit.targetId);
           return { modified: true, revision };
         }, transactionOptions);
       } finally {
@@ -515,12 +667,18 @@ export interface DeployInfo {
 }
 
 const connections = new Map<string, { client: MongoClient; db: Db }>();
-export function mongoConnection(local = false, deploy?: DeployInfo) {
+export function mongoConnection(
+  local = false,
+  deploy?: DeployInfo,
+  explicit?: { uri: string; database: string },
+) {
+  if (explicit && !local) throw new Error('Explicit database is only for the local server');
   const uri =
+    explicit?.uri ||
     process.env.BARBAR_MONGODB_URI ||
     (local ? 'mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true' : '');
   if (!uri) throw new Error('BARBAR_MONGODB_URI is required');
-  const base = process.env.BARBAR_MONGODB_DATABASE || 'barbar';
+  const base = explicit?.database || process.env.BARBAR_MONGODB_DATABASE || 'barbar';
   // CONTEXT/BRANCH are build variables, not guaranteed at Functions runtime.
   if (!local && (!deploy?.context || !deploy.id)) throw new Error('Missing Netlify deploy context');
   const database =

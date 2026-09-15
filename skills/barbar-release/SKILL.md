@@ -10,3 +10,5 @@ description: Verify and release authorized Barbar Cafe changes to its Git reposi
 - Netlify uses `netlify.toml` and Functions. Confirm the deployed commit or changed build assets after an authorized push; an HTTP 200 response alone does not prove the new release is live.
 - Check the deployed login page and anonymous API behavior without creating production test sales. Report cloud settings that cannot be verified, including backup and network configuration, as unverified.
 - Update release notes with actual checks, material limitations and any user action needed. Do not describe incomplete work as finished.
+- Before a release also run `npm run test:backup` and `npm run test:scheduled-backup`. Report storage with `npm run db:storage` when Atlas access is available, and latency with `npm run probe:latency` after publishing (anonymous GETs only).
+- One-time catalog migrations run on the first API request after deploy; mention them in release notes. `dev:production-db` (port 4002) is never used for tests.

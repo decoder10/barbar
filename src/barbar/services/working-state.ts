@@ -3,6 +3,7 @@ import type { BarData, Role, StaffData } from '../domain/types';
 import type { CatalogResponse, StockResponse, StockEntry } from '../domain/sync/contracts';
 import { api } from './api-client';
 import { readCatalog } from './catalog-client';
+import { expandRecipe } from '../domain/catalog/sets';
 export interface WorkingState {
   role: Role;
   revision: string;
@@ -45,12 +46,14 @@ function hydrate(catalog: CatalogResponse, response: StockResponse, stock: Stock
     const available =
       p.kind === 'alcohol'
         ? quantities.get(p.id) || 0
-        : recipe?.ingredients.length
+        : recipe && expandRecipe(recipe, template.recipes).length
           ? Math.max(
               0,
               Math.floor(
                 Math.min(
-                  ...recipe.ingredients.map((i) => ((quantities.get(i.alcoholId) || 0) + 1e-7) / i.ml),
+                  ...expandRecipe(recipe, template.recipes).map(
+                    (i) => ((quantities.get(i.alcoholId) || 0) + 1e-7) / i.ml,
+                  ),
                 ),
               ),
             )

@@ -8,5 +8,5 @@ export default defineConfig({
     // CSP allows same-origin fonts only; keep even small subsets as cacheable files.
     assetsInlineLimit: (filePath) => (/\.(?:woff2?|ttf|otf)$/i.test(filePath) ? false : undefined),
   },
-  test: { include: ['src/**/*.test.ts', 'netlify/**/*.test.ts'] },
+  test: { include: ['src/**/*.test.ts', 'netlify/**/*.test.ts', 'server/**/*.test.ts'] },
 });

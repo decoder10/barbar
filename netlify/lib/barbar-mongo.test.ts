@@ -10,6 +10,7 @@ import { handleReport } from './queries/report';
 import { identity } from '../../tests/identity-fixture';
 import { sessionCookie } from './barbar-auth';
 import { mongoRepository } from './barbar-mongo';
+import { mergeGoodsCatalog } from './database/goods-catalog';
 
 const uri = process.env.BARBAR_TEST_MONGODB_URI;
 describe.skipIf(!uri)('MongoDB transactions and migration (isolated test database)', () => {
@@ -49,6 +50,38 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
       },
       body: JSON.stringify({ command, revision: null }),
     });
+  it('preserves goods referenced only by archived history when merging the catalog', async () => {
+    const { db } = create();
+    await db.collection('state').insertOne({
+      _id: 'state' as never,
+      revision: 'before',
+      archived: { before: '2026-09-01', ingredients: [{ alcoholId: 'archived-tonic', ml: 1, cost: 100 }] },
+    });
+    await db.collection('alcohol').insertMany([
+      { _id: 'tonic' as never, id: 'tonic', name: 'Тоник', category: 'mixer', unit: 'ml', _order: 0 },
+      {
+        _id: 'archived-tonic' as never,
+        id: 'archived-tonic',
+        name: 'Tonic',
+        category: 'goods',
+        unit: 'bottle',
+        _order: 1,
+      },
+    ]);
+    await db.collection('cocktails').insertOne({
+      _id: 'menu-tonic' as never,
+      id: 'menu-tonic',
+      name: 'Tonic',
+      category: 'soft',
+      price: 1000,
+      stockAlcoholId: 'archived-tonic',
+      ingredients: [{ alcoholId: 'archived-tonic', ml: 1 }],
+      _order: 0,
+    });
+    await mergeGoodsCatalog(client, db);
+    expect(await db.collection('alcohol').countDocuments()).toBe(2);
+    expect((await db.collection('cocktails').findOne({}))?.stockAlcoholId).toBe('archived-tonic');
+  });
   it('adds indexes to an existing database without replacing custom records', async () => {
     const { db, repo } = create();
     const current = await repo.read();
@@ -68,12 +101,15 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
     const loader = vi.fn(async () => data);
     const { db, repo } = create(loader);
     const migrated = await repo.read();
-    expect(migrated.data).toEqual({
-      ...migrateBottleCatalog(data),
-      stockResets: [],
-      stockMovements: [],
-      expenses: [],
+    const expected = { ...migrateBottleCatalog(data), stockResets: [], stockMovements: [], expenses: [] };
+    // One-time catalog upgrades (goods, merged duplicates) change the catalog only; the ledger is imported as is.
+    expect({ ...migrated.data, alcohol: [], cocktails: [] }).toEqual({
+      ...expected,
+      alcohol: [],
+      cocktails: [],
     });
+    expect(migrated.data.cocktails.map((c) => c.id)).toEqual(expected.cocktails.map((c) => c.id));
+    expect(new Set(migrated.data.alcohol.map((a) => a.name)).size).toBe(migrated.data.alcohol.length);
     expect(stock(migrated.data, 'vodka')).toBe(80);
     expect(averageCost(migrated.data, 'vodka')).toBe(4000);
     const neverImport = vi.fn(async () => {

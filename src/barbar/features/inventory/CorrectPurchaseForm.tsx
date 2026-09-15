@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Field } from '../../ui/fields';
 import { Modal } from '../../ui/modal';
 import { formatMoney as money } from '../../presentation/currency/format-money';
-import { ingredientUnit, ingredientVolume, priceBasis, round } from '../../domain/model';
+import { ingredientUnit, ingredientVolume, priceBasis, round, unitBasis } from '../../domain/model';
 import type { Purchase } from '../../domain/types';
 import { t } from '../../presentation/i18n/runtime';
 import { useBar } from '../../app/providers/BarProvider';
@@ -40,9 +40,9 @@ export function CorrectPurchaseForm({ purchase, close }: { purchase: Purchase; c
           <input
             type="number"
             required
-            min={drink?.unit === 'bottle' ? 1 : 0.01}
+            min={unitBasis(drink?.unit) === 1 ? 1 : 0.01}
             max="1000000000"
-            step={drink?.unit === 'bottle' ? 1 : 0.01}
+            step={unitBasis(drink?.unit) === 1 ? 1 : 0.01}
             disabled={remove}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}

@@ -1,14 +1,17 @@
+import { inventoryGroup } from '../domain/inventory-groups';
 import { InventoryCategories } from '../features/inventory/InventoryCategories';
 import { useSessionFilter } from '../presentation/use-session-filter';
-import { Boxes, Search, TriangleAlert } from 'lucide-react';
-import { InventoryProduct, InventoryStock } from '../features/inventory/InventoryProduct';
+import { ArrowDownToLine, Boxes, Search, TriangleAlert } from 'lucide-react';
+import { InventoryProduct, InventoryStock, RecipeShortages } from '../features/inventory/InventoryProduct';
 import { Empty, Metric, PageHeading } from '../ui/layout';
 import { InventoryViewSwitch, useInventoryView } from '../features/inventory/view-switch';
-import { unitLabel } from '../domain/model';
+import { ingredientVolume, round, volume } from '../domain/model';
+import { recipeShortages } from '../domain/shortages';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
-import { locale, t } from '../presentation/i18n/runtime';
+import { t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
 
+/** Worker stock: the owner's table and shortages without purchase prices, stock value or stock controls. */
 export default function StaffInventory() {
   const { staffData } = useBar();
   const [category, setCategory] = useSessionFilter<string>('category', 'all');
@@ -18,11 +21,13 @@ export default function StaffInventory() {
   const [missingOnly, setMissingOnly] = useSessionFilter<boolean>('missingOnly', false);
   if (!staffData) return <p className="muted">{t('Загружаем склад…')}</p>;
   const items = staffData.ingredients;
-  const missing = items.filter((a) => a.available <= 0).length;
+  const units = { alcohol: items };
+  const remaining = (id: string) => items.find((a) => a.id === id)?.available || 0;
+  const shortages = recipeShortages(staffData.recipes, remaining);
   const filtered = items
     .filter(
       (a) =>
-        (category === 'all' || a.category === category) &&
+        (category === 'all' || inventoryGroup(a) === category) &&
         (!missingOnly || a.available <= 0) &&
         a.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
     )
@@ -30,28 +35,42 @@ export default function StaffInventory() {
   return (
     <>
       <PageHeading
-        eyebrow="BARBAR · СКЛАД"
+        eyebrow="ВСЁ НА СВОИХ ПОЛКАХ"
         title={t('Остатки на складе')}
         description="Проверяйте наличие напитков и ингредиентов. Для пополнения обратитесь к администратору."
       />
-      <section className="metrics staff-metrics">
+      <section className="metrics">
         <Metric
-          label="В наличии"
-          value={String(items.length - missing)}
-          hint="Позиций с ненулевым остатком"
+          label="Напитков в каталоге"
+          value={String(items.length)}
+          hint="Алкоголь, продукты и миксеры"
           icon={<Boxes size={18} />}
           accent
         />
         <Metric
-          label="Нет в наличии"
-          value={String(missing)}
-          hint="Позиций с нулевым остатком"
+          label="Общий остаток"
+          value={volume(items.filter((a) => !a.unit || a.unit === 'ml').reduce((n, a) => n + a.available, 0))}
+          hint={`Отдельно в бутылках: ${round(items.filter((a) => a.unit === 'bottle').reduce((n, a) => n + a.available, 0))} бут.`}
+          icon={<ArrowDownToLine size={18} />}
+        />
+        <Metric
+          label="Не хватает для рецептов"
+          value={String(shortages.size)}
+          hint="Ингредиентов для одной порции"
           icon={<TriangleAlert size={18} />}
         />
       </section>
       <section className="panel">
+        <div className="section-title">
+          <div>
+            <h2>{t('Ваш барный запас')}</h2>
+            <p>
+              {t('Красным выделены ингредиенты, которых не хватает на одну порцию по сохранённым рецептам.')}
+            </p>
+          </div>
+        </div>
         <div className="catalog-tools">
-          <InventoryCategories value={category} onChange={setCategory} />
+          <InventoryCategories value={category} onChange={setCategory} items={items} />
           <CatalogSortControl
             value={sort}
             onChange={(value) => {
@@ -63,7 +82,7 @@ export default function StaffInventory() {
             <Search size={17} />
             <input
               aria-label={t('Поиск на складе')}
-              placeholder={t('Марка или ингредиент…')}
+              placeholder={t('Найти на полке…')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -90,33 +109,41 @@ export default function StaffInventory() {
           <table className="data-table inventory-table">
             <thead>
               <tr>
-                <th>{t('Марка / ингредиент')}</th>
+                <th>{t('Напиток')}</th>
                 <th>{t('Остаток')}</th>
               </tr>
             </thead>
             <tbody>
-              {t(
-                filtered.map((a) => {
-                  return (
-                    <tr key={a.id} className={a.available <= 0 ? 'inventory-shortage' : ''}>
-                      <td>
-                        <InventoryProduct drink={a} />
-                      </td>
-                      <td>
-                        <InventoryStock
-                          quantity={`${new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 }).format(a.available)} ${unitLabel(a.unit)}`}
-                          unavailable={a.available <= 0}
-                          low={a.available <= 0}
+              {filtered.map((a) => (
+                <tr
+                  key={a.id}
+                  className={shortages.has(a.id) || a.available <= 0 ? 'inventory-shortage' : undefined}
+                >
+                  <td>
+                    <InventoryProduct drink={a} />
+                  </td>
+                  <td>
+                    <InventoryStock
+                      quantity={ingredientVolume(units, a.id, a.available)}
+                      unavailable={a.available <= 0}
+                      low={shortages.has(a.id) || a.available <= 0}
+                    >
+                      {shortages.has(a.id) && (
+                        <RecipeShortages
+                          shortages={shortages.get(a.id)!}
+                          format={(amount) => ingredientVolume(units, a.id, amount)}
                         />
-                      </td>
-                    </tr>
-                  );
-                }),
-              )}
+                      )}
+                    </InventoryStock>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
-        {t(!filtered.length && <Empty title={t('Позиций не найдено')} text="Измените поиск или фильтры." />)}
+        {!filtered.length && (
+          <Empty title={t('На этой полке пока пусто')} text="Измените поиск или фильтры." />
+        )}
       </section>
     </>
   );

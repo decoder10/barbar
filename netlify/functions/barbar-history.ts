@@ -1,3 +1,4 @@
+import { observe } from '../lib/observability';
 import { handleHistory } from '../lib/queries/history';
 import { json } from '../lib/barbar-auth';
 import { mongoConnection, type DeployInfo } from '../lib/barbar-mongo';
@@ -11,7 +12,7 @@ export default async (request: Request, context: { deploy: DeployInfo }) => {
     users ||= mongoUsers(connection.db);
     const response = await handleHistory(request, connection.db, users);
     response.headers.set('Server-Timing', `app;dur=${(performance.now() - started).toFixed(1)}`);
-    return response;
+    return observe('/api/barbar/history', request, response, started);
   } catch {
     return json({ error: 'История временно недоступна.' }, 503);
   }

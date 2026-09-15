@@ -4,6 +4,7 @@ import { compactData } from '../netlify/lib/barbar-working';
 import { publicCatalogPart, publicStock } from '../netlify/lib/barbar-sync';
 import { staffData } from '../netlify/lib/barbar-access';
 import { applyCommand } from '../src/barbar/domain/model';
+import { cardPage, parseCardQuery } from '../src/barbar/domain/catalog/cards';
 import type { Command } from '../src/barbar/domain/types';
 for (const role of ['admin', 'barbar'] as const) {
   test(`${role}: catalog cached across sales, stock refresh and navigation; edited catalog reloaded`, async ({
@@ -20,6 +21,23 @@ for (const role of ['admin', 'barbar'] as const) {
       publicStock({ revision, catalogRevision, stock: compactData(data).opening!.ingredients }, role);
     await page.route('**/api/barbar/auth', (r) => r.fulfill({ json: { authenticated: true, role } }));
     await page.route('**/api/barbar/catalog/*', (r) => {
+      const url = new URL(r.request().url());
+      if (url.pathname.endsWith('/cards')) {
+        // Card pages are ordered IDs over the loaded catalog; they are not catalog reloads.
+        const query = parseCardQuery(url.searchParams);
+        return r.fulfill({
+          json: {
+            ...cardPage(
+              data,
+              new Map(compactData(data).opening!.ingredients.map((b) => [b.alcoholId, b.ml])),
+              query,
+            ),
+            catalogRevision,
+            revision,
+            role,
+          },
+        });
+      }
       catalogCalls++;
       return r.fulfill({
         json: publicCatalogPart(

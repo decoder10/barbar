@@ -23,9 +23,13 @@ for (const role of ['admin', 'barbar'] as const) {
         }),
       );
       await page.goto('/');
-      await page.getByRole('button', { name: 'Коктейли', exact: true }).click();
+      // Phones show categories as a dropdown.
+      if (fallback) await page.getByLabel('Категория', { exact: true }).selectOption('cocktail');
+      else await page.getByRole('button', { name: 'Коктейли', exact: true }).click();
       await page.getByPlaceholder('Найти напиток…').fill('Gin tonic');
-      const count = await page.locator('.drink-card').count();
+      // Search is debounced and applies to the whole catalog: Beefeater and Bombay.
+      await expect(page.locator('.drink-card')).toHaveCount(2);
+      const count = 2;
       await page.getByRole('button', { name: 'На весь экран', exact: true }).click();
       const exit = page.getByRole('button', { name: 'Выйти из полного экрана', exact: true });
       await expect(exit).toBeEnabled();

@@ -1,8 +1,15 @@
 export interface Alcohol {
   id: string;
   name: string;
-  category: 'alcohol' | 'mixer' | 'beer' | 'wine' | 'cognac';
-  unit?: 'ml' | 'g' | 'bottle';
+  /** `food` holds snack products (bread, cheese, meat, vegetables, sauces). */
+  category: 'alcohol' | 'mixer' | 'beer' | 'wine' | 'cognac' | 'food' | 'goods';
+  /** Goods only: the menu section of the linked item (soft drinks, snacks, tea bags). */
+  menuCategory?: GoodsCategory;
+  /** Product group chosen by the owner (fruit, snacks…); derived from the name when absent. */
+  group?: string;
+  /** Goods only: quantity deducted by one sale, in the item's unit (1 bottle, 1 pc, 50 g). */
+  saleAmount?: number;
+  unit?: 'ml' | 'g' | 'bottle' | 'pcs';
   bottleSizeMl?: number;
   glassSizeMl?: number;
   glassPrice?: number;
@@ -10,6 +17,14 @@ export interface Alcohol {
   costPerLiter: number;
   pricePerLiter: number;
   color: string;
+  /** Poured alcohol is listed in the public guest menu unless hidden. */
+  guestHidden?: boolean;
+}
+export type GoodsCategory = 'soft' | 'snack' | 'hot';
+/** One tincture in a set and the number of shots it contributes. */
+export interface SetComponent {
+  cocktailId: string;
+  quantity: number;
 }
 export interface Ingredient {
   alcoholId: string;
@@ -27,6 +42,15 @@ export interface Cocktail {
   extraCosts?: PortionExpense[];
   category?: MenuCategory;
   notes?: string;
+  /** Sets only: tinctures and shots; a set sale deducts their recipes. */
+  components?: SetComponent[];
+  /** Sold as is (tea bags, juice): no recipe and no stock deduction. */
+  noIngredients?: boolean;
+  /** Optional cost per portion in AMD for items without ingredients. */
+  portionCost?: number;
+  /** Guest-facing portion, e.g. «50 мл» or «6 шотов». */
+  portion?: string;
+  guestHidden?: boolean;
   id: string;
   name: string;
   ingredients: Ingredient[];
@@ -42,9 +66,11 @@ export interface Purchase {
 }
 export interface Sale {
   servingMl?: number;
-  unit?: 'bottle' | 'glass';
+  unit?: 'bottle' | 'glass' | 'pcs';
   extraCosts?: (PortionExpense & { name: string })[];
   category?: MenuCategory;
+  /** Menu item sold without ingredients; cost is the saved portion cost. */
+  withoutIngredients?: boolean;
   id: string;
   date: string;
   createdAt: string;
@@ -120,7 +146,9 @@ export interface StaffProduct {
   glassSizeMl?: number;
   bottleSizeMl?: number;
   availableMl?: number;
-  unit?: 'bottle' | 'glass';
+  unit?: 'bottle' | 'glass' | 'pcs';
+  /** Menu serving of stock-linked items; chooses the same photo as the owner card. */
+  serving?: Cocktail['serving'];
   id: string;
   kind: Sale['kind'];
   name: string;
@@ -146,7 +174,7 @@ export type StaffSale = Pick<
 >;
 export interface StaffRecipe extends Pick<
   Cocktail,
-  'id' | 'name' | 'category' | 'image' | 'notes' | 'ingredients'
+  'id' | 'name' | 'category' | 'image' | 'notes' | 'ingredients' | 'noIngredients' | 'components'
 > {
   editable: boolean;
   managedIngredientIds: string[];
@@ -156,7 +184,7 @@ export interface StaffData {
   recipes: StaffRecipe[];
   ingredients: (Pick<
     Alcohol,
-    'id' | 'name' | 'unit' | 'category' | 'bottleSizeMl' | 'glassSizeMl' | 'color'
+    'id' | 'name' | 'unit' | 'category' | 'bottleSizeMl' | 'glassSizeMl' | 'color' | 'menuCategory' | 'group'
   > & {
     available: number;
   })[];

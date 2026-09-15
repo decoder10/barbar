@@ -1,3 +1,4 @@
+import { inventoryGroup } from '../domain/inventory-groups';
 import { InventoryCategories } from '../features/inventory/InventoryCategories';
 import { useNearViewport } from '../ui/use-near-viewport';
 import { useHistory } from '../features/sales/use-history';
@@ -17,7 +18,8 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { InventoryProduct, InventoryStock } from '../features/inventory/InventoryProduct';
+import { InventoryProduct, InventoryStock, RecipeShortages } from '../features/inventory/InventoryProduct';
+import { recipeShortages } from '../domain/shortages';
 import { Empty, Metric, PageHeading } from '../ui/layout';
 import { ExportButton } from '../ui/export';
 import { InventoryViewSwitch, useInventoryView } from '../features/inventory/view-switch';
@@ -66,7 +68,7 @@ export default function Inventory() {
   const filtered = data.alcohol.filter(
     (a) =>
       a.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) &&
-      (category === 'all' || a.category === category),
+      (category === 'all' || inventoryGroup(a) === category),
   );
   filtered.sort((a, b) =>
     compareCatalog(
@@ -82,17 +84,7 @@ export default function Inventory() {
     (n, a) => n + (remaining(a.id) * inventory.averageCost(a.id)) / priceBasis(data, a.id),
     0,
   );
-  const shortages = new Map<string, { id: string; name: string; required: number; missing: number }[]>();
-  for (const recipe of data.cocktails) {
-    for (const ingredient of recipe.ingredients) {
-      const missing = round(ingredient.ml - remaining(ingredient.alcoholId));
-      if (missing > 0) {
-        const items = shortages.get(ingredient.alcoholId) || [];
-        items.push({ id: recipe.id, name: recipe.name, required: ingredient.ml, missing });
-        shortages.set(ingredient.alcoholId, items);
-      }
-    }
-  }
+  const shortages = recipeShortages(data.cocktails, remaining);
   return (
     <>
       <PageHeading
@@ -125,6 +117,26 @@ export default function Inventory() {
             </button>
           )),
         )}
+        <button
+          className="button secondary"
+          onClick={() => {
+            setNewCategory('food');
+            setEdit('new');
+          }}
+        >
+          <Plus size={17} />
+          {t(' Продукт')}
+        </button>
+        <button
+          className="button secondary"
+          onClick={() => {
+            setNewCategory('goods');
+            setEdit('new');
+          }}
+        >
+          <Plus size={17} />
+          {t(' Товар целиком')}
+        </button>
         <button className="button primary" onClick={() => setPurchase('')}>
           <PackagePlus size={17} />
           {t(' Добавить закупку')}
@@ -168,7 +180,7 @@ export default function Inventory() {
           <ExportButton name="alcohol.json" value={data.alcohol} />
         </div>
         <div className="catalog-tools">
-          <InventoryCategories value={category} onChange={setCategory} />
+          <InventoryCategories value={category} onChange={setCategory} items={data.alcohol} />
           <CatalogSortControl
             value={sort}
             onChange={(value) => {
@@ -217,33 +229,11 @@ export default function Inventory() {
                         unavailable={remaining(a.id) <= 0}
                         low={shortages.has(a.id) || remaining(a.id) <= 0}
                       >
-                        {t(
-                          shortages.has(a.id) && (
-                            <details className="inventory-shortage-details">
-                              <summary>
-                                <TriangleAlert size={13} aria-hidden="true" />
-                                {t(' Не хватает для рецептов:')}
-                                {t(' ')}
-                                {t(shortages.get(a.id)!.length)}
-                              </summary>
-                              <ul>
-                                {t(
-                                  shortages.get(a.id)!.map((recipe) => (
-                                    <li key={recipe.id}>
-                                      <strong>{t(recipe.name)}</strong>
-                                      <span>
-                                        {t('На порцию нужно ')}
-                                        {t(ingredientVolume(data, a.id, recipe.required))}
-                                        {t('; не хватает')}
-                                        {t(' ')}
-                                        {t(ingredientVolume(data, a.id, recipe.missing))}.
-                                      </span>
-                                    </li>
-                                  )),
-                                )}
-                              </ul>
-                            </details>
-                          ),
+                        {shortages.has(a.id) && (
+                          <RecipeShortages
+                            shortages={shortages.get(a.id)!}
+                            format={(amount) => ingredientVolume(data, a.id, amount)}
+                          />
                         )}
                       </InventoryStock>
                     </td>

@@ -13,3 +13,8 @@ Work from the repository root. Read `docs/architecture.md` when locating modules
 - Keep command IDs stable on retries. MongoDB transactions and revision checks prevent double sales and lost updates.
 - Existing user identities, custom catalog entries and recipes take precedence over bootstrap defaults. Image changes must not reseed data.
 - Test ledger changes in an isolated database. `test:db` creates disposable databases; verify their names before adding cleanup code. Do not use production sales as test fixtures.
+- Stock `category` drives accounting (`mixer`/`food` are recipe ingredients, `goods` are sold whole); the product `group` (fruit, snacks, soft drinks…) only organises tabs and ingredient pickers. Keep one physical product as one stock item.
+- Goods link to one menu item: each sale deducts `saleAmount` in the item's unit (1 bottle/pc, or grams/ml); `pricePerLiter` of goods is the price of one sale. Bottled goods with `bottleSizeMl` enter recipes in ml as a share of one piece.
+- Sets store `components` (tinctures × shots); a set sale expands the tincture recipes and their extra costs. A tincture used in a set keeps its category.
+- Catalog upgrades run once per database (`appMigrations`) and must be insert-only or remove only items without purchases, movements, resets, sales, balances or recipe references. Bump the key when the definition changes; never run them for `dev:production-db`.
+- Purchase notifications are written in the purchase transaction (`purchaseEvents`, ID = command ID) and delivered to active owners only.

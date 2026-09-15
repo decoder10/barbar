@@ -38,3 +38,41 @@ export function AutoReveal({
     </button>
   );
 }
+
+/** Loads the next server page 400 px before the end of the list; the button stays as a keyboard fallback. */
+export function LoadMore({
+  remaining,
+  loading,
+  onMore,
+}: {
+  remaining: number;
+  loading: boolean;
+  onMore: () => void;
+}) {
+  const target = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!target.current || loading || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        onMore();
+      },
+      { rootMargin: '0px 0px 400px 0px' },
+    );
+    observer.observe(target.current);
+    return () => observer.disconnect();
+  }, [loading, onMore]);
+  return (
+    <button
+      ref={target}
+      className="button secondary load-more"
+      disabled={loading}
+      aria-busy={loading}
+      onClick={onMore}
+    >
+      {t(loading ? 'Загружаем…' : 'Показать ещё · ')}
+      {loading ? '' : remaining}
+    </button>
+  );
+}

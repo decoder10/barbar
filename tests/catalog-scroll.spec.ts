@@ -26,7 +26,9 @@ for (const role of ['admin', 'barbar'] as const) {
       });
       if (role === 'barbar') await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(path);
-      await page.getByRole('button', { name: 'Коктейли', exact: true }).click();
+      // Phones (the worker run at 390px) choose the category from a dropdown.
+      if (role === 'barbar') await page.getByLabel('Категория', { exact: true }).selectOption('cocktail');
+      else await page.getByRole('button', { name: 'Коктейли', exact: true }).click();
       const cards = page.locator('.drink-card');
       await expect(cards).toHaveCount(24);
       const initialReads = reads;

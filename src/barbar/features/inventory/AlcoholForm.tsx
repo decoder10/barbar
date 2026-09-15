@@ -1,8 +1,18 @@
 import { useState } from 'react';
 import { Field } from '../../ui/fields';
 import { Modal, Submit } from '../../ui/modal';
-import { priceUnit, uid } from '../../domain/model';
+import { priceUnit, uid, unitLabel } from '../../domain/model';
 import type { Alcohol } from '../../domain/types';
+import { barConfig } from '../../config';
+import {
+  categoryForGroup,
+  goodsMenuCategoryForGroup,
+  inventoryGroup,
+  inventoryGroupHints,
+  inventoryGroups,
+  isAlcoholGroup,
+  unitForGroup,
+} from '../../domain/inventory-groups';
 import { t } from '../../presentation/i18n/runtime';
 import { useBar } from '../../app/providers/BarProvider';
 
@@ -21,14 +31,21 @@ export function AlcoholForm({
       id: uid(),
       name: '',
       category: initialCategory,
-      unit: ['beer', 'wine', 'cognac'].includes(initialCategory) ? 'bottle' : 'ml',
+      unit:
+        initialCategory === 'goods'
+          ? 'pcs'
+          : isAlcoholGroup(initialCategory)
+            ? unitForGroup(initialCategory)
+            : 'ml',
+      ...(initialCategory === 'goods' ? { menuCategory: 'soft' as const } : {}),
       costPerLiter: 0,
       pricePerLiter: 0,
       color: '#8c775b',
     },
   );
-  const [customSize, setCustomSize] = useState(false);
-  const bottled = value.unit === 'bottle';
+  const bottled = value.unit === 'bottle' && value.category !== 'goods';
+  const group = inventoryGroup(value);
+  const goods = value.category === 'goods';
   const pourable = ['wine', 'cognac'].includes(value.category);
   const used =
     !!alcohol &&
@@ -36,11 +53,21 @@ export function AlcoholForm({
       data.cocktails.some((c) => c.ingredients.some((i) => i.alcoholId === alcohol.id)));
   return (
     <Modal
-      title={t(alcohol ? 'Настройки напитка' : 'Новый напиток')}
+      title={t(
+        value.category === 'food'
+          ? alcohol
+            ? 'Настройки продукта'
+            : 'Новый продукт для закусок'
+          : alcohol
+            ? 'Настройки напитка'
+            : 'Новый напиток',
+      )}
       subtitle={
         bottled
           ? 'У каждой марки свои цены и остаток в бутылках.'
-          : 'Закупочная и продажная цены указываются за 1 000 мл или граммов.'
+          : value.unit === 'pcs'
+            ? 'Закупочная и продажная цены указываются за 1 штуку.'
+            : 'Закупочная и продажная цены указываются за 1 000 мл или граммов.'
       }
       close={close}
     >
@@ -61,43 +88,162 @@ export function AlcoholForm({
             onChange={(e) => setValue({ ...value, name: e.target.value })}
           />
         </Field>
-        <Field label="Тип">
+        <Field label="Группа" hint={inventoryGroupHints[group]}>
           <select
-            value={value.category}
-            disabled={used}
-            onChange={(e) =>
+            value={group}
+            disabled={used && isAlcoholGroup(value.category)}
+            onChange={(e) => {
+              const next = e.target.value;
+              const alcoholType = isAlcoholGroup(next);
               setValue({
                 ...value,
-                category: e.target.value as Alcohol['category'],
-                unit: ['beer', 'wine', 'cognac'].includes(e.target.value)
-                  ? 'bottle'
-                  : e.target.value === 'alcohol' || value.unit === 'bottle'
-                    ? 'ml'
-                    : value.unit,
-                bottleSizeMl: undefined,
-                glassSizeMl: undefined,
-                glassPrice: undefined,
-              })
-            }
+                group: alcoholType ? undefined : next,
+                ...(used
+                  ? {}
+                  : {
+                      category: alcoholType
+                        ? categoryForGroup(next)
+                        : goods
+                          ? 'goods'
+                          : categoryForGroup(next),
+                      // Units per group come from config/inventory-groups.json; a chosen unit is kept.
+                      unit: alcoholType
+                        ? unitForGroup(next)
+                        : goods
+                          ? value.unit || unitForGroup(next, true)
+                          : value.unit && value.unit !== 'bottle'
+                            ? value.unit
+                            : unitForGroup(next),
+                      ...(alcoholType ? { menuCategory: undefined, saleAmount: undefined } : {}),
+                      glassSizeMl: undefined,
+                      glassPrice: undefined,
+                    }),
+              });
+            }}
           >
-            <option value="alcohol">{t('Алкоголь')}</option>
-            <option value="beer">{t('Пиво')}</option>
-            <option value="wine">{t('Вино')}</option>
-            <option value="cognac">{t('Коньяк')}</option>
-            <option value="mixer">{t('Продукты и миксеры (без алкоголя)')}</option>
+            {inventoryGroups.map(([id, label]) => (
+              <option key={id} value={id}>
+                {t(label)}
+              </option>
+            ))}
           </select>
         </Field>
-        <Field label="Единица измерения">
-          <select
-            disabled={value.category !== 'mixer' || used}
-            value={value.unit || 'ml'}
-            onChange={(e) => setValue({ ...value, unit: e.target.value as Alcohol['unit'] })}
-          >
-            {t(bottled && <option value="bottle">{t('Бутылки')}</option>)}
-            <option value="ml">{t('Миллилитры (жидкости)')}</option>
-            <option value="g">{t('Граммы (фрукты, сахар, специи)')}</option>
-          </select>
-        </Field>
+        {!isAlcoholGroup(group) && (
+          <label className="form-help guest-visibility">
+            <input
+              type="checkbox"
+              checked={goods}
+              disabled={used}
+              onChange={(e) =>
+                setValue(
+                  e.target.checked
+                    ? {
+                        ...value,
+                        group,
+                        category: 'goods',
+                        unit: unitForGroup(group, true),
+                        menuCategory: goodsMenuCategoryForGroup(group),
+                      }
+                    : {
+                        ...value,
+                        group,
+                        category: categoryForGroup(group),
+                        unit: unitForGroup(group),
+                        menuCategory: undefined,
+                        saleAmount: undefined,
+                      },
+                )
+              }
+            />
+            {t(' Продаётся целиком в меню (бутылка, пачка, пакетик, порция)')}
+          </label>
+        )}
+        {goods && (
+          <>
+            <div className="form-grid">
+              <Field label="Раздел меню">
+                <select
+                  disabled={used}
+                  value={value.menuCategory || 'soft'}
+                  onChange={(e) =>
+                    setValue({
+                      ...value,
+                      menuCategory: e.target.value as NonNullable<Alcohol['menuCategory']>,
+                    })
+                  }
+                >
+                  <option value="soft">{t('Безалкогольные')}</option>
+                  <option value="snack">{t('Закуски')}</option>
+                  <option value="hot">{t('Горячие напитки')}</option>
+                </select>
+              </Field>
+              <Field label="Учёт на складе">
+                <select
+                  disabled={used}
+                  value={value.unit || 'pcs'}
+                  onChange={(e) => {
+                    const unit = e.target.value as Alcohol['unit'];
+                    setValue({
+                      ...value,
+                      unit,
+                      saleAmount: unit === 'g' || unit === 'ml' ? value.saleAmount : undefined,
+                      bottleSizeMl: unit === 'g' || unit === 'ml' ? undefined : value.bottleSizeMl,
+                    });
+                  }}
+                >
+                  <option value="bottle">{t('Бутылки')}</option>
+                  <option value="pcs">{t('Штуки (пачки, пакетики)')}</option>
+                  <option value="g">{t('Граммы')}</option>
+                  <option value="ml">{t('Миллилитры')}</option>
+                </select>
+              </Field>
+            </div>
+            {value.unit === 'g' || value.unit === 'ml' ? (
+              <Field
+                label={`Списывать за одну продажу, ${unitLabel(value.unit)}`}
+                hint="Например, порция мёда — 50 г. Столько спишется со склада при каждой продаже."
+              >
+                <input
+                  type="number"
+                  min="0.01"
+                  max="100000"
+                  step="0.01"
+                  required
+                  value={value.saleAmount || ''}
+                  onChange={(e) => setValue({ ...value, saleAmount: Number(e.target.value) || undefined })}
+                />
+              </Field>
+            ) : (
+              <Field
+                label="Объём 1 шт., мл"
+                hint="Каждая продажа списывает 1 шт. Объём нужен, только если товар идёт в коктейли в мл."
+              >
+                <input
+                  type="number"
+                  min="1"
+                  max="10000"
+                  step="1"
+                  disabled={!!alcohol?.bottleSizeMl && data.purchases.some((p) => p.alcoholId === alcohol.id)}
+                  value={value.bottleSizeMl || ''}
+                  onChange={(e) => setValue({ ...value, bottleSizeMl: Number(e.target.value) || undefined })}
+                />
+              </Field>
+            )}
+          </>
+        )}
+        {!goods && !isAlcoholGroup(group) && (
+          <Field label="Единица измерения">
+            <select
+              disabled={used}
+              value={value.unit || 'ml'}
+              onChange={(e) => setValue({ ...value, unit: e.target.value as Alcohol['unit'] })}
+            >
+              <option value="ml">{t('Миллилитры (жидкости)')}</option>
+              <option value="g">{t('Граммы (фрукты, сахар, специи)')}</option>
+              <option value="pcs">{t('Штуки (хлеб, лаваш, упаковки)')}</option>
+            </select>
+          </Field>
+        )}
         <div className="form-grid">
           <Field label={`Закупка за ${priceUnit(value.unit)}, ֏`}>
             <input
@@ -111,7 +257,7 @@ export function AlcoholForm({
               onChange={(e) => setValue({ ...value, costPerLiter: Number(e.target.value) })}
             />
           </Field>
-          <Field label={`Продажа за ${priceUnit(value.unit)}, ֏`}>
+          <Field label={goods ? 'Цена продажи, ֏' : `Продажа за ${priceUnit(value.unit)}, ֏`}>
             <input
               type="number"
               min="0"
@@ -124,60 +270,39 @@ export function AlcoholForm({
             />
           </Field>
         </div>
-        {t(
-          bottled && (
+        {bottled && (
+          <>
             <Field
               label="Объём бутылки, мл"
               hint="Для другого объёма той же марки создайте отдельную позицию."
             >
-              <select
-                aria-label={t('Объём бутылки, мл')}
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                step="1"
                 required={pourable}
+                placeholder={t('Например, 750')}
                 disabled={!!alcohol?.bottleSizeMl && data.purchases.some((p) => p.alcoholId === alcohol.id)}
-                value={customSize ? 'custom' : value.bottleSizeMl || ''}
-                onChange={(e) => {
-                  setCustomSize(e.target.value === 'custom');
-                  if (e.target.value !== 'custom')
-                    setValue({ ...value, bottleSizeMl: Number(e.target.value) || undefined });
-                }}
-              >
-                <option value="">{t('Выберите объём')}</option>
-                {t(
-                  [
-                    300,
-                    330,
-                    500,
-                    700,
-                    750,
-                    1000,
-                    ...(value.bottleSizeMl && ![300, 330, 500, 700, 750, 1000].includes(value.bottleSizeMl)
-                      ? [value.bottleSizeMl]
-                      : []),
-                  ].map((n) => (
-                    <option key={n} value={n}>
-                      {t(n)}
-                      {t(' мл')}
-                    </option>
-                  )),
-                )}
-                <option value="custom">{t('Другой объём')}</option>
-              </select>
+                value={value.bottleSizeMl || ''}
+                onChange={(e) => setValue({ ...value, bottleSizeMl: Number(e.target.value) || undefined })}
+              />
             </Field>
-          ),
-        )}
-        {t(
-          bottled && customSize && (
-            <input
-              aria-label={t('Другой объём бутылки, мл')}
-              type="number"
-              min="1"
-              max="10000"
-              step="1"
-              required
-              value={value.bottleSizeMl || ''}
-              onChange={(e) => setValue({ ...value, bottleSizeMl: Number(e.target.value) || undefined })}
-            />
-          ),
+            <div className="quick-values bottle-sizes">
+              {barConfig.presets.bottleSizesMl.map((n) => (
+                <button
+                  type="button"
+                  key={n}
+                  className={value.bottleSizeMl === n ? 'selected' : ''}
+                  aria-pressed={value.bottleSizeMl === n}
+                  disabled={!!alcohol?.bottleSizeMl && data.purchases.some((p) => p.alcoholId === alcohol.id)}
+                  onClick={() => setValue({ ...value, bottleSizeMl: n })}
+                >
+                  {n} {t('мл')}
+                </button>
+              ))}
+            </div>
+          </>
         )}
         {t(
           pourable && (
@@ -223,15 +348,8 @@ export function AlcoholForm({
           ),
         )}
         <datalist id="glass-sizes">
-          {t([30, 50, 100, 125, 150, 175, 200].map((n) => <option key={n} value={n} />))}
+          {t(barConfig.presets.glassSizesMl.map((n) => <option key={n} value={n} />))}
         </datalist>
-        <Field label="Цвет бутылки">
-          <input
-            type="color"
-            value={value.color}
-            onChange={(e) => setValue({ ...value, color: e.target.value })}
-          />
-        </Field>
         <p className="form-help">
           {t(
             'Создание напитка не пополняет склад. После сохранения добавьте закупку. Новые цены не изменяют прошлые продажи.',

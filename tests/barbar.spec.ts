@@ -34,10 +34,10 @@ async function workspace(page: import('@playwright/test').Page, oldSale = false,
   await page.goto('/');
   await expect(page.getByLabel('Дата продаж')).toBeVisible();
 }
-test('login screen and fictitious login work through Node', async ({ page }) => {
+test('login screen and configured owner login work through Node', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('Логин', { exact: true }).fill('barbar');
-  await page.getByLabel('Пароль вашего бара').fill(process.env.BARBAR_PASSWORD || '');
+  await page.getByLabel('Логин', { exact: true }).fill(process.env.BARBAR_ADMIN_USERNAME || 'admin');
+  await page.getByLabel('Пароль вашего бара').fill(process.env.BARBAR_ADMIN_PASSWORD || '');
   await page.getByRole('button', { name: 'Войти в Barbar' }).click();
   await expect(page.getByText('Общие данные', { exact: true })).toBeVisible();
   await page.screenshot({ path: '/private/tmp/barbar-live-desktop.png', fullPage: false });
@@ -94,7 +94,7 @@ test('preloaded tinctures can be edited with grams and an independent selling pr
   await page.getByLabel('Миллилитры ингредиента 1').fill('50');
   await page.getByRole('button', { name: 'Добавить ингредиент' }).click();
   await page.getByLabel('Ингредиент 2', { exact: true }).selectOption('sugar');
-  await page.getByLabel('Миллилитры ингредиента 2').fill('5');
+  await page.getByLabel('Граммы ингредиента 2').fill('5');
   await page.getByLabel('Цена продажи, ֏').fill('1800');
   await expect(page.getByRole('dialog')).toContainText('Себестоимость порции');
   await expect(page.getByRole('dialog')).toContainText('215 ֏');
@@ -121,6 +121,9 @@ test('all menu categories and backup tools are accessible', async ({ page }) => 
   await workspace(page);
   await page.getByRole('link', { name: /Меню и рецепты/ }).click();
   await expect(page.getByRole('heading', { name: 'Меню и рецепты', exact: true })).toBeVisible();
+  // Bottled wine, beer and brandy are sold from stock and have no recipe tab.
+  await expect(page.getByRole('button', { name: 'Вино', exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Продажи Каждый день' }).click();
   await page.getByRole('button', { name: 'Вино', exact: true }).click();
   await expect(page.getByRole('button', { name: /Volcani red dry Haghtanak · бокал/ })).toContainText(
     '1 500',
@@ -233,12 +236,23 @@ test('menu has varied matched images and manual photo selection persists', async
   expect(new Set(positions).size).toBeGreaterThan(10);
   await page.screenshot({ path: '/private/tmp/barbar-new-menu.png', fullPage: false });
   await page.getByRole('button', { name: /КОКТЕЙЛИ.*Gin tonic Beefeater/ }).click();
+  const picker = page.locator('.photo-picker');
+  // Collapsed by default; a cocktail offers only the two cocktail photo sheets.
+  await expect(picker).not.toHaveAttribute('open', '');
+  await expect(page.getByRole('button', { name: 'Изображение: Margarita', exact: true })).toBeHidden();
+  await picker.locator('summary').click();
+  await expect(picker.locator('.photo-group-tabs button')).toHaveText([
+    'Классические коктейли',
+    'Авторские коктейли',
+  ]);
   await page.getByRole('button', { name: 'Авторские коктейли', exact: true }).click();
   await page.getByRole('button', { name: 'Изображение: Margarita', exact: true }).click();
   await page.getByRole('button', { name: 'Сохранить позицию' }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
   await page.reload();
   await page.getByRole('button', { name: /КОКТЕЙЛИ.*Gin tonic Beefeater/ }).click();
+  await expect(page.locator('.photo-picker summary')).toContainText('Margarita');
+  await page.locator('.photo-picker summary').click();
   await expect(page.getByRole('button', { name: 'Изображение: Margarita', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -248,12 +262,19 @@ test('menu has varied matched images and manual photo selection persists', async
 test('products have their own inventory filter and can be costed per cocktail in drams', async ({ page }) => {
   await workspace(page);
   await page.getByRole('link', { name: 'Склад Напитки и закупки' }).click();
-  await page.getByRole('button', { name: 'Продукты и миксеры', exact: true }).click();
+  await page.getByRole('button', { name: 'Фрукты и ягоды', exact: true }).click();
+  await expect(page.getByText('Лимоны, лаймы, цитрусы, ягоды и другие фрукты.')).toBeVisible();
   await expect(page.locator('.inventory-table').getByText('Лимон', { exact: true })).toBeVisible();
+  await expect(page.locator('.inventory-table').getByText('Тоник', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Вода и газировка', exact: true }).click();
+  await expect(page.locator('.inventory-table').getByText('Тоник', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Хлеб и выпечка', exact: true }).click();
+  await expect(page.locator('.inventory-table').getByText('Хлеб', { exact: true })).toBeVisible();
   await expect(page.locator('.inventory-table').getByText('Vodka', { exact: true })).toHaveCount(0);
   await page.getByRole('link', { name: /Меню и рецепты/ }).click();
   await page.getByRole('button', { name: /КОКТЕЙЛИ.*Gin tonic Beefeater/ }).click();
-  await page.getByRole('button', { name: 'Добавить продукт по стоимости' }).click();
+  await page.getByText('Дополнительные расходы на порцию').click();
+  await page.getByRole('button', { name: 'Добавить расход' }).click();
   await page.getByLabel('Продукт по стоимости 1', { exact: true }).selectOption('lemon-fruit');
   await page.getByLabel('Стоимость продукта 1, ֏').fill('50');
   await expect(page.getByRole('dialog')).toContainText('645 ֏');
@@ -301,7 +322,7 @@ test('barbar sees quantities and read-only stock but cannot open admin pages', a
   await expect(page.getByRole('complementary', { name: 'Сводка продаж за день' })).toContainText('3 порц.');
   await page.getByRole('button', { name: 'Предыдущий день' }).click();
   await expect(page.getByRole('complementary', { name: 'Сводка продаж за день' })).toContainText(
-    'Продаж пока нет',
+    'День только начинается',
   );
   await page.getByLabel('Дата продаж').fill(today());
   await expect(page.getByRole('complementary', { name: 'Сводка продаж за день' })).toContainText('3 порц.');
@@ -351,18 +372,20 @@ test('barbar can create a cocktail with a gram recipe without seeing or setting 
     });
   });
   await page.goto('/');
-  const createButton = page.locator('.sales-mode-toolbar').getByRole('button', { name: 'Коктейль', exact: true });
+  const createButton = page
+    .locator('.sales-mode-toolbar')
+    .getByRole('button', { name: 'Коктейль', exact: true });
   await expect(createButton).toBeInViewport();
   await createButton.click();
   await expect(page.getByRole('dialog')).not.toContainText(/֏|Себестоимость|Цена|Выручка/);
-  await page.getByLabel('Название коктейля').fill('Коктейль сотрудника');
+  await page.getByLabel('Название позиции').fill('Коктейль сотрудника');
   await page.getByRole('button', { name: 'Добавить ингредиент', exact: true }).click();
   await page.getByLabel('Ингредиент 1', { exact: true }).selectOption('vodka');
-  await page.getByLabel('Количество ингредиента 1, мл').fill('50');
+  await page.getByLabel('Миллилитры ингредиента 1').fill('50');
   await page.getByRole('button', { name: 'Добавить ингредиент', exact: true }).click();
   await page.getByLabel('Ингредиент 2', { exact: true }).selectOption('sugar');
-  await page.getByLabel('Количество ингредиента 2, г').fill('5');
-  await page.getByRole('button', { name: 'Сохранить коктейль', exact: true }).click();
+  await page.getByLabel('Граммы ингредиента 2').fill('5');
+  await page.getByRole('button', { name: 'Сохранить позицию', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
   await page.getByLabel('Поиск напитка').fill('Коктейль сотрудника');
   await expect(page.getByRole('button', { name: /Коктейль сотрудника/ })).toBeVisible();

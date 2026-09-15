@@ -12,9 +12,13 @@ import {
   round,
   today,
   uid,
+  unitBasis,
 } from '../../domain/model';
 import { t } from '../../presentation/i18n/runtime';
 import { useBar } from '../../app/providers/BarProvider';
+import { barConfig } from '../../config';
+
+const quickAmounts = barConfig.presets.purchaseQuickAmounts;
 import { useBusinessDate } from '../sales/use-business-date';
 
 export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: () => void }) {
@@ -23,11 +27,11 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
   const selected = data.alcohol.find((a) => a.id === alcoholId) || data.alcohol[0];
   const [id] = useState(uid);
   const [drinkId, setDrinkId] = useState(selected?.id || '');
-  const [ml, setMl] = useState(selected?.unit === 'bottle' ? '1' : '1000');
+  const [ml, setMl] = useState(unitBasis(selected?.unit) === 1 ? '1' : '1000');
   const [cost, setCost] = useState(String(selected?.costPerLiter || ''));
   const [date, setDate] = useBusinessDate();
   const drink = data.alcohol.find((a) => a.id === drinkId);
-  const bottled = drink?.unit === 'bottle';
+  const bottled = unitBasis(drink?.unit) === 1;
   return (
     <Modal
       title={t('Добавить закупку')}
@@ -56,7 +60,7 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
             value={drinkId}
             onChange={(e) => {
               setDrinkId(e.target.value);
-              setMl(data.alcohol.find((a) => a.id === e.target.value)?.unit === 'bottle' ? '1' : '1000');
+              setMl(unitBasis(data.alcohol.find((a) => a.id === e.target.value)?.unit) === 1 ? '1' : '1000');
               setCost(String(data.alcohol.find((a) => a.id === e.target.value)?.costPerLiter || ''));
             }}
           >
@@ -96,7 +100,12 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
         </div>
         <div className="quick-values">
           {t(
-            (bottled ? [1, 6, 12, 24, 48] : [500, 700, 1000, 2000, 5000]).map((n) => (
+            (drink?.unit === 'pcs'
+              ? quickAmounts.pcs
+              : bottled
+                ? quickAmounts.bottle
+                : quickAmounts.volume
+            ).map((n) => (
               <button
                 type="button"
                 key={n}

@@ -16,7 +16,7 @@
 @use 'inventory';
 @use 'users';
 @use 'photos';
-@use 'staff-receipt';
+@use 'business-day';
 @use 'catalog-media';
 @use 'inventory-grid';
 @use 'fluid-layout';
@@ -34,3 +34,9 @@
 @use 'sales-fullscreen';
 
 @use 'notifications';
+
+@use 'environment';
+
+@use 'guest-qr';
+
+@use 'category-tabs';

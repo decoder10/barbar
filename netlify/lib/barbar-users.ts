@@ -91,7 +91,7 @@ export function publicUser(user: UserRecord): UserProfile {
     createdAt: user.createdAt,
   };
 }
-export function mongoUsers(db: Db): IdentityStore {
+export function mongoUsers(db: Db, options: { bootstrap?: boolean } = {}): IdentityStore {
   const users = db.collection<UserRecord>('users');
   const sessions = db.collection<SessionRecord>('sessions');
   let ready: Promise<void> | undefined;
@@ -149,6 +149,8 @@ export function mongoUsers(db: Db): IdentityStore {
       throw new Error('Configure initial owner credentials');
   }
   async function ensureReady() {
+    // A live database selected for local work keeps its users; never create accounts from local .env.
+    if (options.bootstrap === false) return;
     ready ||= oncePerDatabase(db, 'identity-bootstrap-v2', initialize).catch((error) => {
       ready = undefined;
       throw error;

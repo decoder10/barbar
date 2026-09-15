@@ -1,4 +1,5 @@
-import { safelyDeliverStockAlerts } from '../lib/notifications/deliver';
+import { observe } from '../lib/observability';
+import { safelyDeliverNotifications } from '../lib/notifications/deliver';
 import { getStore } from '@netlify/blobs';
 import { initialData } from '../../src/barbar/domain/model';
 import { authenticated, json } from '../lib/barbar-auth';
@@ -44,12 +45,12 @@ export default async (request: Request, context: { deploy: DeployInfo }) => {
     }
     const response = await handleBarApi(request, repository, users, user);
     if (request.method === 'POST' && response.ok)
-      await safelyDeliverStockAlerts(mongoConnection(false, context?.deploy).db);
+      await safelyDeliverNotifications(mongoConnection(false, context?.deploy).db);
     response.headers.set(
       'Server-Timing',
       `auth;dur=${(authorized - started).toFixed(1)},data;dur=${(performance.now() - authorized).toFixed(1)}`,
     );
-    return response;
+    return observe(new URL(request.url).pathname, request, response, started);
   } catch {
     return json(
       { error: 'Не удалось подключить MongoDB. Проверьте BARBAR_MONGODB_URI и настройки доступа к базе.' },
@@ -63,5 +64,6 @@ export const config = {
     '/api/barbar/catalog',
     '/api/barbar/catalog/alcohol',
     '/api/barbar/catalog/cocktails',
+    '/api/barbar/catalog/cards',
   ],
 };

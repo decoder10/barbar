@@ -1,0 +1,95 @@
+{
+  "sets": { "category": "set", "componentCategory": "tincture", "maxShots": 64, "maxComponents": 40 },
+  "categories": [
+    {
+      "id": "cocktail",
+      "label": "Коктейли",
+      "recipes": true,
+      "extraCosts": true,
+      "foodRecipe": false,
+      "photoSheets": [0, 1],
+      "guestTitle": { "ru": "Коктейли", "en": "Cocktails", "hy": "Կոկտեյլներ" }
+    },
+    {
+      "id": "tincture",
+      "label": "Настойки",
+      "recipes": true,
+      "extraCosts": false,
+      "foodRecipe": false,
+      "photoSheets": [2],
+      "guestTitle": { "ru": "Настойки", "en": "Tinctures", "hy": "Թրմօղիներ" }
+    },
+    {
+      "id": "shot",
+      "label": "Шоты",
+      "recipes": true,
+      "extraCosts": true,
+      "foodRecipe": false,
+      "photoSheets": [2],
+      "guestTitle": { "ru": "Шоты", "en": "Special shots", "hy": "Հատուկ շոթեր" }
+    },
+    {
+      "id": "set",
+      "label": "Сеты",
+      "recipes": true,
+      "extraCosts": false,
+      "foodRecipe": false,
+      "photoSheets": [2],
+      "guestTitle": { "ru": "Сеты настоек", "en": "Tincture sets", "hy": "Թրմօղու սեթեր" }
+    },
+    {
+      "id": "beer",
+      "label": "Пиво",
+      "recipes": false,
+      "extraCosts": false,
+      "foodRecipe": false,
+      "photoSheets": [3],
+      "guestTitle": { "ru": "Пиво", "en": "Beer", "hy": "Գարեջուր" }
+    },
+    {
+      "id": "wine",
+      "label": "Вино",
+      "recipes": false,
+      "extraCosts": false,
+      "foodRecipe": false,
+      "photoSheets": [3],
+      "guestTitle": { "ru": "Вино", "en": "Wine", "hy": "Գինի" }
+    },
+    {
+      "id": "cognac",
+      "label": "Коньяк",
+      "recipes": false,
+      "extraCosts": false,
+      "foodRecipe": false,
+      "photoSheets": [3],
+      "guestTitle": { "ru": "Коньяк", "en": "Brandy", "hy": "Կոնյակ" }
+    },
+    {
+      "id": "hot",
+      "label": "Горячие напитки",
+      "recipes": true,
+      "extraCosts": true,
+      "foodRecipe": false,
+      "photoSheets": [3],
+      "guestTitle": { "ru": "Горячие напитки", "en": "Hot drinks", "hy": "Տաք ըմպելիքներ" }
+    },
+    {
+      "id": "soft",
+      "label": "Безалкогольные",
+      "recipes": true,
+      "extraCosts": true,
+      "foodRecipe": false,
+      "photoSheets": [3],
+      "guestTitle": { "ru": "Безалкогольные", "en": "Soft drinks", "hy": "Զովացուցիչ ըմպելիքներ" }
+    },
+    {
+      "id": "snack",
+      "label": "Закуски",
+      "recipes": true,
+      "extraCosts": true,
+      "foodRecipe": true,
+      "photoSheets": [3],
+      "guestTitle": { "ru": "Закуски", "en": "Snacks", "hy": "Խորտիկներ" }
+    }
+  ]
+}

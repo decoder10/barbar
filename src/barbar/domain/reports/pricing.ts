@@ -48,6 +48,7 @@ export function salesPerformance(data: BarData, period: ReportPeriod): ProductPe
 }
 
 export function saleCostKnown(s: Sale) {
+  if (s.withoutIngredients) return s.cost > 0;
   return (
     s.ingredients.length + (s.extraCosts?.length || 0) > 0 &&
     s.ingredients.every((i) => i.cost > 0) &&

@@ -529,5 +529,104 @@
     "costPerLiter": 0,
     "pricePerLiter": 0,
     "color": "#85a183"
+  },
+  {
+    "id": "food-bread",
+    "name": "Хлеб",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "pcs"
+  },
+  {
+    "id": "food-lavash",
+    "name": "Лаваш",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "pcs"
+  },
+  {
+    "id": "food-cheese",
+    "name": "Сыр",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "g"
+  },
+  {
+    "id": "food-mikayelyan-cheese",
+    "name": "Сыр Микаелян",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "g"
+  },
+  {
+    "id": "food-sausages",
+    "name": "Мини-колбаски",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "pcs"
+  },
+  {
+    "id": "food-pickles",
+    "name": "Маринованные огурцы",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "g"
+  },
+  {
+    "id": "food-tomato",
+    "name": "Помидоры",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "g"
+  },
+  {
+    "id": "food-cucumber",
+    "name": "Огурцы",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "g"
+  },
+  {
+    "id": "food-greens",
+    "name": "Зелень",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "g"
+  },
+  {
+    "id": "food-sauce",
+    "name": "Соус",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "g"
+  },
+  {
+    "id": "food-butter",
+    "name": "Сливочное масло",
+    "category": "food",
+    "costPerLiter": 0,
+    "pricePerLiter": 0,
+    "color": "#b8875a",
+    "unit": "g"
   }
 ]
