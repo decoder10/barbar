@@ -70,4 +70,14 @@ describe('local Production database profile', () => {
     expect(profile.uri).toBe('mongodb+srv://u:a%40b%3Ac%2F%23%3F%25@cluster.example.net/');
     expect(process.env.BARBAR_PRODUCTION_MONGODB_PASSWORD).toBeUndefined();
   });
+  it('uses the separate password even when the URI contains an unescaped password', () => {
+    const profile = localDatabaseProfile(
+      production,
+      file(
+        'BARBAR_PRODUCTION_MONGODB_URI="mongodb+srv://u:raw/@/#@cluster.example.net/?appName=barbar"\n' +
+          'BARBAR_PRODUCTION_MONGODB_PASSWORD="actual/@:#?%"\n',
+      ),
+    );
+    expect(profile.uri).toBe('mongodb+srv://u:actual%2F%40%3A%23%3F%25@cluster.example.net/?appName=barbar');
+  });
 });

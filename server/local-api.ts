@@ -48,11 +48,18 @@ export function localApi(): Plugin {
         },
       };
       const profile = localDatabaseProfile();
-      const { client, db } = mongoConnection(
-        true,
-        undefined,
-        profile.production ? { uri: profile.uri!, database: profile.database! } : undefined,
-      );
+      let connection: ReturnType<typeof mongoConnection>;
+      try {
+        connection = mongoConnection(
+          true,
+          undefined,
+          profile.production ? { uri: profile.uri!, database: profile.database! } : undefined,
+        );
+      } catch (error) {
+        if (profile.production) throw new Error(productionDatabaseError(error));
+        throw error;
+      }
+      const { client, db } = connection;
       if (profile.production) {
         try {
           await client.connect();

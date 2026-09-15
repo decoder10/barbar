@@ -32,10 +32,17 @@ export function localDatabaseProfile(
   const values = parseEnv(readFileSync(file, 'utf8'));
   const template = values.BARBAR_PRODUCTION_MONGODB_URI?.trim();
   const password = values.BARBAR_PRODUCTION_MONGODB_PASSWORD;
-  const uri =
-    template?.includes('<db_password>') && password
-      ? template.replace('<db_password>', encodeURIComponent(password))
-      : template;
+  let uri = template;
+  if (template && password) {
+    // The separate password is authoritative even if a raw password was pasted into
+    // the URI. Raw slashes/@/# must not be parsed as URL separators before encoding.
+    const start = template.indexOf('://') + 3;
+    const colon = template.indexOf(':', start);
+    const at = template.lastIndexOf('@');
+    if (start < 3 || colon < start || at <= colon)
+      throw new Error('Вставьте URI из Atlas → Connect → Drivers с именем пользователя и <db_password>.');
+    uri = template.slice(0, colon + 1) + encodeURIComponent(password) + template.slice(at);
+  }
   if (!uri || !/^mongodb(\+srv)?:\/\//.test(uri) || /^mongodb:\/\/(127\.0\.0\.1|localhost)[:/]/.test(uri))
     throw new Error('Укажите в .env.production-db строку подключения рабочей базы Atlas.');
   // Template values copied from instructions cannot connect; stop before the server starts.
