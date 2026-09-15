@@ -61,28 +61,11 @@ textarea {
 .analytics-numbers small {
   color: var(--muted);
 }
-.card-image,
-.tincture-composition,
-.set-photo {
+.card-image {
   background: #fff;
 }
 .card-image .real-photo {
   background: #fff;
-}
-.set-photo {
-  background-image: none;
-}
-.card-image > .set-photo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  transform: none;
-}
-.set-photo img {
-  padding: 16px;
-  object-fit: contain;
-  mix-blend-mode: normal;
 }
 [data-theme='dark'] .table-product .real-photo {
   background: #fff;

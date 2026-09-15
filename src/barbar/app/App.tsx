@@ -12,7 +12,6 @@ import {
   Files,
   GlassWater,
   LogOut,
-  Menu,
   MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
@@ -30,7 +29,7 @@ import { Login } from '../features/auth/Login';
 import { t } from '../presentation/i18n/runtime';
 import { PreferenceControls } from '../presentation/PreferenceControls';
 import { useBar } from './providers/BarProvider';
-import { useCompact } from '../ui/use-compact';
+import { useCompact, useTablet } from '../ui/use-compact';
 import { Sheet } from '../ui/sheet';
 import { SelectSheet } from '../ui/select-sheet';
 const Operations = lazy(() => import('../pages/Operations'));
@@ -84,23 +83,29 @@ function Workspace() {
   const [menu, setMenu] = useState(false);
   const [settings, setSettings] = useState(false);
   const compact = useCompact();
+  const tablet = useTablet();
+  // Phones and tablets open the sidebar as an overlay drawer; desktop keeps the persisted rail preference.
+  const drawer = compact || tablet;
   const [collapsed, setCollapsed] = useSessionFilter<boolean>(
     'sidebar-collapsed',
     false,
     undefined,
     'workspace',
   );
+  const shut = tablet ? !menu : collapsed;
   return (
-    <div className={`app-shell${collapsed ? ' sidebar-collapsed' : ''}`}>
+    <div
+      className={`app-shell${collapsed ? ' sidebar-collapsed' : ''}${drawer && menu ? ' sidebar-open' : ''}`}
+    >
       <a className="skip-link" href="#content">
         {t('Перейти к содержимому')}
       </a>
       {t(
-        menu && (
+        drawer && menu && (
           <button className="sidebar-scrim" aria-label={t('Закрыть меню')} onClick={() => setMenu(false)} />
         ),
       )}
-      <aside id="workspace-sidebar" className={`sidebar ${menu ? 'open' : ''}`} inert={busy}>
+      <aside id="workspace-sidebar" className={`sidebar ${drawer && menu ? 'open' : ''}`} inert={busy}>
         <div className="sidebar-brand">
           <Brand onNavigate={() => setMenu(false)} />
           <button
@@ -192,28 +197,19 @@ function Workspace() {
             <button
               type="button"
               className="sidebar-toggle icon-button"
-              aria-label={t(collapsed ? 'Развернуть меню' : 'Свернуть меню')}
-              title={t(collapsed ? 'Развернуть меню' : 'Свернуть меню')}
-              aria-expanded={!collapsed}
+              aria-label={t(shut ? 'Развернуть меню' : 'Свернуть меню')}
+              title={t(shut ? 'Развернуть меню' : 'Свернуть меню')}
+              aria-expanded={!shut}
               aria-controls="workspace-sidebar"
               disabled={busy}
-              onClick={() => setCollapsed((value) => !value)}
+              onClick={() => (tablet ? setMenu((value) => !value) : setCollapsed((value) => !value))}
             >
-              {collapsed ? (
+              {shut ? (
                 <PanelLeftOpen size={20} aria-hidden="true" />
               ) : (
                 <PanelLeftClose size={20} aria-hidden="true" />
               )}
             </button>
-            {!compact && (
-              <button
-                className="mobile-menu icon-button"
-                aria-label={t('Открыть меню')}
-                onClick={() => setMenu(true)}
-              >
-                <Menu size={22} />
-              </button>
-            )}
             <span>{t('Рабочее пространство')}</span>
             <ChevronRight size={13} />
             <strong>{t(navigation.find((n) => n.path === pathname)?.label || 'Barbar')}</strong>

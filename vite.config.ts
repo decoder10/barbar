@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [react(), localApi()],
   server: { port: 4001, strictPort: true },
   build: {
+    // The public guest menu (`/menu`) is its own page and never downloads the workspace bundle.
+    rollupOptions: { input: { main: 'index.html', menu: 'menu.html' } },
     // CSP allows same-origin fonts only; keep even small subsets as cacheable files.
     assetsInlineLimit: (filePath) => (/\.(?:woff2?|ttf|otf)$/i.test(filePath) ? false : undefined),
   },

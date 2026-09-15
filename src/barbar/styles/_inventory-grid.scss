@@ -92,33 +92,3 @@ html {
     flex-wrap: wrap;
   }
 }
-
-.card-image > .tincture-composition,
-.drink-card:hover .card-image > .tincture-composition {
-  position: absolute;
-  inset: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  transform: none;
-}
-
-.tincture-composition {
-  position: relative;
-  background: var(--surface);
-}
-
-.tincture-composition .tincture-glass {
-  position: absolute;
-  inset: 6% 30% 6% 4%;
-}
-
-.tincture-composition .tincture-glass img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.tincture-composition .tincture-fruit {
-  position: absolute;
-}

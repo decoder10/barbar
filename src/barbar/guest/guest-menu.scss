@@ -1,3 +1,10 @@
+// Only the reset and photo rules the cards need: the guest page never loads the workspace stylesheet.
+@use '../styles/tokens';
+@use '../styles/base';
+@use '../styles/photos';
+@use '../styles/catalog-media';
+@use '../styles/tinctures';
+
 // Public guest menu: photo cards, sticky search and section chips. Light and dark palettes.
 .guest-menu {
   --menu-bg: #f7f2ef;

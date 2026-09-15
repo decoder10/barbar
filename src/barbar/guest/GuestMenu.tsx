@@ -18,6 +18,17 @@ const title = (id: GuestSectionId, language: Language) =>
     ? pouredAlcohol.title[language].replace('{ml}', String(pouredAlcohol.portionMl))
     : barConfig.menu.categories.find((c) => c.id === id)?.guestTitle[language] || id;
 const storageKey = 'barbar-guest-language';
+const menuKey = 'barbar-guest-menu';
+
+/** The last menu this device saw: shown instantly while the current prices load. */
+function savedMenu(): GuestMenu | null {
+  try {
+    const value = JSON.parse(localStorage.getItem(menuKey) || 'null') as GuestMenu | null;
+    return value && Array.isArray(value.sections) ? value : null;
+  } catch {
+    return null;
+  }
+}
 
 function initialLanguage(): Language {
   try {
@@ -78,7 +89,7 @@ function Card({ item, language }: { item: GuestMenuItem; language: Language }) {
 export default function GuestMenuPage() {
   const [language, setLanguage] = useState(initialLanguage);
   const [dictionary, setDictionary] = useState<Language | null>(null);
-  const [menu, setMenu] = useState<GuestMenu | null>(null);
+  const [menu, setMenu] = useState<GuestMenu | null>(savedMenu);
   const [error, setError] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState<GuestSectionId | null>(null);
@@ -115,6 +126,11 @@ export default function GuestMenuPage() {
       if (!Array.isArray(value.sections)) throw new Error('Invalid menu');
       setMenu(value);
       setError(false);
+      try {
+        localStorage.setItem(menuKey, JSON.stringify(value));
+      } catch {
+        // Storage full or blocked: the next visit waits for the network.
+      }
     } catch {
       setError(true);
     }

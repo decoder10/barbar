@@ -1,3 +1,34 @@
+// Tincture compositions and shot-set photos, shared by workspace cards and the guest menu.
+.card-image > .tincture-composition,
+.drink-card:hover .card-image > .tincture-composition {
+  position: absolute;
+  inset: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+}
+
+.tincture-composition {
+  position: relative;
+  background: var(--surface);
+}
+
+.tincture-composition .tincture-glass {
+  position: absolute;
+  inset: 6% 30% 6% 4%;
+}
+
+.tincture-composition .tincture-glass img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tincture-composition .tincture-fruit {
+  position: absolute;
+}
+
 .shot-set-art {
   height: 100%;
   display: flex;
@@ -36,4 +67,24 @@
   bottom: 9%;
   object-fit: contain;
   mix-blend-mode: multiply;
+}
+
+.tincture-composition,
+.set-photo {
+  background: #fff;
+}
+.set-photo {
+  background-image: none;
+}
+.card-image > .set-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+}
+.set-photo img {
+  padding: 16px;
+  object-fit: contain;
+  mix-blend-mode: normal;
 }

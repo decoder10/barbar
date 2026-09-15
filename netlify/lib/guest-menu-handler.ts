@@ -12,6 +12,8 @@ export async function handleGuestMenu(request: Request, repository: Repository) 
   const headers = {
     // Short browser cache; price edits change catalogRevision and appear within a minute.
     'Cache-Control': 'public, max-age=30, must-revalidate',
+    // Netlify's CDN answers guests at once and refreshes in the background, so price edits appear within a minute.
+    'Netlify-CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=600, durable',
     ETag: etag,
     'X-Robots-Tag': 'noindex',
   };

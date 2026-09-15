@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#662735" />
+    <meta name="description" content="BAR BAR · Art Gallery — меню, цены и порции." />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>BAR BAR · Меню</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- The menu request starts with the page instead of waiting for the script. -->
+    <link rel="preload" href="/api/menu" as="fetch" crossorigin="anonymous" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/guest.tsx"></script>
+  </body>
+</html>

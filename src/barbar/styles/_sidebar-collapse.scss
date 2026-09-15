@@ -9,64 +9,115 @@
   }
 }
 
-@media (min-width: 761px) {
+@mixin rail {
+  --sidebar-width: 76px;
+
+  .sidebar {
+    padding-inline: 12px;
+  }
+
+  .sidebar-brand {
+    padding: 2px 0 18px;
+  }
+
+  .brand img {
+    width: 48px;
+    height: 34px;
+  }
+
+  .brand small,
+  .workspace-label,
+  .nav-arrow,
+  .sidebar-tip,
+  .sidebar-footer > div,
+  .photo-credits-link {
+    display: none;
+  }
+
+  .sidebar nav {
+    margin-top: 18px;
+  }
+
+  .nav-item {
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px;
+  }
+
+  .nav-item > svg {
+    flex-shrink: 0;
+  }
+
+  // Keep link names available to assistive technology while title supplies the tooltip.
+  .nav-item > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .sidebar-footer {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 0;
+  }
+
+  .sidebar-footer .icon-button {
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 1025px) {
   .app-shell.sidebar-collapsed {
+    @include rail;
+  }
+}
+
+// Tablets: an icon rail by default; the toggle opens the full sidebar over the content.
+@media (min-width: 761px) and (max-width: 1024px) {
+  .app-shell {
     --sidebar-width: 76px;
+  }
 
-    .sidebar {
-      padding-inline: 12px;
-    }
+  .app-shell:not(.sidebar-open) {
+    @include rail;
+  }
 
-    .sidebar-brand {
-      padding: 2px 0 18px;
-    }
+  .app-shell.sidebar-open .sidebar {
+    width: 234px;
+    box-shadow: 12px 0 40px #14203f40;
+  }
 
-    .brand img {
-      width: 48px;
-      height: 34px;
-    }
+  .sidebar-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 29;
+    background: #14203f70;
+    backdrop-filter: blur(3px);
+  }
 
-    .brand small,
-    .workspace-label,
-    .nav-arrow,
-    .sidebar-tip,
-    .sidebar-footer > div,
-    .photo-credits-link {
-      display: none;
-    }
+  .topbar {
+    padding-inline: 20px;
+  }
 
-    .sidebar nav {
-      margin-top: 18px;
-    }
+  .breadcrumb > span,
+  .breadcrumb > svg,
+  .topbar .sync-status > span {
+    display: none;
+  }
 
-    .nav-item {
-      justify-content: center;
-      min-height: 48px;
-      padding: 12px;
-    }
+  .topbar-right {
+    gap: 8px;
+  }
 
-    .nav-item > svg {
-      flex-shrink: 0;
-    }
+  .currency-tag {
+    padding-left: 10px;
+  }
 
-    // Keep link names available to assistive technology while title supplies the tooltip.
-    .nav-item > span {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-    }
-
-    .sidebar-footer {
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 0;
-    }
-
-    .sidebar-footer .icon-button {
-      margin-left: 0;
-    }
+  .topbar .preference-controls {
+    flex-wrap: nowrap;
   }
 }

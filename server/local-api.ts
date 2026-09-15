@@ -95,6 +95,9 @@ export function localApi(): Plugin {
         void client.close();
       });
       server.middlewares.use(async (request, response, next) => {
+        // Same rewrite as netlify.toml: the guest menu is a separate page.
+        if (/^\/menu\/?(\?|$)/.test(request.url || ''))
+          request.url = request.url!.replace(/^\/menu\/?/, '/menu.html');
         if ((request.url || '').split('?')[0] === '/api/barbar/environment') {
           const result = json({
             database: profile.production ? 'production' : 'local',
