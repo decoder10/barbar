@@ -9,6 +9,8 @@ import {
   ArrowDownToLine,
   Boxes,
   CircleDollarSign,
+  History,
+  MoreHorizontal,
   PackagePlus,
   Pencil,
   Plus,
@@ -21,7 +23,9 @@ import { useSearchParams } from 'react-router-dom';
 import { InventoryProduct, InventoryStock, RecipeShortages } from '../features/inventory/InventoryProduct';
 import { recipeShortages } from '../domain/shortages';
 import { Empty, Metric, PageHeading } from '../ui/layout';
-import { ExportButton } from '../ui/export';
+import { download, ExportButton } from '../ui/export';
+import { FilterSheet, MenuButton, Sheet, SheetActions, type SheetAction } from '../ui/sheet';
+import { useCompact } from '../ui/use-compact';
 import { InventoryViewSwitch, useInventoryView } from '../features/inventory/view-switch';
 import { formatMoney as money } from '../presentation/currency/format-money';
 import { ingredientVolume, priceBasis, priceUnit, round, stockTotals, volume } from '../domain/model';
@@ -36,19 +40,23 @@ import { useBar } from '../app/providers/BarProvider';
 export default function Inventory() {
   const [params] = useSearchParams();
   const { data } = useBar();
+  const compact = useCompact();
+  // Phones open the histories in sheets instead of rendering them below the stock list.
+  const [historySheet, setHistorySheet] = useState<'purchases' | 'resets' | null>(null);
+  const [rowMenu, setRowMenu] = useState<Alcohol | null>(null);
   const historySection = useNearViewport();
   const purchaseHistory = useHistory<import('../domain/types').Purchase>(
     'purchases',
     '1900-01-01',
     '9999-12-31',
-    historySection.active,
+    historySection.active || !!historySheet,
   );
   const purchases = purchaseHistory.enabled ? purchaseHistory.rows : data.purchases;
   const resetHistory = useHistory<import('../domain/types').StockReset>(
     'stockResets',
     '1900-01-01',
     '9999-12-31',
-    historySection.active,
+    historySection.active || !!historySheet,
   );
   const resets = resetHistory.enabled ? resetHistory.rows : [...(data.stockResets || [])].reverse();
   const inventory = useInventoryCalculations(data);
@@ -85,6 +93,33 @@ export default function Inventory() {
     0,
   );
   const shortages = recipeShortages(data.cocktails, remaining);
+  const newItems: SheetAction[] = (
+    [
+      ['alcohol', 'Новый напиток'],
+      ['beer', 'Новое пиво'],
+      ['wine', 'Новое вино'],
+      ['cognac', 'Новый коньяк'],
+      ['food', 'Продукт'],
+      ['goods', 'Товар целиком'],
+    ] as const
+  ).map(([type, label]) => ({
+    label,
+    icon: <Plus size={19} />,
+    onClick: () => {
+      setNewCategory(type);
+      setEdit('new');
+    },
+  }));
+  const sortControl = (
+    <CatalogSortControl
+      value={sort}
+      onChange={(value) => {
+        setSort(value);
+      }}
+      options={['original', 'missing', 'available', 'name', 'name-desc', 'price', 'price-desc']}
+    />
+  );
+  const unitOf = (id: string) => data.alcohol.find((a) => a.id === id)?.unit;
   return (
     <>
       <PageHeading
@@ -92,55 +127,96 @@ export default function Inventory() {
         title={t('Склад напитков')}
         description="Закупки складываются. Продажи списываются. Остатки всегда перед глазами."
       >
-        <button
-          className="button secondary"
-          onClick={() => {
-            setNewCategory('alcohol');
-            setEdit('new');
-          }}
-        >
-          <Plus size={17} />
-          {t(' Новый напиток')}
-        </button>
-        {t(
-          (['beer', 'wine', 'cognac'] as const).map((type) => (
+        {compact ? (
+          <>
+            <button className="button primary" onClick={() => setPurchase('')}>
+              <PackagePlus size={17} />
+              {t('Закупка')}
+            </button>
+            <MenuButton
+              label="Добавить"
+              title="Новая позиция склада"
+              icon={<Plus size={17} />}
+              actions={newItems}
+            >
+              {t('Добавить')}
+            </MenuButton>
+            <MenuButton
+              label="Ещё действия"
+              className="button secondary heading-more"
+              icon={<MoreHorizontal size={20} />}
+              actions={[
+                {
+                  label: 'История закупок',
+                  icon: <History size={19} />,
+                  onClick: () => setHistorySheet('purchases'),
+                },
+                {
+                  label: 'История сбросов',
+                  icon: <RotateCcw size={19} />,
+                  onClick: () => setHistorySheet('resets'),
+                },
+                {
+                  label: 'Скачать JSON',
+                  icon: <ArrowDownToLine size={19} />,
+                  onClick: () => download('alcohol.json', data.alcohol),
+                },
+              ]}
+            />
+          </>
+        ) : (
+          <>
             <button
-              key={type}
               className="button secondary"
               onClick={() => {
-                setNewCategory(type);
+                setNewCategory('alcohol');
                 setEdit('new');
               }}
             >
               <Plus size={17} />
-              {t(type === 'beer' ? 'Новое пиво' : type === 'wine' ? 'Новое вино' : 'Новый коньяк')}
+              {t(' Новый напиток')}
             </button>
-          )),
+            {t(
+              (['beer', 'wine', 'cognac'] as const).map((type) => (
+                <button
+                  key={type}
+                  className="button secondary"
+                  onClick={() => {
+                    setNewCategory(type);
+                    setEdit('new');
+                  }}
+                >
+                  <Plus size={17} />
+                  {t(type === 'beer' ? 'Новое пиво' : type === 'wine' ? 'Новое вино' : 'Новый коньяк')}
+                </button>
+              )),
+            )}
+            <button
+              className="button secondary"
+              onClick={() => {
+                setNewCategory('food');
+                setEdit('new');
+              }}
+            >
+              <Plus size={17} />
+              {t(' Продукт')}
+            </button>
+            <button
+              className="button secondary"
+              onClick={() => {
+                setNewCategory('goods');
+                setEdit('new');
+              }}
+            >
+              <Plus size={17} />
+              {t(' Товар целиком')}
+            </button>
+            <button className="button primary" onClick={() => setPurchase('')}>
+              <PackagePlus size={17} />
+              {t(' Добавить закупку')}
+            </button>
+          </>
         )}
-        <button
-          className="button secondary"
-          onClick={() => {
-            setNewCategory('food');
-            setEdit('new');
-          }}
-        >
-          <Plus size={17} />
-          {t(' Продукт')}
-        </button>
-        <button
-          className="button secondary"
-          onClick={() => {
-            setNewCategory('goods');
-            setEdit('new');
-          }}
-        >
-          <Plus size={17} />
-          {t(' Товар целиком')}
-        </button>
-        <button className="button primary" onClick={() => setPurchase('')}>
-          <PackagePlus size={17} />
-          {t(' Добавить закупку')}
-        </button>
       </PageHeading>
       <section className="metrics">
         <Metric
@@ -170,24 +246,29 @@ export default function Inventory() {
         />
       </section>
       <section className="panel">
-        <div className="section-title">
-          <div>
-            <h2>{t('Ваш барный запас')}</h2>
-            <p>
-              {t('Красным выделены ингредиенты, которых не хватает на одну порцию по сохранённым рецептам.')}
-            </p>
+        {!compact && (
+          <div className="section-title">
+            <div>
+              <h2>{t('Ваш барный запас')}</h2>
+              <p>
+                {t(
+                  'Красным выделены ингредиенты, которых не хватает на одну порцию по сохранённым рецептам.',
+                )}
+              </p>
+            </div>
+            <ExportButton name="alcohol.json" value={data.alcohol} />
           </div>
-          <ExportButton name="alcohol.json" value={data.alcohol} />
-        </div>
+        )}
         <div className="catalog-tools">
           <InventoryCategories value={category} onChange={setCategory} items={data.alcohol} />
-          <CatalogSortControl
-            value={sort}
-            onChange={(value) => {
-              setSort(value);
-            }}
-            options={['original', 'missing', 'available', 'name', 'name-desc', 'price', 'price-desc']}
-          />
+          {compact ? (
+            <FilterSheet active={sort !== 'original' || view === 'grid'}>
+              {sortControl}
+              <InventoryViewSwitch view={view} onChange={setView} />
+            </FilterSheet>
+          ) : (
+            sortControl
+          )}
           <label className="search">
             <Search size={17} />
             <input
@@ -197,11 +278,13 @@ export default function Inventory() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
-          <InventoryViewSwitch view={view} onChange={setView} />
+          {!compact && <InventoryViewSwitch view={view} onChange={setView} />}
         </div>
-        <p className="inventory-recipe-help">
-          {t('Позиции без состава не проверяются. Добавьте ингредиенты в разделе «Меню и рецепты».')}
-        </p>
+        {!compact && (
+          <p className="inventory-recipe-help">
+            {t('Позиции без состава не проверяются. Добавьте ингредиенты в разделе «Меню и рецепты».')}
+          </p>
+        )}
         <div className={`table-scroll inventory-layout ${view === 'grid' ? 'inventory-grid-view' : ''}`}>
           <table className="data-table inventory-table">
             <thead>
@@ -220,7 +303,7 @@ export default function Inventory() {
                     key={a.id}
                     className={shortages.has(a.id) || remaining(a.id) <= 0 ? 'inventory-shortage' : undefined}
                   >
-                    <td>
+                    <td onClick={compact ? () => setRowMenu(a) : undefined}>
                       <InventoryProduct drink={a} />
                     </td>
                     <td>
@@ -252,28 +335,39 @@ export default function Inventory() {
                       <small className="muted"> / {t(priceUnit(a.unit))}</small>
                     </td>
                     <td>
-                      <div className="row-actions">
-                        <button className="button small secondary" onClick={() => setPurchase(a.id)}>
-                          <Plus size={14} />
-                          {t(' Закупка')}
-                        </button>
+                      {compact ? (
                         <button
-                          className="button small secondary"
-                          aria-label={t(`Сбросить остаток ${a.name}`)}
-                          disabled={remaining(a.id) <= 0}
-                          onClick={() => setReset(a)}
+                          className="icon-button row-menu"
+                          aria-label={t(`Действия: ${a.name}`)}
+                          aria-haspopup="dialog"
+                          onClick={() => setRowMenu(a)}
                         >
-                          <RotateCcw size={14} />
-                          {t(' Сброс')}
+                          <MoreHorizontal size={20} />
                         </button>
-                        <button
-                          className="icon-button"
-                          aria-label={t(`Изменить ${a.name}`)}
-                          onClick={() => setEdit(a)}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                      </div>
+                      ) : (
+                        <div className="row-actions">
+                          <button className="button small secondary" onClick={() => setPurchase(a.id)}>
+                            <Plus size={14} />
+                            {t(' Закупка')}
+                          </button>
+                          <button
+                            className="button small secondary"
+                            aria-label={t(`Сбросить остаток ${a.name}`)}
+                            disabled={remaining(a.id) <= 0}
+                            onClick={() => setReset(a)}
+                          >
+                            <RotateCcw size={14} />
+                            {t(' Сброс')}
+                          </button>
+                          <button
+                            className="icon-button"
+                            aria-label={t(`Изменить ${a.name}`)}
+                            onClick={() => setEdit(a)}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 )),
@@ -290,73 +384,75 @@ export default function Inventory() {
           ),
         )}
       </section>
-      <section className="panel" ref={historySection.ref}>
-        <div className="section-title">
-          <div>
-            <h2>{t('История закупок')}</h2>
-            <p>{t('Каждая поставка сохраняется отдельной записью')}</p>
-          </div>
-          <ExportButton name="purchases-page.json" value={purchases} />
-          <Pagination page={purchaseHistory} />
-        </div>
-        {t(
-          purchases.length ? (
-            <div className="table-scroll">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>{t('Дата')}</th>
-                    <th>{t('Напиток')}</th>
-                    <th>{t('Количество')}</th>
-                    <th>{t('Закупочная цена')}</th>
-                    <th>{t('Сумма')}</th>
-                    <th>{t('Действия')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {t(
-                    [...purchases]
-                      .sort((a, b) => b.date.localeCompare(a.date))
-                      .map((p) => (
-                        <tr key={p.id}>
-                          <td>{t(new Date(`${p.date}T12:00:00`).toLocaleDateString(locale()))}</td>
-                          <td>{t(data.alcohol.find((a) => a.id === p.alcoholId)?.name)}</td>
-                          <td>{t(ingredientVolume(data, p.alcoholId, p.ml))}</td>
-                          <td>
-                            {t(money(p.costPerLiter))} /{t(' ')}
-                            {t(priceUnit(data.alcohol.find((a) => a.id === p.alcoholId)?.unit))}
-                          </td>
-                          <td>
-                            <strong>
-                              {t(money(round((p.ml * p.costPerLiter) / priceBasis(data, p.alcoholId))))}
-                            </strong>
-                          </td>
-                          <td>
-                            <button
-                              className="button small secondary"
-                              onClick={() => setCorrection(p)}
-                              disabled={!!data.archived && p.date < data.archived.before}
-                            >
-                              <Pencil size={14} />
-                              {t(' Исправить / удалить')}
-                            </button>
-                          </td>
-                        </tr>
-                      )),
-                  )}
-                </tbody>
-              </table>
+      {!compact && (
+        <section className="panel" ref={historySection.ref}>
+          <div className="section-title">
+            <div>
+              <h2>{t('История закупок')}</h2>
+              <p>{t('Каждая поставка сохраняется отдельной записью')}</p>
             </div>
-          ) : (
-            <Empty
-              title={t('Начните с первой закупки')}
-              text="Выберите марку, укажите купленное количество и закупочную цену."
-            />
-          ),
-        )}
-      </section>
+            <ExportButton name="purchases-page.json" value={purchases} />
+            <Pagination page={purchaseHistory} />
+          </div>
+          {t(
+            purchases.length ? (
+              <div className="table-scroll">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>{t('Дата')}</th>
+                      <th>{t('Напиток')}</th>
+                      <th>{t('Количество')}</th>
+                      <th>{t('Закупочная цена')}</th>
+                      <th>{t('Сумма')}</th>
+                      <th>{t('Действия')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {t(
+                      [...purchases]
+                        .sort((a, b) => b.date.localeCompare(a.date))
+                        .map((p) => (
+                          <tr key={p.id}>
+                            <td>{t(new Date(`${p.date}T12:00:00`).toLocaleDateString(locale()))}</td>
+                            <td>{t(data.alcohol.find((a) => a.id === p.alcoholId)?.name)}</td>
+                            <td>{t(ingredientVolume(data, p.alcoholId, p.ml))}</td>
+                            <td>
+                              {t(money(p.costPerLiter))} /{t(' ')}
+                              {t(priceUnit(data.alcohol.find((a) => a.id === p.alcoholId)?.unit))}
+                            </td>
+                            <td>
+                              <strong>
+                                {t(money(round((p.ml * p.costPerLiter) / priceBasis(data, p.alcoholId))))}
+                              </strong>
+                            </td>
+                            <td>
+                              <button
+                                className="button small secondary"
+                                onClick={() => setCorrection(p)}
+                                disabled={!!data.archived && p.date < data.archived.before}
+                              >
+                                <Pencil size={14} />
+                                {t(' Исправить / удалить')}
+                              </button>
+                            </td>
+                          </tr>
+                        )),
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <Empty
+                title={t('Начните с первой закупки')}
+                text="Выберите марку, укажите купленное количество и закупочную цену."
+              />
+            ),
+          )}
+        </section>
+      )}
       {t(
-        (!!resets.length || resetHistory.loading || !!resetHistory.error) && (
+        !compact && (!!resets.length || resetHistory.loading || !!resetHistory.error) && (
           <section className="panel">
             <div className="section-title">
               <div>
@@ -394,6 +490,115 @@ export default function Inventory() {
             </div>
           </section>
         ),
+      )}
+      {rowMenu && (
+        <Sheet
+          title={rowMenu.name}
+          subtitle={`${t('Остаток')}: ${ingredientVolume(data, rowMenu.id, remaining(rowMenu.id))}`}
+          close={() => setRowMenu(null)}
+        >
+          <dl className="sheet-facts">
+            <div>
+              <dt>{t('Ср. закупочная цена')}</dt>
+              <dd>
+                {t(money(round(inventory.averageCost(rowMenu.id))))} / {t(priceUnit(rowMenu.unit))}
+              </dd>
+            </div>
+            <div>
+              <dt>{t('Продажная цена')}</dt>
+              <dd>
+                {rowMenu.pricePerLiter
+                  ? `${t(money(rowMenu.pricePerLiter))} / ${t(priceUnit(rowMenu.unit))}`
+                  : t('Не задана')}
+              </dd>
+            </div>
+          </dl>
+          <SheetActions
+            close={() => setRowMenu(null)}
+            actions={[
+              {
+                label: 'Добавить закупку',
+                icon: <PackagePlus size={19} />,
+                onClick: () => setPurchase(rowMenu.id),
+              },
+              { label: 'Изменить', icon: <Pencil size={19} />, onClick: () => setEdit(rowMenu) },
+              {
+                label: 'Сбросить остаток',
+                icon: <RotateCcw size={19} />,
+                disabled: remaining(rowMenu.id) <= 0,
+                onClick: () => setReset(rowMenu),
+              },
+            ]}
+          />
+        </Sheet>
+      )}
+      {historySheet === 'purchases' && (
+        <Sheet
+          title="История закупок"
+          subtitle="Каждая поставка сохраняется отдельной записью"
+          close={() => setHistorySheet(null)}
+        >
+          <Pagination page={purchaseHistory} />
+          {purchases.length ? (
+            <div className="compact-list">
+              {[...purchases]
+                .sort((a, b) => b.date.localeCompare(a.date))
+                .map((p) => (
+                  <div className="compact-list-row" key={p.id}>
+                    <div>
+                      <strong>{t(data.alcohol.find((a) => a.id === p.alcoholId)?.name)}</strong>
+                      <small>
+                        {t(new Date(`${p.date}T12:00:00`).toLocaleDateString(locale()))} ·{' '}
+                        {t(ingredientVolume(data, p.alcoholId, p.ml))} · {t(money(p.costPerLiter))} /{' '}
+                        {t(priceUnit(unitOf(p.alcoholId)))}
+                      </small>
+                    </div>
+                    <b>{t(money(round((p.ml * p.costPerLiter) / priceBasis(data, p.alcoholId))))}</b>
+                    <button
+                      className="icon-button"
+                      aria-label={t('Исправить / удалить')}
+                      disabled={!!data.archived && p.date < data.archived.before}
+                      onClick={() => setCorrection(p)}
+                    >
+                      <Pencil size={17} />
+                    </button>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <Empty
+              title={t('Начните с первой закупки')}
+              text="Выберите марку, укажите купленное количество и закупочную цену."
+            />
+          )}
+        </Sheet>
+      )}
+      {historySheet === 'resets' && (
+        <Sheet
+          title="История сбросов"
+          subtitle="Списания запасов при обнулении остатков"
+          close={() => setHistorySheet(null)}
+        >
+          <Pagination page={resetHistory} />
+          {resets.length ? (
+            <div className="compact-list">
+              {resets.map((r) => (
+                <div className="compact-list-row" key={r.id}>
+                  <div>
+                    <strong>{t(r.name)}</strong>
+                    <small>
+                      {t(new Date(r.createdAt).toLocaleString(locale(), { timeZone: 'Asia/Yerevan' }))} ·{' '}
+                      {t(ingredientVolume(data, r.alcoholId, r.ml))}
+                    </small>
+                  </div>
+                  <b>{t(money(r.cost))}</b>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Empty title={t('Сбросов пока нет')} text="Здесь появятся обнулённые остатки." />
+          )}
+        </Sheet>
       )}
       {t(correction && <CorrectPurchaseForm purchase={correction} close={() => setCorrection(null)} />)}
       {t(reset && <ResetStockForm alcohol={reset} close={() => setReset(null)} />)}

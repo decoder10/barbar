@@ -9,7 +9,7 @@ import { useHistory } from '../features/sales/use-history';
 import { CategoryTabs } from '../ui/category-tabs';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { menuQuantitySummary } from '../domain/quantity-summary';
-import { ArrowDownRight, Banknote, GlassWater, Plus, ReceiptText, Search, ShoppingBag } from 'lucide-react';
+import { ArrowDownRight, Banknote, GlassWater, Plus, Search, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
 import { AlcoholCard, CocktailCard, compositionText, stockPill } from '../features/catalog/cards';
 import { Empty, Metric } from '../ui/layout';
@@ -23,11 +23,15 @@ import { SaleDialog, saleQuantityLabel } from '../features/sales/SaleDialog';
 import { locale, t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
 import { useBusinessDate } from '../features/sales/use-business-date';
+import { DayReceipt } from '../features/sales/DayReceipt';
+import { FilterSheet } from '../ui/sheet';
+import { useCompact } from '../ui/use-compact';
 
 /** Worker sales: the owner's screen without costs, profit, voids, exports or the operation log. */
 export default function StaffSales() {
   const { staffData, run } = useBar();
   const [creating, setCreating] = useState(false);
+  const compact = useCompact();
   const [date, setDate, currentShift] = useBusinessDate();
   const [category, setCategory] = useSessionFilter<string>('category', 'all');
   const [search, setSearch] = useSessionFilter<string>('search', '');
@@ -131,6 +135,38 @@ export default function StaffSales() {
         : current
           ? [{ alcoholId: current.id, ml: 1 }]
           : [];
+  const metrics = (
+    <section className="metrics">
+      <Metric
+        label="Выручка за день"
+        value={money(revenue)}
+        hint={dayLabel}
+        icon={<Banknote size={18} />}
+        accent
+      />
+      <Metric
+        label="Продано из меню"
+        value={`${sales.filter((s) => s.kind === 'cocktail').reduce((n, s) => n + s.quantity, 0)} ед.`}
+        hint={menuQuantitySummary(sales)}
+        icon={<GlassWater size={18} />}
+      />
+      <Metric
+        label="Алкоголь в розлив"
+        value={volume(ml)}
+        hint="Продажи без коктейлей"
+        icon={<ArrowDownRight size={18} />}
+      />
+    </section>
+  );
+  const sortControl = (
+    <CatalogSortControl
+      value={sort}
+      onChange={(value) => {
+        setSort(value);
+      }}
+      options={['original', 'popular', 'available', 'name', 'name-desc']}
+    />
+  );
   return (
     <>
       <h1 className="visually-hidden">{t('Продажи за день')}</h1>
@@ -145,27 +181,7 @@ export default function StaffSales() {
         }
       />
       <p className="business-day-hint">{t(businessDayHint)}</p>
-      <section className="metrics">
-        <Metric
-          label="Выручка за день"
-          value={money(revenue)}
-          hint={dayLabel}
-          icon={<Banknote size={18} />}
-          accent
-        />
-        <Metric
-          label="Продано из меню"
-          value={`${sales.filter((s) => s.kind === 'cocktail').reduce((n, s) => n + s.quantity, 0)} ед.`}
-          hint={menuQuantitySummary(sales)}
-          icon={<GlassWater size={18} />}
-        />
-        <Metric
-          label="Алкоголь в розлив"
-          value={volume(ml)}
-          hint="Продажи без коктейлей"
-          icon={<ArrowDownRight size={18} />}
-        />
-      </section>
+      {!compact && metrics}
       {t(
         staffData.archivedBefore && date < staffData.archivedBefore && (
           <p className="form-warning">{t('История за этот день очищена владельцем.')}</p>
@@ -190,13 +206,7 @@ export default function StaffSales() {
                 ['alcohol', 'В розлив'] as const,
               ]}
             />
-            <CatalogSortControl
-              value={sort}
-              onChange={(value) => {
-                setSort(value);
-              }}
-              options={['original', 'popular', 'available', 'name', 'name-desc']}
-            />
+            {compact ? <FilterSheet active={sort !== 'original'}>{sortControl}</FilterSheet> : sortControl}
             <label className="search">
               <Search size={17} />
               <input
@@ -274,17 +284,13 @@ export default function StaffSales() {
             ),
           )}
         </section>
-        <aside className="day-receipt" aria-label={t('Сводка продаж за день')}>
-          <div className="receipt-heading">
-            <span className="receipt-icon">
-              <ReceiptText size={20} />
-            </span>
-            <div>
-              <h2>{t('Продажи за день')}</h2>
-              <p>{t(dayLabel)}</p>
-            </div>
-            <span className="count-badge">{t(summary.size)}</span>
-          </div>
+        <DayReceipt
+          label="Сводка продаж за день"
+          dayLabel={dayLabel}
+          count={summary.size}
+          total={money(revenue)}
+          metrics={metrics}
+        >
           <div className="receipt-lines">
             {history.loading ? (
               <LoadingStatus />
@@ -330,7 +336,7 @@ export default function StaffSales() {
             {t(' Остатки списываются автоматически')}
           </div>
           <div className="receipt-note">{t('Для исправления продажи обратитесь к владельцу.')}</div>
-        </aside>
+        </DayReceipt>
       </div>
       {t(creating && <StaffCocktailForm close={() => setCreating(false)} />)}
       {selected && current && (

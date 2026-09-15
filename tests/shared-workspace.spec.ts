@@ -115,7 +115,10 @@ test('owner and worker share inventory art, shortage styles, and responsive grid
       else expect(styles).toEqual(ownerStyles);
       for (const width of [390, 768, 1440]) {
         await page.setViewportSize({ width, height: 900 });
-        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+        // React updates compact controls after the media-query change.
+        await expect
+          .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1))
+          .toBe(true);
       }
       if (role === 'barbar') {
         for (const img of await page.locator('.inventory-grid-view tbody tr').first().locator('img').all()) {

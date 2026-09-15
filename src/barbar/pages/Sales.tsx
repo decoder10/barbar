@@ -15,7 +15,6 @@ import {
   Banknote,
   GlassWater,
   Plus,
-  ReceiptText,
   Search,
   ShoppingBag,
   Undo2,
@@ -36,9 +35,13 @@ import { SaleForm } from '../features/sales/SaleForm';
 import { locale, t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
 import { useBusinessDate } from '../features/sales/use-business-date';
+import { DayReceipt } from '../features/sales/DayReceipt';
+import { FilterSheet } from '../ui/sheet';
+import { useCompact } from '../ui/use-compact';
 export default function Sales() {
   const { data, run, busy } = useBar();
   const inventory = useInventoryCalculations(data);
+  const compact = useCompact();
   const [date, setDate, currentShift] = useBusinessDate();
   const [category, setCategory] = useSessionFilter<string>('category', 'cocktail');
   const [search, setSearch] = useSessionFilter<string>('search', '');
@@ -87,6 +90,44 @@ export default function Sales() {
     month: 'long',
     weekday: 'long',
   });
+  const metrics = (
+    <section className="metrics">
+      <Metric
+        label="Выручка за день"
+        value={money(revenue)}
+        hint={dayLabel}
+        icon={<Banknote size={18} />}
+        accent
+      />
+      <Metric
+        label="Валовая прибыль"
+        value={money(revenue - cost)}
+        hint="Выручка − стоимость ингредиентов"
+        icon={<ArrowUpRight size={18} />}
+      />
+      <Metric
+        label="Продано из меню"
+        value={`${count} ед.`}
+        hint={menuQuantitySummary(totals)}
+        icon={<GlassWater size={18} />}
+      />
+      <Metric
+        label="Алкоголь в розлив"
+        value={volume(ml)}
+        hint="Продажи без коктейлей"
+        icon={<ArrowDownRight size={18} />}
+      />
+    </section>
+  );
+  const sortControl = (
+    <CatalogSortControl
+      value={sort}
+      onChange={(value) => {
+        setSort(value);
+      }}
+      options={['original', 'popular', 'available', 'name', 'name-desc', 'price', 'price-desc']}
+    />
+  );
   return (
     <>
       <h1 className="visually-hidden">{t('Продажи за день')}</h1>
@@ -101,33 +142,7 @@ export default function Sales() {
         }
       />
       <p className="business-day-hint">{t(businessDayHint)}</p>
-      <section className="metrics">
-        <Metric
-          label="Выручка за день"
-          value={money(revenue)}
-          hint={dayLabel}
-          icon={<Banknote size={18} />}
-          accent
-        />
-        <Metric
-          label="Валовая прибыль"
-          value={money(revenue - cost)}
-          hint="Выручка − стоимость ингредиентов"
-          icon={<ArrowUpRight size={18} />}
-        />
-        <Metric
-          label="Продано из меню"
-          value={`${count} ед.`}
-          hint={menuQuantitySummary(totals)}
-          icon={<GlassWater size={18} />}
-        />
-        <Metric
-          label="Алкоголь в розлив"
-          value={volume(ml)}
-          hint="Продажи без коктейлей"
-          icon={<ArrowDownRight size={18} />}
-        />
-      </section>
+      {!compact && metrics}
       <div className="sales-layout">
         <section className="catalog">
           <div className="section-title">
@@ -147,13 +162,7 @@ export default function Sales() {
                 ['alcohol', 'В розлив'] as const,
               ]}
             />
-            <CatalogSortControl
-              value={sort}
-              onChange={(value) => {
-                setSort(value);
-              }}
-              options={['original', 'popular', 'available', 'name', 'name-desc', 'price', 'price-desc']}
-            />
+            {compact ? <FilterSheet active={sort !== 'original'}>{sortControl}</FilterSheet> : sortControl}
             <label className="search">
               <Search size={17} />
               <input
@@ -220,17 +229,7 @@ export default function Sales() {
             ),
           )}
         </section>
-        <aside className="day-receipt">
-          <div className="receipt-heading">
-            <span className="receipt-icon">
-              <ReceiptText size={20} />
-            </span>
-            <div>
-              <h2>{t('Продажи за день')}</h2>
-              <p>{t(dayLabel)}</p>
-            </div>
-            <span className="count-badge">{t(operationCount)}</span>
-          </div>
+        <DayReceipt dayLabel={dayLabel} count={operationCount} total={money(revenue)} metrics={metrics}>
           <div className="receipt-lines">
             {t(
               !allDaySales.length ? (
@@ -290,7 +289,7 @@ export default function Sales() {
             <span />
             {t(' Остатки списываются автоматически')}
           </div>
-        </aside>
+        </DayReceipt>
       </div>
       {t(
         selected && (

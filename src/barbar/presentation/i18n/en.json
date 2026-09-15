@@ -153,8 +153,6 @@
   "Подобрать по названию": "Match by name",
   "Фотографии напитков. Выберите форму бокала и пример подачи.": "Drink photos. Choose a glass shape and serving example.",
   "Авторская коллекция": "Signature collection",
-  "Ваше меню уже здесь. Добавим состав?": "Your menu is ready. Add the recipes?",
-  "Названия и продажные цены перенесены из меню. В редакторе добавьте ингредиенты в мл, граммах или бутылках — себестоимость рассчитается отдельно.": "Names and prices were imported from the menu. Add ingredients in ml, grams or bottles in the editor to calculate costs.",
   "Ваши рецепты, точные пропорции и цены, в которых всё учтено.": "Your recipes, precise measures and fully calculated prices.",
   "Нажмите на коктейль, чтобы открыть рецепт и настроить цену": "Select a cocktail to open its recipe and set the price",
   "Добавляйте ингредиенты, указывайте количество на порцию и способ приготовления.": "Add ingredients, quantities per serving and preparation instructions.",
@@ -1097,5 +1095,16 @@
   "Тоник": "Tonic",
   "Энергетик": "Energy drink",
   "По названию": "By name",
-  "Выберите фото из этой категории или оставьте подбор по названию.": "Choose a photo from this category or keep matching by name."
+  "Выберите фото из этой категории или оставьте подбор по названию.": "Choose a photo from this category or keep matching by name.",
+  "Ещё": "More",
+  "Меню": "Menu",
+  "Настройки": "Settings",
+  "Готово": "Done",
+  "Добавить": "Add",
+  "Сортировка и фильтры": "Sort & filters",
+  "Быстрая навигация": "Quick navigation",
+  "Ещё действия": "More actions",
+  "Новая позиция склада": "New stock item",
+  "Сбросов пока нет": "No resets yet",
+  "Здесь появятся обнулённые остатки.": "Stock that was reset to zero will appear here."
 }

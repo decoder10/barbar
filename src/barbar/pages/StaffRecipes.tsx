@@ -12,6 +12,8 @@ import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/
 import StaffCocktailForm from '../features/recipes/StaffCocktailForm';
 import { t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
+import { FilterSheet } from '../ui/sheet';
+import { useCompact } from '../ui/use-compact';
 
 /** Worker recipes: the owner's collection without prices, costs, exports or the guest menu QR. */
 export default function StaffRecipes() {
@@ -21,6 +23,7 @@ export default function StaffRecipes() {
   const [sort, setSort] = useCatalogSort('worker-recipes');
   const [visible, setVisible] = useState(24);
   const [selected, setSelected] = useState<StaffRecipe | 'new' | null>(null);
+  const compact = useCompact();
   if (!staffData) return <p className="muted">{t('Загружаем рецепты…')}</p>;
   const units = { alcohol: staffData.ingredients };
   const recipeItems = staffData.recipes.filter(
@@ -40,6 +43,38 @@ export default function StaffRecipes() {
       sort,
     ),
   );
+  const sortControl = (
+    <CatalogSortControl
+      value={sort}
+      onChange={(value) => {
+        setSort(value);
+        setVisible(24);
+      }}
+      options={['original', 'recipe', 'name', 'name-desc']}
+    />
+  );
+  const searchField = (
+    <label className="search">
+      <Search size={17} />
+      <input
+        aria-label={t('Поиск рецепта')}
+        placeholder={t('Название коктейля…')}
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setVisible(24);
+        }}
+      />
+    </label>
+  );
+  const categoryTabs = (
+    <CategoryTabs
+      className="menu-categories"
+      value={category}
+      onChange={setCategory}
+      options={[['all', 'Всё меню'] as const, ...recipeCategories.map((c) => [c.id, c.label] as const)]}
+    />
+  );
   const name = (id: string) => staffData.ingredients.find((a) => a.id === id)?.name;
   return (
     <>
@@ -53,41 +88,28 @@ export default function StaffRecipes() {
           {t(' Добавить позицию')}
         </button>
       </PageHeading>
-      <div className="section-title">
-        <div>
-          <h2>
-            {t('Авторская коллекция ')}
-            <span className="inline-count">{t(recipeItems.length)}</span>
-          </h2>
-          <p>{t('Нажмите на позицию, чтобы открыть рецепт')}</p>
+      {compact ? (
+        <div className="catalog-tools">
+          {categoryTabs}
+          <FilterSheet active={sort !== 'original'}>{sortControl}</FilterSheet>
+          {searchField}
         </div>
-        <CatalogSortControl
-          value={sort}
-          onChange={(value) => {
-            setSort(value);
-            setVisible(24);
-          }}
-          options={['original', 'recipe', 'name', 'name-desc']}
-        />
-        <label className="search">
-          <Search size={17} />
-          <input
-            aria-label={t('Поиск рецепта')}
-            placeholder={t('Название коктейля…')}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setVisible(24);
-            }}
-          />
-        </label>
-      </div>
-      <CategoryTabs
-        className="menu-categories"
-        value={category}
-        onChange={setCategory}
-        options={[['all', 'Всё меню'] as const, ...recipeCategories.map((c) => [c.id, c.label] as const)]}
-      />
+      ) : (
+        <>
+          <div className="section-title">
+            <div>
+              <h2>
+                {t('Авторская коллекция ')}
+                <span className="inline-count">{t(recipeItems.length)}</span>
+              </h2>
+              <p>{t('Нажмите на позицию, чтобы открыть рецепт')}</p>
+            </div>
+            {sortControl}
+            {searchField}
+          </div>
+          {categoryTabs}
+        </>
+      )}
       <div className="recipe-grid">
         {recipes.slice(0, visible).map((c) => {
           const short = c.ingredients.filter(

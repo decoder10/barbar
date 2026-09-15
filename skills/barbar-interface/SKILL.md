@@ -16,6 +16,7 @@ Read `docs/architecture.md` for the current feature and style boundaries.
 - Groups, hints, menu category flags, guest menu texts, catalog upgrades and presets live in `src/barbar/config/*.json` (see `docs/configuration.md`); do not hardcode them in components.
 - Check modal scroll locking, worker Sales prices and daily amounts while keeping costs/profit and stock prices hidden, unavailable stock highlighting, and grid/list layouts when changing shared styles.
 - Dialogs: main text at least 14px, secondary text at least 12px. Category rows use `ui/category-tabs.tsx`: buttons on wide screens, a native dropdown below 760px.
+- Phones (below 760px, `ui/use-compact.ts`) keep only daily actions on screen: bottom navigation, one heading row of actions, search with a sort/filter sheet, and a day-receipt bar. Rare actions, histories, row actions, settings and day metrics open in `ui/sheet.tsx` bottom sheets; dialogs open from the bottom edge. Keep desktop markup unchanged when adding phone variants.
 - Photos: prefer the brand's or retailer's original packshot with its source page, or a licensed Wikimedia Commons photo with author and licence; owner-supplied photos are recorded as such. Generic packshots of another brand are marked as examples. Run `npm run photos:optimize` after adding files.
 - The public guest menu (`/menu`) never loads the workspace or session; it renders only the `guest-menu.ts` allowlist.
 - Every new visible string needs EN and HY entries; stored product names, notes and reasons stay untranslated.

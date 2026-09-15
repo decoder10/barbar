@@ -71,7 +71,9 @@ export function SalesFullscreen({ children }: { children?: ReactNode }) {
         onClick={() => void toggle()}
       >
         {active ? <Minimize size={17} /> : <Maximize size={17} />}
-        {t(active ? 'Выйти из полного экрана' : 'На весь экран')}
+        <span className="sales-fullscreen-label">
+          {t(active ? 'Выйти из полного экрана' : 'На весь экран')}
+        </span>
       </BusyButton>
       {children}
     </div>

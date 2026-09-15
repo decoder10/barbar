@@ -10,6 +10,8 @@ import { recipeShortages } from '../domain/shortages';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
 import { t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
+import { FilterSheet } from '../ui/sheet';
+import { useCompact } from '../ui/use-compact';
 
 /** Worker stock: the owner's table and shortages without purchase prices, stock value or stock controls. */
 export default function StaffInventory() {
@@ -19,6 +21,7 @@ export default function StaffInventory() {
   const [sort, setSort] = useCatalogSort('worker-stock', 'missing');
   const [view, setView] = useInventoryView();
   const [missingOnly, setMissingOnly] = useSessionFilter<boolean>('missingOnly', false);
+  const compact = useCompact();
   if (!staffData) return <p className="muted">{t('Загружаем склад…')}</p>;
   const items = staffData.ingredients;
   const units = { alcohol: items };
@@ -32,6 +35,33 @@ export default function StaffInventory() {
         a.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
     )
     .sort((a, b) => compareCatalog(a, b, sort));
+  const sortControl = (
+    <CatalogSortControl
+      value={sort}
+      onChange={(value) => {
+        setSort(value);
+      }}
+      options={['missing', 'available', 'name', 'name-desc']}
+    />
+  );
+  const availabilityFilter = (
+    <div className="segmented">
+      <button
+        className={!missingOnly ? 'active' : ''}
+        aria-pressed={!missingOnly}
+        onClick={() => setMissingOnly(false)}
+      >
+        {t('Все остатки')}
+      </button>
+      <button
+        className={missingOnly ? 'active' : ''}
+        aria-pressed={missingOnly}
+        onClick={() => setMissingOnly(true)}
+      >
+        {t('Нет в наличии')}
+      </button>
+    </div>
+  );
   return (
     <>
       <PageHeading
@@ -61,23 +91,29 @@ export default function StaffInventory() {
         />
       </section>
       <section className="panel">
-        <div className="section-title">
-          <div>
-            <h2>{t('Ваш барный запас')}</h2>
-            <p>
-              {t('Красным выделены ингредиенты, которых не хватает на одну порцию по сохранённым рецептам.')}
-            </p>
+        {!compact && (
+          <div className="section-title">
+            <div>
+              <h2>{t('Ваш барный запас')}</h2>
+              <p>
+                {t(
+                  'Красным выделены ингредиенты, которых не хватает на одну порцию по сохранённым рецептам.',
+                )}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
         <div className="catalog-tools">
           <InventoryCategories value={category} onChange={setCategory} items={items} />
-          <CatalogSortControl
-            value={sort}
-            onChange={(value) => {
-              setSort(value);
-            }}
-            options={['missing', 'available', 'name', 'name-desc']}
-          />
+          {compact ? (
+            <FilterSheet active={sort !== 'missing' || view === 'grid' || missingOnly}>
+              {sortControl}
+              <InventoryViewSwitch view={view} onChange={setView} />
+              {availabilityFilter}
+            </FilterSheet>
+          ) : (
+            sortControl
+          )}
           <label className="search">
             <Search size={17} />
             <input
@@ -87,24 +123,9 @@ export default function StaffInventory() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
-          <InventoryViewSwitch view={view} onChange={setView} />
+          {!compact && <InventoryViewSwitch view={view} onChange={setView} />}
         </div>
-        <div className="segmented">
-          <button
-            className={!missingOnly ? 'active' : ''}
-            aria-pressed={!missingOnly}
-            onClick={() => setMissingOnly(false)}
-          >
-            {t('Все остатки')}
-          </button>
-          <button
-            className={missingOnly ? 'active' : ''}
-            aria-pressed={missingOnly}
-            onClick={() => setMissingOnly(true)}
-          >
-            {t('Нет в наличии')}
-          </button>
-        </div>
+        {!compact && availabilityFilter}
         <div className={`table-scroll inventory-layout ${view === 'grid' ? 'inventory-grid-view' : ''}`}>
           <table className="data-table inventory-table">
             <thead>

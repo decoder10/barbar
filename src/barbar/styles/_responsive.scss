@@ -183,18 +183,6 @@
   .consumption-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .recipe-banner {
-    padding: 22px;
-  }
-  .recipe-banner h3 {
-    font-size: 17px;
-  }
-  .recipe-banner-number {
-    display: none;
-  }
-  .recipe-banner p {
-    font-size: 9px;
-  }
   .section-title {
     align-items: start;
   }
@@ -457,20 +445,6 @@
   }
   .recipe-grid {
     gap: 17px;
-  }
-  .recipe-banner {
-    padding: 21px 18px;
-    gap: 14px;
-    margin-bottom: 26px;
-  }
-  .recipe-banner h3 {
-    font-size: 18px;
-    line-height: 1.5;
-  }
-  .recipe-banner-icon {
-    width: 42px;
-    height: 48px;
-    flex-shrink: 0;
   }
   .recipe-grid .card-content h3 {
     font-size: 15px;
@@ -739,15 +713,6 @@
   .recipe-card-meta {
     font-size: 8px;
     padding: 11px 3px;
-  }
-  .recipe-banner h3 {
-    font-size: 16px;
-  }
-  .recipe-banner p {
-    font-size: 9px;
-  }
-  .recipe-banner-icon {
-    display: none;
   }
   .new-recipe-card {
     min-height: 260px;

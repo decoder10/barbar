@@ -1,0 +1,911 @@
+@use 'mixins' as *;
+
+/* Phones: daily actions stay on screen, secondary tools open in bottom sheets (`ui/sheet.tsx`). */
+
+.modal.sheet {
+  padding: 0;
+}
+
+.sheet-body {
+  padding: 28px;
+}
+
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet-actions button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.sheet-actions button > svg {
+  flex-shrink: 0;
+  color: var(--pink);
+}
+
+.sheet-actions button small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.sheet-actions button:disabled {
+  opacity: 0.45;
+}
+
+.sheet-actions button:active:not(:disabled) {
+  background: var(--pink-light);
+}
+
+.filter-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.filter-sheet .catalog-sort {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  font-size: 13px;
+}
+
+.filter-sheet .catalog-sort select {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.filter-sheet .segmented {
+  display: flex;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.filter-sheet .segmented button {
+  flex: 1;
+  justify-content: center;
+}
+
+.filter-sheet-toggle {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.filter-sheet-toggle.active::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+.sheet-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.sheet-facts > div {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.sheet-facts dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sheet-facts dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.compact-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.compact-list-row > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.compact-list-row strong {
+  display: block;
+  font-size: 14px;
+}
+
+.compact-list-row small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.compact-list-row > b {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.compact-list-row > .icon-button {
+  width: 42px;
+  height: 42px;
+}
+
+.settings-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-sheet .preference-controls {
+  flex-wrap: nowrap;
+}
+
+.settings-sheet .preference-controls label {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-sheet .preference-controls select {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.settings-sheet .theme-toggle {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.settings-sheet .sync-status {
+  font-size: 13px;
+}
+
+@include below(760px) {
+  /* Shell: sticky compact top bar, bottom navigation, no decorative footer. */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    height: calc(54px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 58px 0 16px;
+  }
+
+  .breadcrumb > strong {
+    font-size: 16px;
+  }
+
+  .topbar-right {
+    gap: 2px;
+  }
+
+  .topbar .sync-status {
+    padding: 0 8px;
+  }
+
+  .topbar .sync-status > span {
+    display: none;
+  }
+
+  .topbar .icon-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .stock-notifications-toggle {
+    top: calc(env(safe-area-inset-top, 0px) + 6px);
+    right: 12px;
+    bottom: auto;
+    z-index: 26;
+    width: 42px;
+    min-height: 42px;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--muted);
+  }
+
+  .stock-notifications-toggle > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .stock-alerts {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    bottom: calc(142px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .toast {
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .page-content {
+    padding: 14px 14px calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .page-content:has(.day-receipt-bar) {
+    padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .page-footer {
+    display: none;
+  }
+
+  .bottom-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 27;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 -4px 20px #1420400d;
+  }
+
+  .bottom-nav > a,
+  .bottom-nav > button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 52px;
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .bottom-nav > .active {
+    background: var(--pink-light);
+    color: var(--pink);
+  }
+
+  /* Headings: the top bar names the page; only its actions remain, in one row. */
+  .page-heading {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .page-heading > div:first-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .heading-actions {
+    width: 100%;
+    max-width: none;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .heading-actions:empty {
+    display: none;
+  }
+
+  .page-heading:has(> .heading-actions:empty) {
+    margin-bottom: 0;
+  }
+
+  .heading-actions > .button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px 12px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .heading-actions > .heading-more {
+    flex: 0 0 48px;
+    padding: 0;
+  }
+
+  /* Metrics: one swipeable row of small tiles. */
+  .metrics {
+    display: flex;
+    gap: 8px;
+    margin: 0 -14px 14px;
+    padding: 0 14px 2px;
+    overflow-x: auto;
+    scroll-padding-inline: 14px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .metric {
+    flex: 0 0 auto;
+    min-width: 138px;
+    min-height: 0;
+    padding: 10px 12px;
+    scroll-snap-align: start;
+  }
+
+  .metric-label {
+    font-size: 12px;
+  }
+
+  .metric-label > span,
+  .metric > small {
+    display: none;
+  }
+
+  .metric > strong {
+    margin: 4px 0 0;
+    font-size: 18px;
+  }
+
+  .panel {
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+
+  /* Sales: date, cocktail and fullscreen in one row; the day receipt sits in a bottom bar. */
+  .sales-mode-toolbar {
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 0;
+    overflow: visible;
+  }
+
+  .sales-mode-toolbar > :first-child {
+    margin-left: 0;
+  }
+
+  .sales-mode-toolbar > .button {
+    width: 48px;
+    min-height: 48px;
+    padding: 0;
+  }
+
+  .sales-fullscreen-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .sales-create-action .button {
+    min-height: 48px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .sales-mode-toolbar > .date-control {
+    flex: 1 1 auto;
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: 48px;
+    justify-content: space-between;
+    padding: 4px 6px;
+  }
+
+  .sales-mode-toolbar > .date-control > svg {
+    display: none;
+  }
+
+  .sales-mode-toolbar .date-control input {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    font-size: 15px;
+    text-align: center;
+  }
+
+  .page-content > .business-day-hint,
+  .sales-layout > .catalog > .section-title {
+    display: none;
+  }
+
+  .day-receipt-bar {
+    position: fixed;
+    right: 10px;
+    bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+    left: 10px;
+    z-index: 26;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 58px;
+    padding: 8px 14px 8px 8px;
+    border-radius: 14px;
+    background: var(--navy);
+    color: #fff;
+    box-shadow: 0 6px 24px #14203f40;
+    text-align: left;
+  }
+
+  .day-receipt-bar > span:nth-child(2) {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .day-receipt-bar small {
+    display: block;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 400;
+    opacity: 0.7;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .day-receipt-bar .receipt-icon {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    background: #ffffff1a;
+    color: #fff;
+  }
+
+  .day-receipt-bar .count-badge {
+    width: auto;
+    min-width: 26px;
+    height: 26px;
+    margin-left: 0;
+    padding: 0 6px;
+    background: #ffffff24;
+    color: #fff;
+    font-size: 13px;
+  }
+
+  .day-receipt-bar > strong {
+    font-size: 17px;
+    white-space: nowrap;
+  }
+
+  .sales-fullscreen {
+    .bottom-nav,
+    .stock-notifications-toggle {
+      display: none;
+    }
+
+    .day-receipt-bar {
+      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .page-content {
+      padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  .sheet .metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0 0 16px;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .sheet .metric {
+    min-width: 0;
+  }
+
+  .sheet .day-receipt {
+    position: static;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .sheet .receipt-lines {
+    max-height: none;
+  }
+
+  .sheet .receipt-line strong,
+  .sheet .receipt-line > b,
+  .sheet .receipt-total > span {
+    font-size: 14px;
+  }
+
+  .sheet .receipt-line small,
+  .sheet .receipt-total > small,
+  .sheet .receipt-note,
+  .sheet .business-day-hint {
+    font-size: 12px;
+  }
+
+  .sheet .receipt-line > .icon-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .sheet .receipt-total strong {
+    font-size: 22px;
+  }
+
+  .sheet .day-receipt > .button {
+    min-height: 48px;
+    font-size: 14px;
+  }
+
+  .sheet .business-day-hint {
+    margin: 14px 0 0;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* Catalog filters: category, then search with a sort/filter button. */
+  .catalog-tools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .catalog-tools > .search {
+    order: 1;
+    min-height: 48px;
+    max-width: none;
+    padding: 0 12px;
+  }
+
+  .catalog-tools .search input {
+    font-size: 16px;
+  }
+
+  .catalog-tools > .filter-sheet-toggle {
+    order: 2;
+  }
+
+  .catalog-tools > .inventory-category-hint {
+    order: 3;
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .category-select select {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  /* Cards: smaller art, one line of composition, larger readable text. */
+  .drink-grid,
+  .recipe-grid,
+  .sales-layout .drink-grid {
+    gap: 10px;
+  }
+
+  .sales-layout .card-image {
+    height: 128px;
+  }
+
+  .card-badge,
+  .card-open {
+    display: none;
+  }
+
+  .card-content {
+    padding: 10px;
+  }
+
+  .card-content h3,
+  .recipe-grid .card-content h3 {
+    margin-bottom: 4px;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .card-content p,
+  .recipe-grid .card-content p {
+    height: auto;
+    font-size: 12px;
+    line-height: 1.5;
+    -webkit-line-clamp: 1;
+  }
+
+  .card-bottom {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .card-bottom > strong,
+  .recipe-grid .card-bottom > strong {
+    font-size: 14px;
+  }
+
+  .stock-pill,
+  .edit-recipe {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+
+  .recipe-card-meta {
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+
+  .recipe-card-meta > span:not(:only-child):last-child {
+    display: none;
+  }
+
+  .new-recipe-card {
+    min-height: 180px;
+  }
+
+  /* Stock list: photo, name and quantity per row; row actions open in a sheet. */
+  .inventory-layout:not(.inventory-grid-view) {
+    overflow: visible;
+
+    .data-table,
+    tbody {
+      display: block;
+    }
+
+    thead {
+      display: none;
+    }
+
+    tr {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 2px 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    tr:last-child {
+      border-bottom: 0;
+    }
+
+    td {
+      display: block;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      white-space: normal;
+    }
+
+    td:first-child {
+      grid-column: 1;
+      grid-row: 1 / span 2;
+      min-width: 0;
+      box-shadow: none;
+    }
+
+    td:nth-child(2) {
+      display: contents;
+    }
+
+    td[data-label] {
+      display: none;
+    }
+
+    td:nth-child(n + 3):last-child {
+      grid-column: 3;
+      grid-row: 1 / span 2;
+    }
+
+    .inventory-shortage {
+      margin-inline: -14px;
+      padding-inline: 14px;
+      background: var(--pink-light);
+      box-shadow: inset 3px 0 #bb354e;
+    }
+
+    .table-product {
+      gap: 10px;
+    }
+
+    .table-product > span {
+      min-width: 0;
+    }
+
+    .table-product .bottle-art {
+      flex-shrink: 0;
+      width: 42px;
+      height: 52px;
+    }
+
+    .table-product strong {
+      display: block;
+      overflow: hidden;
+      font-size: 14px;
+      text-overflow: ellipsis;
+    }
+
+    .table-product small {
+      font-size: 12px;
+    }
+
+    .stock-pill {
+      grid-column: 2;
+      grid-row: 1;
+      justify-self: end;
+      font-size: 13px;
+      padding: 5px 8px;
+    }
+
+    .stock-unavailable-label {
+      grid-column: 2;
+      grid-row: 2;
+      justify-self: end;
+      margin: 0;
+      font-size: 12px;
+    }
+
+    .inventory-shortage-details {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      max-width: none;
+      margin: 4px 0 0;
+      font-size: 12px;
+    }
+
+    .row-menu {
+      width: 44px;
+      height: 44px;
+    }
+  }
+
+  .inventory-grid-view .row-menu {
+    width: 100%;
+    height: 44px;
+    border: 1px solid var(--line);
+  }
+
+  /* Other pages. */
+  .report-filter .segmented button {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  .user-role-guide {
+    display: none;
+  }
+
+  .page-content > .operation-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 0;
+  }
+
+  .page-content > .operation-toolbar .button {
+    min-height: 48px;
+    font-size: 14px;
+  }
+
+  /* Every dialog opens from the bottom edge, within thumb reach. */
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .modal.sheet {
+    padding: 0;
+  }
+
+  .sheet-body {
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .modal-heading {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .modal-heading .eyebrow {
+    display: none;
+  }
+
+  .modal-heading h2 {
+    font-size: 21px;
+  }
+
+  .modal-heading p {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+}
+
+.select-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.select-sheet h3 {
+  margin: 12px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.select-sheet button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 15px;
+  text-align: left;
+}
+
+.select-sheet button.selected {
+  background: var(--pink-light);
+  color: var(--pink);
+  font-weight: 600;
+}
+
+.select-sheet button:active:not(:disabled) {
+  background: var(--surface-muted);
+}

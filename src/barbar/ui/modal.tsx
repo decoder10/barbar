@@ -1,8 +1,9 @@
 import { BusyButton, LoadingStatus } from './loading';
 import { Check, X } from 'lucide-react';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
+import { useModalDialog } from './use-modal-dialog';
 
 export function Modal({
   title,
@@ -15,22 +16,8 @@ export function Modal({
   children: ReactNode;
   close: () => void;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
+  const ref = useModalDialog();
   const { busy, activity, notice } = useBar();
-  useEffect(() => {
-    const dialog = ref.current;
-    const root = document.documentElement;
-    const oldOverflow = root.style.overflow;
-    const bodyOverflow = document.body.style.overflow;
-    root.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    dialog?.showModal();
-    return () => {
-      dialog?.close();
-      root.style.overflow = oldOverflow;
-      document.body.style.overflow = bodyOverflow;
-    };
-  }, []);
   return (
     <dialog
       ref={ref}

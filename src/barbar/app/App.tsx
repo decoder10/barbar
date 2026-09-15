@@ -13,9 +13,11 @@ import {
   GlassWater,
   LogOut,
   Menu,
+  MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
   RefreshCw,
+  Settings,
   ShoppingBag,
   Sparkles,
   Users as UsersIcon,
@@ -28,6 +30,9 @@ import { Login } from '../features/auth/Login';
 import { t } from '../presentation/i18n/runtime';
 import { PreferenceControls } from '../presentation/PreferenceControls';
 import { useBar } from './providers/BarProvider';
+import { useCompact } from '../ui/use-compact';
+import { Sheet } from '../ui/sheet';
+import { SelectSheet } from '../ui/select-sheet';
 const Operations = lazy(() => import('../pages/Operations'));
 const Audit = lazy(() => import('../pages/Audit'));
 const Users = lazy(() => import('../pages/Users'));
@@ -48,6 +53,12 @@ const navigation = [
   { path: '/audit', label: 'Журнал действий', icon: History, caption: 'История изменений' },
   { path: '/users', label: 'Пользователи', icon: UsersIcon, caption: 'Команда и роли' },
   { path: '/files', label: 'Данные и копии', icon: Files, caption: 'Ваши данные' },
+];
+// Phones keep the daily sections under the thumb; the drawer holds everything else.
+const bottomNavigation = [
+  { path: '/', label: 'Продажи', icon: ShoppingBag },
+  { path: '/inventory', label: 'Склад', icon: Boxes },
+  { path: '/cocktails', label: 'Меню', icon: GlassWater },
 ];
 export default function App() {
   const { mode, user, role } = useBar();
@@ -71,6 +82,8 @@ function Workspace() {
   const { pathname } = useLocation();
   useRouteScroll(pathname);
   const [menu, setMenu] = useState(false);
+  const [settings, setSettings] = useState(false);
+  const compact = useCompact();
   const [collapsed, setCollapsed] = useSessionFilter<boolean>(
     'sidebar-collapsed',
     false,
@@ -192,13 +205,15 @@ function Workspace() {
                 <PanelLeftClose size={20} aria-hidden="true" />
               )}
             </button>
-            <button
-              className="mobile-menu icon-button"
-              aria-label={t('Открыть меню')}
-              onClick={() => setMenu(true)}
-            >
-              <Menu size={22} />
-            </button>
+            {!compact && (
+              <button
+                className="mobile-menu icon-button"
+                aria-label={t('Открыть меню')}
+                onClick={() => setMenu(true)}
+              >
+                <Menu size={22} />
+              </button>
+            )}
             <span>{t('Рабочее пространство')}</span>
             <ChevronRight size={13} />
             <strong>{t(navigation.find((n) => n.path === pathname)?.label || 'Barbar')}</strong>
@@ -223,9 +238,21 @@ function Workspace() {
                 </button>
               ),
             )}
-            <span className="currency-tag">
-              <PreferenceControls />
-            </span>
+            {compact ? (
+              <button
+                type="button"
+                className="icon-button"
+                aria-label={t('Настройки')}
+                aria-haspopup="dialog"
+                onClick={() => setSettings(true)}
+              >
+                <Settings size={18} />
+              </button>
+            ) : (
+              <span className="currency-tag">
+                <PreferenceControls />
+              </span>
+            )}
           </div>
         </header>
         <main id="content" className="page-content" inert={busy} aria-busy={busy}>
@@ -277,6 +304,60 @@ function Workspace() {
           </footer>
         </main>
       </div>
+      {compact && (
+        <nav className="bottom-nav" aria-label={t('Быстрая навигация')} inert={busy}>
+          {bottomNavigation.map(({ path, label, icon: Icon }) => (
+            <NavLink
+              key={path}
+              to={path}
+              end={path === '/'}
+              className={({ isActive }) => (isActive ? 'active' : '')}
+            >
+              <Icon size={21} aria-hidden="true" />
+              <span>{t(label)}</span>
+            </NavLink>
+          ))}
+          <button
+            type="button"
+            className={bottomNavigation.some((item) => item.path === pathname) ? '' : 'active'}
+            aria-label={t('Открыть меню')}
+            aria-controls="workspace-sidebar"
+            aria-expanded={menu}
+            onClick={() => setMenu(true)}
+          >
+            <MoreHorizontal size={21} aria-hidden="true" />
+            <span>{t('Ещё')}</span>
+          </button>
+        </nav>
+      )}
+      {settings && (
+        <Sheet
+          title="Настройки"
+          subtitle={`${user?.fullName || 'Barbar Cafe'} · ${role === 'admin' ? 'Владелец' : 'Работник'}`}
+          close={() => setSettings(false)}
+        >
+          <div className="settings-sheet">
+            <PreferenceControls />
+            <span className={`sync-status ${connected ? '' : 'offline'}`}>
+              <Cloud size={16} />
+              <span>{t(syncing ? 'Обновляем…' : connected ? 'Общие данные' : 'Нет связи')}</span>
+            </span>
+            <button
+              type="button"
+              className="button secondary full"
+              disabled={busy}
+              onClick={() => {
+                setSettings(false);
+                void logout();
+              }}
+            >
+              <LogOut size={17} />
+              {t('Выйти')}
+            </button>
+          </div>
+        </Sheet>
+      )}
+      {compact && <SelectSheet />}
       {hasData && <StockNotifications key={`${user?.id || role}`} />}
       {busy && <LoadingStatus label={activity || 'Сохраняем…'} className="action-progress" />}
       {t(

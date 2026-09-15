@@ -103,6 +103,8 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   role = 'admin';
   await page.goto('/inventory');
   await page.reload();
+  // Phones fold the new-item buttons into the «Добавить» sheet.
+  await page.getByRole('button', { name: 'Добавить', exact: true }).click();
   await page.getByRole('button', { name: 'Новый коньяк', exact: true }).click();
   await page.getByLabel('Объём бутылки, мл').fill('700');
   await page.getByLabel('Объём порции, мл').fill('50');

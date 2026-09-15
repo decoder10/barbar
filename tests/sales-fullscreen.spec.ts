@@ -38,7 +38,8 @@ for (const role of ['admin', 'barbar'] as const) {
       await expect(page.locator('.sidebar')).toBeHidden();
       await expect(page.locator('.metrics')).toBeHidden();
       await expect(page.locator('.business-day-hint')).toBeHidden();
-      await expect(page.locator('.day-receipt')).toBeVisible();
+      // Phones keep the day receipt in a bottom bar that opens a sheet.
+      await expect(page.locator(fallback ? '.day-receipt-bar' : '.day-receipt')).toBeVisible();
       await expect(page.getByPlaceholder('Найти напиток…')).toHaveValue('Gin tonic');
       await expect(page.locator('.drink-card')).toHaveCount(count);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);

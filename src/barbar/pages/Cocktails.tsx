@@ -3,14 +3,16 @@ import { AutoReveal } from '../ui/auto-reveal';
 import { CategoryTabs } from '../ui/category-tabs';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { useInventoryCalculations } from '../features/inventory/use-inventory-calculations';
-import { Calculator, Plus, QrCode, Search } from 'lucide-react';
+import { ArrowDownToLine, MoreHorizontal, Plus, QrCode, Search } from 'lucide-react';
 import { GuestMenuQrModal } from '../features/guest/GuestMenuQr';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CocktailCard, compositionText } from '../features/catalog/cards';
 import { ShortageNote } from '../features/inventory/InventoryProduct';
 import { Empty, PageHeading } from '../ui/layout';
-import { ExportButton } from '../ui/export';
+import { download, ExportButton } from '../ui/export';
+import { FilterSheet, MenuButton } from '../ui/sheet';
+import { useCompact } from '../ui/use-compact';
 import { formatMoney as money } from '../presentation/currency/format-money';
 import { categoryLabel, ingredientVolume, recipeCategories } from '../domain/model';
 import type { Cocktail } from '../domain/types';
@@ -21,6 +23,7 @@ import { useBar } from '../app/providers/BarProvider';
 export default function Cocktails() {
   const { data } = useBar();
   const inventory = useInventoryCalculations(data);
+  const compact = useCompact();
   const [params] = useSearchParams();
   const [selected, setSelected] = useState<Cocktail | 'new' | null>(
     () => data.cocktails.find((c) => c.id === params.get('edit')) || null,
@@ -46,6 +49,38 @@ export default function Cocktails() {
       sort,
     ),
   );
+  const sortControl = (
+    <CatalogSortControl
+      value={sort}
+      onChange={(value) => {
+        setSort(value);
+        setVisible(24);
+      }}
+      options={['original', 'recipe', 'name', 'name-desc', 'price', 'price-desc']}
+    />
+  );
+  const searchField = (
+    <label className="search">
+      <Search size={17} />
+      <input
+        aria-label={t('Поиск коктейля')}
+        placeholder={t('Название коктейля…')}
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setVisible(24);
+        }}
+      />
+    </label>
+  );
+  const categoryTabs = (
+    <CategoryTabs
+      className="menu-categories"
+      value={category}
+      onChange={setCategory}
+      options={[['all', 'Всё меню'] as const, ...recipeCategories.map((c) => [c.id, c.label] as const)]}
+    />
+  );
   return (
     <>
       <PageHeading
@@ -53,65 +88,55 @@ export default function Cocktails() {
         title={t('Меню и рецепты')}
         description="Ваши рецепты, точные пропорции и цены, в которых всё учтено."
       >
-        <ExportButton name="cocktails.json" value={data.cocktails} />
-        <button className="button secondary" onClick={() => setQr(true)}>
-          <QrCode size={17} />
-          {t(' Гостевое меню')}
-        </button>
+        {!compact && <ExportButton name="cocktails.json" value={data.cocktails} />}
+        {!compact && (
+          <button className="button secondary" onClick={() => setQr(true)}>
+            <QrCode size={17} />
+            {t(' Гостевое меню')}
+          </button>
+        )}
         <button className="button primary" onClick={() => setSelected('new')}>
           <Plus size={17} />
           {t(' Добавить позицию')}
         </button>
-      </PageHeading>
-      <div className="recipe-banner">
-        <span className="recipe-banner-icon">
-          <Calculator size={27} />
-        </span>
-        <div>
-          <h3>{t('Ваше меню уже здесь. Добавим состав?')}</h3>
-          <p>
-            {t(
-              'Названия и продажные цены перенесены из меню. В редакторе добавьте ингредиенты в мл, граммах или бутылках — себестоимость рассчитается отдельно.',
-            )}
-          </p>
-        </div>
-        <span className="recipe-banner-number">01 / 04</span>
-      </div>
-      <div className="section-title">
-        <div>
-          <h2>
-            {t('Авторская коллекция ')}
-            <span className="inline-count">{t(recipeItems.length)}</span>
-          </h2>
-          <p>{t('Нажмите на коктейль, чтобы открыть рецепт и настроить цену')}</p>
-        </div>
-        <CatalogSortControl
-          value={sort}
-          onChange={(value) => {
-            setSort(value);
-            setVisible(24);
-          }}
-          options={['original', 'recipe', 'name', 'name-desc', 'price', 'price-desc']}
-        />
-        <label className="search">
-          <Search size={17} />
-          <input
-            aria-label={t('Поиск коктейля')}
-            placeholder={t('Название коктейля…')}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setVisible(24);
-            }}
+        {compact && (
+          <MenuButton
+            label="Ещё действия"
+            className="button secondary heading-more"
+            icon={<MoreHorizontal size={20} />}
+            actions={[
+              { label: 'Гостевое меню', icon: <QrCode size={19} />, onClick: () => setQr(true) },
+              {
+                label: 'Скачать JSON',
+                icon: <ArrowDownToLine size={19} />,
+                onClick: () => download('cocktails.json', data.cocktails),
+              },
+            ]}
           />
-        </label>
-      </div>
-      <CategoryTabs
-        className="menu-categories"
-        value={category}
-        onChange={setCategory}
-        options={[['all', 'Всё меню'] as const, ...recipeCategories.map((c) => [c.id, c.label] as const)]}
-      />
+        )}
+      </PageHeading>
+      {compact ? (
+        <div className="catalog-tools">
+          {categoryTabs}
+          <FilterSheet active={sort !== 'original'}>{sortControl}</FilterSheet>
+          {searchField}
+        </div>
+      ) : (
+        <>
+          <div className="section-title">
+            <div>
+              <h2>
+                {t('Авторская коллекция ')}
+                <span className="inline-count">{t(recipeItems.length)}</span>
+              </h2>
+              <p>{t('Нажмите на коктейль, чтобы открыть рецепт и настроить цену')}</p>
+            </div>
+            {sortControl}
+            {searchField}
+          </div>
+          {categoryTabs}
+        </>
+      )}
       <div className="recipe-grid">
         {t(
           items.slice(0, visible).map((c) => (
@@ -208,11 +233,13 @@ export default function Cocktails() {
           <Empty title={t('Коктейль не найден')} text="Попробуйте другой запрос или создайте свой рецепт." />
         ),
       )}
-      <p className="page-footnote">
-        {t(
-          'Фотографии иллюстративные и выбираются в редакторе. Состав и размеры порций не указаны в бумажном меню, поэтому их нужно заполнить перед продажей. «Your cocktail» — цена по договорённости; задайте её вручную.',
-        )}
-      </p>
+      {!compact && (
+        <p className="page-footnote">
+          {t(
+            'Фотографии иллюстративные и выбираются в редакторе. Состав и размеры порций не указаны в бумажном меню, поэтому их нужно заполнить перед продажей. «Your cocktail» — цена по договорённости; задайте её вручную.',
+          )}
+        </p>
+      )}
       {t(
         selected && (
           <RecipeForm cocktail={selected === 'new' ? undefined : selected} close={() => setSelected(null)} />
