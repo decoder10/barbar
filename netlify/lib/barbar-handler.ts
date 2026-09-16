@@ -5,6 +5,8 @@ import type { BarData, Command } from '../../src/barbar/domain/types';
 import type { UserProfile } from '../../src/barbar/domain/identity/user';
 import { publicSnapshot } from './barbar-access';
 import { cardPage, parseCardQuery } from '../../src/barbar/domain/catalog/cards';
+import { barConfig } from '../../src/barbar/config';
+import { businessDaysBefore } from '../../src/barbar/domain/business-day';
 import { authenticated, json, roleFor, sameOrigin } from './barbar-auth';
 import type { Repository } from './barbar-repository';
 import type { IdentityStore } from './barbar-users';
@@ -44,9 +46,13 @@ export const handleBarApi = async (
       const stock = stockSnapshot?.stock
         ? new Map(stockSnapshot.stock.map((b) => [b.alcoholId, b.ml]))
         : stockTotals((await repository.read()).data);
+      // «Most sold first» counts a window of business days ending on the requested day.
       const popularity =
         query.sort === 'popular' && query.date && repository.salesPopularity
-          ? await repository.salesPopularity(query.date)
+          ? await repository.salesPopularity(
+              businessDaysBefore(query.date, barConfig.presets.popularityDays - 1),
+              query.date,
+            )
           : undefined;
       return json({
         ...cardPage(catalog.data!, stock, query, popularity),

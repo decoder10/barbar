@@ -8,12 +8,14 @@ const labels: Record<CatalogSort, string> = {
   'name-desc': 'По названию Я–А',
   available: 'Сначала доступные',
   missing: 'Сначала отсутствующие',
-  popular: 'Чаще продаются за день',
+  popular: 'Сначала самые продаваемые',
   recipe: 'Сначала без рецепта',
   price: 'Цена по возрастанию',
   'price-desc': 'Цена по убыванию',
 };
 
+/** Sales screens open on the most sold items; other catalogs keep the menu order. */
+export const salesSortDefault: CatalogSort = 'popular';
 export function useCatalogSort(key: string, initial: CatalogSort = 'original') {
   return useSessionFilter<CatalogSort>(
     `sort-${key}`,

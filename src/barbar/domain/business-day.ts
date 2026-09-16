@@ -6,3 +6,9 @@ export function businessToday(now = new Date()) {
   return dateFormatter.format(new Date(now.getTime() - BUSINESS_DAY_START_HOUR * 3600000));
 }
 export const businessDayHint = 'День смены: 06:00–05:59 · Ереван';
+/** The business day `days` earlier, as a plain calendar date. Used for windows ending on `date`. */
+export function businessDaysBefore(date: string, days: number) {
+  const start = new Date(`${date}T12:00:00Z`);
+  start.setUTCDate(start.getUTCDate() - days);
+  return start.toISOString().slice(0, 10);
+}

@@ -277,13 +277,13 @@ export function mongoRepository(
       }
       return result;
     },
-    async salesPopularity(date) {
+    async salesPopularity(from, to) {
       await ensureReady();
       const rows = await db
         .collection('sales')
         .aggregate<{ _id: { kind: string; productId: string }; operations: number }>(
           [
-            { $match: { date, voided: false } },
+            { $match: { date: { $gte: from, $lte: to }, voided: false } },
             { $group: { _id: { kind: '$kind', productId: '$productId' }, operations: { $sum: 1 } } },
           ],
           { maxTimeMS: 10000 },

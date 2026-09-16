@@ -36,7 +36,8 @@ test('owner filters survive refresh and navigation, while another tab starts fre
   const other = await context.newPage();
   await other.goto('/');
   await expect(other.getByPlaceholder('Найти напиток…')).toHaveValue('');
-  await expect(other.getByLabel('Сортировка', { exact: true })).toHaveValue('original');
+  // A fresh tab opens on the default order: the most sold items first.
+  await expect(other.getByLabel('Сортировка', { exact: true })).toHaveValue('popular');
 });
 
 test('worker stock remembers missing items, category, search, sort and grid', async ({ page }) => {

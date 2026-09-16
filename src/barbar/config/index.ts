@@ -58,6 +58,8 @@ export interface PresetsConfig {
   purchaseQuickAmounts: { pcs: number[]; bottle: number[]; volume: number[] };
   batchExpirySoonDays: number;
   cardPageSize: number;
+  /** Sales window in days, ending on the chosen day, behind the «most sold first» order. */
+  popularityDays: number;
   storage: { limitMb: number; warningPercent: number };
 }
 export interface GuestMenuConfig {
@@ -202,6 +204,8 @@ export function validateConfig(config: BarConfig = barConfig, ledgerMenuCategori
     positive(`purchaseQuickAmounts.${unit}`, values);
   if (!(Number.isInteger(p.cardPageSize) && p.cardPageSize >= 1 && p.cardPageSize <= 200))
     problems.push('cardPageSize must be 1–200');
+  if (!(Number.isInteger(p.popularityDays) && p.popularityDays >= 1 && p.popularityDays <= 365))
+    problems.push('popularityDays must be 1–365');
   if (!(Number.isInteger(p.batchExpirySoonDays) && p.batchExpirySoonDays >= 0))
     problems.push('batchExpirySoonDays must be a whole number of days');
   if (!(p.storage.limitMb > 0 && p.storage.warningPercent > 0 && p.storage.warningPercent <= 100))

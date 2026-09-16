@@ -26,11 +26,12 @@ import { Empty, Metric } from '../ui/layout';
 import { ExportButton } from '../ui/export';
 import { Modal } from '../ui/modal';
 import { formatMoney as money } from '../presentation/currency/format-money';
-import { businessDayHint } from '../domain/business-day';
+import { barConfig } from '../config';
+import { businessDayHint, businessDaysBefore } from '../domain/business-day';
 import { activeSales, categories, round, saleUnit, volume } from '../domain/model';
 import { expandRecipe } from '../domain/catalog/sets';
 import type { Alcohol, Cocktail, Sale } from '../domain/types';
-import { CatalogSortControl, useCatalogSort } from '../features/catalog/sort';
+import { CatalogSortControl, salesSortDefault, useCatalogSort } from '../features/catalog/sort';
 import { SaleForm } from '../features/sales/SaleForm';
 import { locale, t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
@@ -45,7 +46,7 @@ export default function Sales() {
   const [date, setDate, currentShift] = useBusinessDate();
   const [category, setCategory] = useSessionFilter<string>('category', 'cocktail');
   const [search, setSearch] = useSessionFilter<string>('search', '');
-  const [sort, setSort] = useCatalogSort('owner-sales');
+  const [sort, setSort] = useCatalogSort('owner-sales', salesSortDefault);
   const [selected, setSelected] = useState<{ kind: Sale['kind']; product: Alcohol | Cocktail } | null>(null);
   const [voiding, setVoiding] = useState<Sale | null>(null);
   const history = useHistory('sales', date);
@@ -59,13 +60,15 @@ export default function Sales() {
   const cost = round(totals.reduce((n, s) => n + (s.cost || 0), 0));
   const count = totals.filter((s) => s.kind === 'cocktail').reduce((n, s) => n + s.quantity, 0);
   const ml = totals.filter((s) => s.kind === 'alcohol').reduce((n, s) => n + s.quantity, 0);
+  // The default order counts the sales window ending on the chosen day, not that day alone.
+  const popularityFrom = businessDaysBefore(date, barConfig.presets.popularityDays - 1);
   const popularity = new Map<string, number>();
-  totals.forEach((s) =>
-    popularity.set(
-      `${s.kind}:${s.productId}`,
-      (popularity.get(`${s.kind}:${s.productId}`) || 0) + ('operations' in s ? s.operations : 1),
-    ),
-  );
+  if (!data.opening)
+    for (const s of activeSales(data))
+      if (s.date >= popularityFrom && s.date <= date) {
+        const key = `${s.kind}:${s.productId}`;
+        popularity.set(key, (popularity.get(key) || 0) + 1);
+      }
   // Card order and search come from server pages; a complete in-memory ledger pages locally.
   const pages = useCardPages({
     resources:
@@ -162,7 +165,11 @@ export default function Sales() {
                 ['alcohol', 'В розлив'] as const,
               ]}
             />
-            {compact ? <FilterSheet active={sort !== 'original'}>{sortControl}</FilterSheet> : sortControl}
+            {compact ? (
+              <FilterSheet active={sort !== salesSortDefault}>{sortControl}</FilterSheet>
+            ) : (
+              sortControl
+            )}
             <label className="search">
               <Search size={17} />
               <input

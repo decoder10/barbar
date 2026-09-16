@@ -8,6 +8,7 @@
   },
   "batchExpirySoonDays": 2,
   "cardPageSize": 24,
+  "popularityDays": 30,
   "storage": {
     "limitMb": 512,
     "warningPercent": 70

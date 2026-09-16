@@ -40,6 +40,10 @@ describe('server catalog card pages', () => {
       new Map([[`cocktail:${data.cocktails[150].id}`, 4]]),
     );
     expect(popular.ids).toEqual([data.cocktails[150].id]);
+    // Without sales the order is the menu order, not the alphabet: equally popular items keep their place.
+    expect(cardPage(data, stock, { ...query, sort: 'popular' }).ids).toEqual(
+      data.cocktails.slice(0, 24).map((c) => c.id),
+    );
   });
 
   it('keeps poured alcohol as a separate resource and validates queries', () => {

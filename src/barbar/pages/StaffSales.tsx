@@ -13,11 +13,12 @@ import { ArrowDownRight, Banknote, GlassWater, Plus, Search, ShoppingBag } from 
 import { useState } from 'react';
 import { AlcoholCard, CocktailCard, compositionText, stockPill } from '../features/catalog/cards';
 import { Empty, Metric } from '../ui/layout';
-import { businessDayHint } from '../domain/business-day';
+import { barConfig } from '../config';
+import { businessDayHint, businessDaysBefore } from '../domain/business-day';
 import { categories, ingredientVolume, round, saleUnit, volume } from '../domain/model';
 import { isGlassServing } from '../domain/serving';
 import type { StaffProduct } from '../domain/types';
-import { CatalogSortControl, useCatalogSort } from '../features/catalog/sort';
+import { CatalogSortControl, salesSortDefault, useCatalogSort } from '../features/catalog/sort';
 import StaffCocktailForm from '../features/recipes/StaffCocktailForm';
 import { SaleDialog, saleQuantityLabel } from '../features/sales/SaleDialog';
 import { locale, t } from '../presentation/i18n/runtime';
@@ -35,7 +36,7 @@ export default function StaffSales() {
   const [date, setDate, currentShift] = useBusinessDate();
   const [category, setCategory] = useSessionFilter<string>('category', 'all');
   const [search, setSearch] = useSessionFilter<string>('search', '');
-  const [sort, setSort] = useCatalogSort('worker-sales');
+  const [sort, setSort] = useCatalogSort('worker-sales', salesSortDefault);
   const [selected, setSelected] = useState<StaffProduct | null>(null);
   const [quantity, setQuantity] = useState('1');
   const [glassMl, setGlassMl] = useState('150');
@@ -53,8 +54,12 @@ export default function StaffSales() {
       : {
           key: date,
           page: (_resource, query) => {
+            // The default order counts the sales window ending on the chosen day, not that day alone.
+            const from = businessDaysBefore(date, barConfig.presets.popularityDays - 1);
             const popularity = new Map<string, number>();
-            for (const s of staffData?.sales.filter((sale) => sale.date === date && !sale.voided) || [])
+            for (const s of staffData?.sales.filter(
+              (sale) => !sale.voided && sale.date >= from && sale.date <= date,
+            ) || [])
               popularity.set(
                 `${s.kind}:${s.productId}`,
                 (popularity.get(`${s.kind}:${s.productId}`) || 0) + 1,
@@ -206,7 +211,11 @@ export default function StaffSales() {
                 ['alcohol', 'В розлив'] as const,
               ]}
             />
-            {compact ? <FilterSheet active={sort !== 'original'}>{sortControl}</FilterSheet> : sortControl}
+            {compact ? (
+              <FilterSheet active={sort !== salesSortDefault}>{sortControl}</FilterSheet>
+            ) : (
+              sortControl
+            )}
             <label className="search">
               <Search size={17} />
               <input
