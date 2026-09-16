@@ -11,6 +11,7 @@ import {
 } from '../domain/identity/preferences';
 import { PresentationContext } from './presentation-context';
 import { useBar } from '../app/providers/BarProvider';
+import { api } from '../services/api-client';
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const { user, updatePreferences, notify } = useBar();
   const preferences = user?.preferences || defaultPreferences;
@@ -43,14 +44,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (preferences.currency === 'AMD') return;
     let active = true;
-    const controller = new AbortController();
     async function load() {
       try {
-        const response = await fetch('/api/barbar/rates', {
-          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]),
-        });
-        if (!response.ok) throw new Error('Rates unavailable');
-        const next = (await response.json()) as ExchangeRates;
+        // The shared client: same timeout, JSON guard and coalescing as every other read.
+        const next = await api('/api/barbar/rates');
         if (
           !next.date ||
           !['AMD', 'USD', 'EUR', 'RUB'].every(
@@ -76,7 +73,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }, 3600000);
     return () => {
       active = false;
-      controller.abort();
       window.clearInterval(timer);
     };
   }, [preferences.currency]);

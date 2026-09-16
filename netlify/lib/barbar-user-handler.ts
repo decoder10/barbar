@@ -1,5 +1,6 @@
 import { authenticated, json, roleFor, sameOrigin, sessionCookie, sessionToken } from './barbar-auth';
 import { UserError, type IdentityStore } from './barbar-users';
+import { respondError } from './http';
 async function body(request: Request) {
   const text = await request.text();
   if (text.length > 4096) throw new UserError('Запрос слишком большой.', 413);
@@ -10,9 +11,7 @@ async function body(request: Request) {
   }
 }
 const failure = (error: unknown) =>
-  error instanceof UserError
-    ? json({ error: error.message }, error.status)
-    : json({ error: 'База пользователей временно недоступна. Повторите попытку.' }, 503);
+  respondError(error, 'База пользователей временно недоступна. Повторите попытку.');
 export async function handleAuth(request: Request, users: IdentityStore) {
   if (!['GET', 'POST', 'DELETE', 'PATCH'].includes(request.method))
     return json({ error: 'Метод не поддерживается.' }, 405);

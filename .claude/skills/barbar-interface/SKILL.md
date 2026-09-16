@@ -26,3 +26,4 @@ Read `docs/architecture.md` for the current feature and style boundaries.
 - Build chunks (`vite.config.ts`): `react` (framework) and `photo-manifest` are separate, shared by the workspace and `/menu`; routes stay lazy. The photo manifest is not what makes the shared chunk heavy — React is.
 - Sales open on `salesSortDefault` («most sold first», 30-day window); card pages ask for both resources in one request (`use-card-pages.ts`, `resources=`). Search inputs `.trim()` on every page.
 - Provider context values are memoized (`BarProvider`, `SettingsProvider`); new actions go through `useCallback`, or every screen re-renders on each poll.
+- Report figures come from `domain/reports/totals.ts` (`reportTotals`), the team list from `features/users/use-users.ts`, the full backup copy through `snapshotRead`; rates go through `api()` like every other read. Only the guest page keeps a raw `fetch` — it must not load the workspace client.

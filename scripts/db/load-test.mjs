@@ -126,6 +126,21 @@ try {
     assert.equal(page.total, undefined);
     assert.equal(page.groups, undefined);
   });
+  // Card pages in the default order: the 30-day popularity window is counted once per revision.
+  const cards = () =>
+    handleBarApi(
+      request(`/catalog/cards?resources=cocktails,alcohol&sort=popular&date=${day}`),
+      repo,
+      identity,
+    );
+  await measure('cardsPopularCold', 1, 1, async () => {
+    const r = await cards();
+    assert.equal(r.status, 200);
+    assert.equal((await r.json()).pages.length, 2);
+  });
+  await measure('cardsPopularCached', 12, 4, async () => {
+    assert.equal((await cards()).status, 200);
+  });
   await measure('reportCold', 1, 1, async () => {
     const r = await handleReport(request(`/report?from=${day}&to=${day}`), db, identity);
     assert.equal(r.status, 200);
@@ -159,6 +174,16 @@ try {
     .sort({ date: -1, createdAt: -1, id: -1 })
     .limit(51)
     .explain('executionStats');
+  // The «most sold first» window: a date range plus voided filter, grouped per product.
+  const popularityPlan = await db
+    .collection('sales')
+    .aggregate([
+      { $match: { date: { $gte: day, $lte: day }, voided: false } },
+      { $group: { _id: { kind: '$kind', productId: '$productId' }, operations: { $sum: 1 } } },
+    ])
+    .explain('executionStats');
+  const popularityStats =
+    popularityPlan.stages?.[0]?.$cursor?.executionStats || popularityPlan.executionStats || {};
   const fullBytes = Buffer.byteLength(JSON.stringify(full));
   console.log(
     JSON.stringify(
@@ -175,6 +200,11 @@ try {
           returned: plan.executionStats.nReturned,
           examined: plan.executionStats.totalDocsExamined,
           keys: plan.executionStats.totalKeysExamined,
+        },
+        popularityQuery: {
+          examined: popularityStats.totalDocsExamined,
+          keys: popularityStats.totalKeysExamined,
+          stage: popularityPlan.stages?.[0]?.$cursor?.queryPlanner?.winningPlan?.inputStage?.stage,
         },
         metrics,
         integrity: 'stock, valuation, 30 audit events and deduplicated retries verified',

@@ -9,11 +9,11 @@ import { download, ExportButton } from '../ui/export';
 import { Empty, Metric, PageHeading } from '../ui/layout';
 import { displayCurrency, formatMoney as money } from '../presentation/currency/format-money';
 import { businessDayHint, businessToday } from '../domain/business-day';
-import { activeSales, categoryLabel, ingredientVolume, priceBasis, round, saleUnit } from '../domain/model';
+import { activeSales, categoryLabel, ingredientVolume, round, saleUnit } from '../domain/model';
 import { reportAnalytics } from '../domain/reports/analytics';
 import { toCsv } from '../domain/reports/csv';
+import { reportTotals } from '../domain/reports/totals';
 import { inReportPeriod, revenueSeries, type ReportPeriod } from '../domain/reports/period';
-import type { MenuCategory } from '../domain/types';
 import { Purchasing } from '../features/reports/Purchasing';
 import { ReportPerformance } from '../features/reports/ReportPerformance';
 import { locale, t } from '../presentation/i18n/runtime';
@@ -42,69 +42,14 @@ export default function Reports() {
   const records = data.sales.filter((s) => inReportPeriod(s.date, period));
   const sales = activeSales(data).filter((s) => inReportPeriod(s.date, period));
   const purchases = data.purchases.filter((p) => inReportPeriod(p.date, period));
-  const revenue = round(
-    remote.report
-      ? remote.report.groups.reduce((sum, s) => sum + (s.revenue || 0), 0)
-      : sales.reduce((sum, s) => sum + s.revenue, 0),
-  );
-  const cost = round(
-    remote.report
-      ? remote.report.groups.reduce((sum, s) => sum + (s.cost || 0), 0)
-      : sales.reduce((sum, s) => sum + s.cost, 0),
-  );
-  const bought = round(
-    remote.report?.purchaseTotal ??
-      purchases.reduce((sum, p) => sum + (p.ml * p.costPerLiter) / priceBasis(data, p.alcoholId), 0),
-  );
-  const cocktailCount = (remote.report?.groups || sales)
-    .filter((s) => s.kind === 'cocktail')
-    .reduce((sum, s) => sum + s.quantity, 0);
-  const groups: Record<
-    string,
-    {
-      name: string;
-      servingMl?: number;
-      unit?: 'bottle' | 'glass';
-      category?: MenuCategory;
-      kind: string;
-      quantity: number;
-      revenue: number;
-      cost: number;
-    }
-  > = {};
-  sales.forEach((s) => {
-    const key = `${s.kind}-${s.productId}-${s.unit || ''}-${s.servingMl || ''}`;
-    const row = groups[key] || {
-      name: s.name,
-      category: s.category,
-      kind: s.kind,
-      unit: s.unit,
-      servingMl: s.servingMl,
-      quantity: 0,
-      revenue: 0,
-      cost: 0,
-    };
-    row.quantity += s.quantity;
-    row.revenue += s.revenue;
-    row.cost += s.cost;
-    groups[key] = row;
-  });
-  const rows = (
-    remote.report
-      ? remote.report.groups.map((r) => ({ ...r, revenue: r.revenue || 0, cost: r.cost || 0 }))
-      : Object.values(groups)
-  ).sort((a, b) => b.revenue - a.revenue);
-  // Copy: the server report object is cached per snapshot and must not be mutated while rendering.
-  const consumed: Record<string, number> = { ...(remote.report?.consumed || {}) };
-  sales.forEach((s) =>
-    s.ingredients.forEach((i) => {
-      consumed[i.alcoholId] = (consumed[i.alcoholId] || 0) + i.ml;
-    }),
+  // One source for every headline figure: the server report when the ledger is paged, else local sales.
+  const { revenue, cost, bought, cocktailCount, operationCount, rows, consumed } = reportTotals(
+    remote.report,
+    sales,
+    purchases,
+    data,
   );
   const bars = revenueSeries(remote.report?.daily || sales, chartFrom, chartTo);
-  const operationCount = remote.report
-    ? remote.report.groups.reduce((sum, r) => sum + r.operations, 0)
-    : sales.length;
   const groupedChart = bars.some((b) => b.date !== b.end);
   const peak = Math.max(1, ...bars.map((b) => b.amount));
   function exportCsv() {

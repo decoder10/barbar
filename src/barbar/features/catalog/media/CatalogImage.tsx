@@ -25,6 +25,8 @@ export function CatalogImage({
         height={photo.height}
         alt={alt}
         loading={eager ? 'eager' : 'lazy'}
+        // The first-screen logo is the LCP candidate: ask for it before the lazy card photos.
+        fetchPriority={eager ? 'high' : undefined}
         decoding="async"
       />
     </picture>

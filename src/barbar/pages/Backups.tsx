@@ -1,6 +1,6 @@
 import { LoadingStatus, BusyButton } from '../ui/loading';
 import { Archive, ArrowDownToLine, FileJson, FolderArchive, Trash2, Upload } from 'lucide-react';
-import { api } from '../services/api-client';
+import { snapshotRead } from '../services/api-client';
 import { useEffect, useRef, useState } from 'react';
 import { download, ExportButton } from '../ui/export';
 import { Modal } from '../ui/modal';
@@ -19,7 +19,8 @@ export default function Backups() {
   useEffect(() => {
     if (!working.opening) return;
     let stopped = false;
-    void api('/api/barbar?view=full')
+    // Shared per-snapshot cache: a remount or a second reader does not refetch the full copy.
+    void snapshotRead(working, '/api/barbar?view=full')
       .then((r) => {
         if (!stopped) setFull({ data: r.data, source: working });
       })

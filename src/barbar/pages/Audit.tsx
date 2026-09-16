@@ -4,7 +4,7 @@ import { PageHeading } from '../ui/layout';
 import { Field } from '../ui/fields';
 import { api } from '../services/api-client';
 import type { AuditEvent } from '../domain/identity/audit';
-import type { UserProfile } from '../domain/identity/user';
+import { useUsers } from '../features/users/use-users';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { t, locale } from '../presentation/i18n/runtime';
 const actions: Record<string, string> = {
@@ -32,17 +32,13 @@ const actions: Record<string, string> = {
 export default function Audit() {
   const [actor, setActor] = useSessionFilter('actor', '', (v): v is string => typeof v === 'string');
   const [action, setAction] = useSessionFilter('action', '', (v): v is string => typeof v === 'string');
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  // The same loader as «Пользователи»: a failed team list is shown, not swallowed.
+  const { users, error: usersError } = useUsers();
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [next, setNext] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    void api('/api/barbar/users')
-      .then((r) => setUsers(r.users))
-      .catch(() => {});
-  }, []);
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -107,6 +103,7 @@ export default function Audit() {
             </select>
           </Field>
         </div>
+        {usersError && <p role="alert">{t(usersError)}</p>}
         {error && <p role="alert">{t(error)}</p>}
         {loading ? (
           <LoadingStatus />

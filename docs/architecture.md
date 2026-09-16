@@ -130,5 +130,6 @@
 - Общие модули страниц: `domain/sales/day-totals.ts`, `domain/sales/popularity.ts`, `presentation/format-date.ts`, `domain/lookup.ts` (`byId`), `domain/reports/csv.ts`, `domain/catalog/recipe-status.ts`. Страницы компонуют их, а не повторяют расчёты.
 - Уведомления: колокольчик в шапке (`features/notifications/NotificationsButton.tsx`) открывает панель (`NotificationsPanel.tsx`, `ui/drawer.tsx`) с тумблером push и лентой `GET /api/barbar/notifications` (`netlify/lib/notifications/feed.ts`); живые предупреждения — `StockAlerts.tsx`; состояние — `use-stock-alerts.ts`, `use-notifications-feed.ts`; тексты — `domain/notifications/feed.ts`. Сотрудник получает только остатки.
 - Карточки: один запрос на оба ресурса (`resources=`, `parseCardQueries`); история: итоги периода только с первой страницей.
+- Сервер: `netlify/lib/barbar-handler.ts` — только транспорт (аутентификация, метод, источник, выбор маршрута, `respondError` из `netlify/lib/http.ts`); маршруты — `netlify/lib/routes/{cards,catalog,working,commands}.ts`. Окно популярности кешируется по revision (`queries/cache.ts`). Итоги отчёта — `domain/reports/totals.ts`; команда — `features/users/use-users.ts`.
 - Сборка: чанки `react` и `photo-manifest` общие для рабочего пространства и `/menu`; один шрифт Manrope (`--display`). Замеры и проверки — [refactor-2026-09-16.md](refactor-2026-09-16.md).
 

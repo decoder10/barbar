@@ -1,5 +1,5 @@
 import { Pencil, Plus, ShieldCheck, UserRound, Users as UsersIcon } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Field } from '../ui/fields';
 import { LoadingStatus } from '../ui/loading';
 import { Modal, Submit } from '../ui/modal';
@@ -8,31 +8,16 @@ import { t } from '../presentation/i18n/runtime';
 import { api } from '../services/api-client';
 import { useBar } from '../app/providers/BarProvider';
 import type { UserInput, UserProfile } from '../domain/identity/user';
+import { useUsers } from '../features/users/use-users';
 const blank: UserInput = { username: '', fullName: '', email: '', phone: '', password: '', role: 'worker' };
 export default function Users() {
   const { user: me, notify, perform, busy: saving } = useBar();
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { users, setUsers, loading, error: loadError, reload: load } = useUsers();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<UserProfile | null>(null);
   const [active, setActive] = useState(true);
   const [form, setForm] = useState<UserInput>(blank);
   const [error, setError] = useState('');
-  const [loadError, setLoadError] = useState('');
-  async function load() {
-    setLoading(true);
-    setLoadError('');
-    try {
-      setUsers((await api('/api/barbar/users')).users);
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Не удалось загрузить пользователей.');
-    } finally {
-      setLoading(false);
-    }
-  }
-  useEffect(() => {
-    void load();
-  }, []);
   const field = (key: keyof UserInput, value: string) => setForm((current) => ({ ...current, [key]: value }));
   async function create(event: FormEvent) {
     event.preventDefault();

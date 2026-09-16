@@ -18,6 +18,7 @@ import { commandAudit, appendAudit } from './audit/store';
 import type { Repository, Snapshot } from './barbar-repository';
 
 import { ensureLedgerIndexes, ledgerCollections as collections } from './database/indexes';
+import { revisionQuery } from './queries/cache';
 import { seedFoodCatalog } from './database/food-catalog';
 import { convertGoodsCatalog, mergeGoodsCatalog } from './database/goods-catalog';
 
@@ -279,17 +280,21 @@ export function mongoRepository(
     },
     async salesPopularity(from, to) {
       await ensureReady();
-      const rows = await db
-        .collection('sales')
-        .aggregate<{ _id: { kind: string; productId: string }; operations: number }>(
-          [
-            { $match: { date: { $gte: from, $lte: to }, voided: false } },
-            { $group: { _id: { kind: '$kind', productId: '$productId' }, operations: { $sum: 1 } } },
-          ],
-          { maxTimeMS: 10000 },
-        )
-        .toArray();
-      return new Map(rows.map((r) => [`${r._id.kind}:${r._id.productId}`, r.operations]));
+      // Cached per ledger revision: a search keystroke or a category switch must not re-count
+      // a month of sales. Counts carry no money, so both roles share one entry.
+      return revisionQuery(db, `popularity:${from}:${to}`, async () => {
+        const rows = await db
+          .collection('sales')
+          .aggregate<{ _id: { kind: string; productId: string }; operations: number }>(
+            [
+              { $match: { date: { $gte: from, $lte: to }, voided: false } },
+              { $group: { _id: { kind: '$kind', productId: '$productId' }, operations: { $sum: 1 } } },
+            ],
+            { maxTimeMS: 10000 },
+          )
+          .toArray();
+        return new Map(rows.map((r) => [`${r._id.kind}:${r._id.productId}`, r.operations]));
+      });
     },
     async readSale(id) {
       await ensureReady();
