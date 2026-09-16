@@ -81,6 +81,91 @@
       "ru": "Обслуживание 0%, чаевые приветствуются",
       "en": "Service 0%, tips are welcome",
       "hy": "Սպասարկում 0%, թեյավճարը ողջունելի է"
+    },
+    "menu": {
+      "ru": "Меню",
+      "en": "Menu",
+      "hy": "Ճաշացանկ"
+    },
+    "allSections": {
+      "ru": "Все разделы",
+      "en": "All sections",
+      "hy": "Բոլոր բաժինները"
+    },
+    "favorites": {
+      "ru": "Избранное",
+      "en": "Favorites",
+      "hy": "Ընտրվածներ"
+    },
+    "favoritesHint": {
+      "ru": "Покажите бармену, когда выберете",
+      "en": "Show the bartender when you are ready",
+      "hy": "Ցույց տվեք բարմենին, երբ ընտրեք"
+    },
+    "favoritesEmpty": {
+      "ru": "Нажмите на сердечко рядом с напитком, чтобы сохранить его здесь.",
+      "en": "Tap the heart next to a drink to save it here.",
+      "hy": "Սեղմեք խմիչքի կողքի սրտիկը՝ այն այստեղ պահպանելու համար։"
+    },
+    "savedLocally": {
+      "ru": "Ваш список сохраняется на этом устройстве",
+      "en": "Your list is saved on this device",
+      "hy": "Ձեր ցանկը պահպանվում է այս սարքում"
+    },
+    "addFavorite": {
+      "ru": "Добавить в избранное",
+      "en": "Save to favorites",
+      "hy": "Ավելացնել ընտրվածներում"
+    },
+    "removeFavorite": {
+      "ru": "Убрать из избранного",
+      "en": "Remove from favorites",
+      "hy": "Հեռացնել ընտրվածներից"
+    },
+    "clearFavorites": {
+      "ru": "Очистить список",
+      "en": "Clear list",
+      "hy": "Մաքրել ցանկը"
+    },
+    "lightTheme": {
+      "ru": "Светлая тема",
+      "en": "Light theme",
+      "hy": "Բաց գունային թեմա"
+    },
+    "darkTheme": {
+      "ru": "Тёмная тема",
+      "en": "Dark theme",
+      "hy": "Մուգ գունային թեմա"
+    },
+    "gridView": {
+      "ru": "Карточки",
+      "en": "Grid view",
+      "hy": "Քարտեր"
+    },
+    "listView": {
+      "ru": "Список",
+      "en": "List view",
+      "hy": "Ցանկ"
+    },
+    "close": {
+      "ru": "Закрыть",
+      "en": "Close",
+      "hy": "Փակել"
+    },
+    "found": {
+      "ru": "Результаты поиска",
+      "en": "Search results",
+      "hy": "Որոնման արդյունքներ"
+    },
+    "clearSearch": {
+      "ru": "Сбросить поиск",
+      "en": "Clear search",
+      "hy": "Մաքրել որոնումը"
+    },
+    "stale": {
+      "ru": "Не удалось обновить меню. Цены могут быть неактуальны.",
+      "en": "Could not refresh the menu. Prices may be out of date.",
+      "hy": "Չհաջողվեց թարմացնել ճաշացանկը։ Գները կարող են հնացած լինել։"
     }
   }
 }

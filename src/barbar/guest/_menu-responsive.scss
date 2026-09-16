@@ -1,0 +1,323 @@
+@media (max-width: 1279px) {
+  .guest-menu {
+    --menu-header-height: 144px;
+  }
+  .menu-mobile-categories {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+  }
+  .menu-all-sections {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 11px;
+    background: var(--menu-accent-soft);
+    color: var(--menu-active-text);
+    border-radius: 9px;
+    min-height: 42px;
+    font-size: 12px;
+  }
+  .menu-chips {
+    min-width: 0;
+    overflow: auto;
+    scrollbar-width: none;
+    position: relative;
+    nav {
+      display: flex;
+      width: max-content;
+      gap: 8px;
+    }
+    a {
+      display: flex;
+      align-items: center;
+      min-height: 42px;
+      border: 1px solid var(--menu-line);
+      border-radius: 9px;
+      padding: 8px 12px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    a[aria-current='true'] {
+      border-color: var(--menu-accent);
+      color: var(--menu-accent);
+    }
+  }
+
+  .menu-header {
+    grid-template-columns: 190px minmax(0, 1fr) auto;
+    gap: 18px;
+    padding-inline: 20px;
+  }
+  .menu-layout {
+    display: block;
+    max-width: 1200px;
+  }
+  .menu-sidebar,
+  .menu-favorites {
+    display: none;
+  }
+  .menu-mobile-favorites {
+    display: block;
+  }
+  .menu-main {
+    padding: 20px 24px 76px;
+  }
+  .menu-bottom-nav {
+    position: fixed;
+    z-index: 12;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    border-top: 1px solid var(--menu-line);
+    background: var(--menu-bg);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 62px;
+      flex: 1;
+      color: var(--menu-muted);
+    }
+    button[aria-current='page'] {
+      color: var(--menu-accent);
+      background: color-mix(in srgb, var(--menu-accent-soft) 30%, transparent);
+    }
+    b {
+      display: inline-block;
+      margin-left: 7px;
+      font-size: 11px;
+      background: var(--menu-accent-soft);
+      border-radius: 20px;
+      padding: 1px 7px;
+    }
+  }
+}
+@media (max-width: 900px) and (min-width: 760px) {
+  .menu-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .menu-list {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 759px) {
+  .guest-menu {
+    --menu-header-height: calc(174px + env(safe-area-inset-top, 0px));
+  }
+  .menu-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'brand preferences' 'search search' 'categories categories';
+    gap: 10px;
+    padding: calc(9px + env(safe-area-inset-top, 0px)) 16px 10px;
+    min-height: auto;
+  }
+  .menu-brand {
+    grid-area: brand;
+  }
+  .menu-logo {
+    width: 120px;
+    height: 48px;
+  }
+  .menu-preferences {
+    grid-area: preferences;
+    gap: 4px;
+  }
+  .menu-languages {
+    border: 0;
+    padding: 0;
+    button {
+      min-width: 36px;
+      min-height: 40px;
+      font-size: 11px;
+    }
+  }
+  .menu-theme-toggle {
+    min-width: 38px !important;
+  }
+  .menu-search {
+    grid-area: search;
+    padding-inline: 10px;
+    input {
+      min-height: 42px;
+      font-size: 16px;
+    }
+  }
+  .menu-mobile-categories {
+    grid-area: categories;
+  }
+  .menu-layout {
+    display: block;
+  }
+  .menu-sidebar {
+    display: none;
+  }
+  .menu-main {
+    padding: 20px 16px 80px;
+  }
+  .menu-page-tools {
+    position: relative;
+    float: right;
+    margin: 0 0 6px 10px;
+    z-index: 1;
+    p {
+      display: none;
+    }
+  }
+  .menu-view-toggle {
+    padding: 2px;
+    button {
+      min-width: 36px;
+      min-height: 36px;
+    }
+  }
+  .menu-section-head {
+    min-height: 45px;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 9px;
+    h1 {
+      font-size: 27px;
+    }
+    span {
+      font-size: 12px;
+    }
+  }
+  .menu-section + .menu-section {
+    margin-top: 32px;
+  }
+  .menu-grid {
+    clear: both;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .menu-card-photo {
+    height: 112px;
+    padding: 7px;
+  }
+  .menu-card-body {
+    padding: 9px 10px 11px;
+    gap: 5px;
+    h3 {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+  }
+  .menu-price b {
+    font-size: 16px;
+  }
+  .menu-heart {
+    width: 40px;
+    height: 40px;
+    top: 2px;
+    right: 2px;
+  }
+  .menu-list,
+  .menu-wine {
+    grid-template-columns: 1fr;
+    .menu-card {
+      flex-direction: row;
+      padding-right: 32px;
+    }
+    .menu-card-photo {
+      width: 65px;
+      height: 105px;
+      align-self: center;
+      border-radius: 5px;
+    }
+    .menu-card-body {
+      justify-content: center;
+    }
+    .menu-card-prices {
+      margin-top: 2px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .menu-card-prices.single {
+      grid-template-columns: 1fr;
+    }
+    .menu-price small {
+      font-size: 10px;
+    }
+    .menu-price b {
+      font-size: 15px;
+    }
+    .menu-heart {
+      background: transparent;
+      color: var(--menu-muted);
+      width: 36px;
+      top: 8px;
+      right: 0;
+      transform: none;
+    }
+    .menu-heart[aria-pressed='true'] {
+      color: var(--menu-accent);
+    }
+  }
+  .menu-group > h2 {
+    font-size: 18px;
+  }
+  .menu-bottom-nav {
+    left: 0;
+    button {
+      flex-direction: column;
+      gap: 3px;
+      min-height: 64px;
+      font-size: 12px;
+    }
+  }
+  .menu-category-dialog {
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    .menu-dialog-body {
+      padding: calc(20px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+  .menu-mobile-favorites .menu-favorites-list {
+    li {
+      grid-template-columns: 66px minmax(0, 1fr) 44px;
+    }
+    .menu-card-photo {
+      width: 66px;
+      height: 78px;
+    }
+  }
+  .menu-mobile-favorites .menu-saved-note {
+    margin-top: 28px;
+  }
+  .menu-refresh-error {
+    clear: both;
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: 12px;
+  }
+}
+@media (max-width: 359px) {
+  .menu-header {
+    padding-inline: 12px;
+  }
+  .menu-main {
+    padding-inline: 12px;
+  }
+  .menu-logo {
+    width: 102px;
+  }
+  .menu-card-photo {
+    height: 112px;
+  }
+  .menu-favorites-heading h2 {
+    font-size: 21px;
+  }
+}

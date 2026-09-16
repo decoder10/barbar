@@ -79,7 +79,24 @@ export interface GuestMenuConfig {
     | 'sections'
     | 'prices'
     | 'photos'
-    | 'service',
+    | 'service'
+    | 'menu'
+    | 'allSections'
+    | 'favorites'
+    | 'favoritesHint'
+    | 'favoritesEmpty'
+    | 'savedLocally'
+    | 'addFavorite'
+    | 'removeFavorite'
+    | 'clearFavorites'
+    | 'lightTheme'
+    | 'darkTheme'
+    | 'gridView'
+    | 'listView'
+    | 'close'
+    | 'found'
+    | 'clearSearch'
+    | 'stale',
     Localized
   >;
 }
