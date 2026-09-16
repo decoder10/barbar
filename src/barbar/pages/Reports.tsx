@@ -11,6 +11,7 @@ import { displayCurrency, formatMoney as money } from '../presentation/currency/
 import { businessDayHint, businessToday } from '../domain/business-day';
 import { activeSales, categoryLabel, ingredientVolume, priceBasis, round, saleUnit } from '../domain/model';
 import { reportAnalytics } from '../domain/reports/analytics';
+import { toCsv } from '../domain/reports/csv';
 import { inReportPeriod, revenueSeries, type ReportPeriod } from '../domain/reports/period';
 import type { MenuCategory } from '../domain/types';
 import { Purchasing } from '../features/reports/Purchasing';
@@ -93,7 +94,8 @@ export default function Reports() {
       ? remote.report.groups.map((r) => ({ ...r, revenue: r.revenue || 0, cost: r.cost || 0 }))
       : Object.values(groups)
   ).sort((a, b) => b.revenue - a.revenue);
-  const consumed: Record<string, number> = remote.report?.consumed || {};
+  // Copy: the server report object is cached per snapshot and must not be mutated while rendering.
+  const consumed: Record<string, number> = { ...(remote.report?.consumed || {}) };
   sales.forEach((s) =>
     s.ingredients.forEach((i) => {
       consumed[i.alcoholId] = (consumed[i.alcoholId] || 0) + i.ml;
@@ -107,31 +109,16 @@ export default function Reports() {
   const peak = Math.max(1, ...bars.map((b) => b.amount));
   function exportCsv() {
     if (remote.report) {
-      const csv = [
-        'Напиток;Количество;Выручка AMD;Себестоимость AMD',
-        ...rows.map((r) =>
-          [r.name, r.quantity, r.revenue, r.cost]
-            .map(
-              (v) =>
-                '"' +
-                String(v)
-                  .replace(/^[=+@-]/, "'")
-                  .replaceAll('"', '""') +
-                '"',
-            )
-            .join(';'),
-        ),
-      ].join('\r\n');
-      download(`barbar-summary-${exportPeriod}.csv`, csv, true);
+      download(
+        `barbar-summary-${exportPeriod}.csv`,
+        toCsv([
+          ['Напиток', 'Количество', 'Выручка AMD', 'Себестоимость AMD'],
+          ...rows.map((r) => [r.name, r.quantity, r.revenue, r.cost]),
+        ]),
+        true,
+      );
       return;
     }
-    const safe = (s: string | number) => {
-      let value = String(s);
-      if (/^[=+\-@\t\r]/.test(value)) {
-        value = `'${value}`;
-      }
-      return `"${value.replace(/"/g, '""')}"`;
-    };
     const csv = [
       [
         'Дата',
@@ -157,10 +144,8 @@ export default function Reports() {
         round(s.revenue - s.cost),
         s.voided ? 'Отменена' : 'Продана',
       ]),
-    ]
-      .map((row) => row.map(safe).join(';'))
-      .join('\r\n');
-    download(`barbar-report-${exportPeriod}.csv`, csv, true);
+    ];
+    download(`barbar-report-${exportPeriod}.csv`, toCsv(csv), true);
   }
   return (
     <>

@@ -13,15 +13,17 @@ import { ArrowDownRight, Banknote, GlassWater, Plus, Search, ShoppingBag } from 
 import { useState } from 'react';
 import { AlcoholCard, CocktailCard, compositionText, stockPill } from '../features/catalog/cards';
 import { Empty, Metric } from '../ui/layout';
-import { barConfig } from '../config';
-import { businessDayHint, businessDaysBefore } from '../domain/business-day';
+import { businessDayHint } from '../domain/business-day';
+import { businessDayLabel } from '../presentation/format-date';
+import { dayTotals } from '../domain/sales/day-totals';
+import { popularityWindow } from '../domain/sales/popularity';
 import { categories, ingredientVolume, round, saleUnit, volume } from '../domain/model';
 import { isGlassServing } from '../domain/serving';
 import type { StaffProduct } from '../domain/types';
 import { CatalogSortControl, salesSortDefault, useCatalogSort } from '../features/catalog/sort';
 import StaffCocktailForm from '../features/recipes/StaffCocktailForm';
 import { SaleDialog, saleQuantityLabel } from '../features/sales/SaleDialog';
-import { locale, t } from '../presentation/i18n/runtime';
+import { t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
 import { useBusinessDate } from '../features/sales/use-business-date';
 import { DayReceipt } from '../features/sales/DayReceipt';
@@ -53,28 +55,14 @@ export default function StaffSales() {
       ? undefined
       : {
           key: date,
-          page: (_resource, query) => {
-            // The default order counts the sales window ending on the chosen day, not that day alone.
-            const from = businessDaysBefore(date, barConfig.presets.popularityDays - 1);
-            const popularity = new Map<string, number>();
-            for (const s of staffData?.sales.filter(
-              (sale) => !sale.voided && sale.date >= from && sale.date <= date,
-            ) || [])
-              popularity.set(
-                `${s.kind}:${s.productId}`,
-                (popularity.get(`${s.kind}:${s.productId}`) || 0) + 1,
-              );
-            return staffCardPage(staffData?.products || [], query, popularity);
-          },
+          page: (_resource, query) =>
+            staffCardPage(staffData?.products || [], query, popularityWindow(staffData?.sales || [], date)),
         },
   });
   if (!staffData) return <p className="muted">{t('Загружаем продажи…')}</p>;
   const day = history.enabled ? history.rows : staffData.sales.filter((sale) => sale.date === date);
   const sales = history.enabled ? history.groups : day.filter((sale) => !sale.voided);
-  const revenue = round(sales.reduce((sum, sale) => sum + (sale.revenue || 0), 0));
-  const operationCount = history.enabled
-    ? history.groups.reduce((n, g) => n + g.operations, 0)
-    : sales.length;
+  const { revenue, menuQuantity, pouredMl: ml, operations: operationCount } = dayTotals(sales);
   // Workers see what was sold, grouped by position, not each operation.
   const summary = new Map<
     string,
@@ -105,12 +93,7 @@ export default function StaffSales() {
     item.revenue += sale.revenue || 0;
     summary.set(key, item);
   }
-  const dayLabel = new Date(`${date}T12:00:00`).toLocaleDateString(locale(), {
-    day: 'numeric',
-    month: 'long',
-    weekday: 'long',
-  });
-  const ml = sales.filter((s) => s.kind === 'alcohol').reduce((n, s) => n + s.quantity, 0);
+  const dayLabel = businessDayLabel(date);
   const productByKey = new Map(staffData.products.map((p) => [`${p.kind}:${p.id}`, p]));
   const recipeById = new Map(staffData.recipes.map((r) => [r.id, r]));
   const ingredientName = (id: string) => staffData.ingredients.find((a) => a.id === id)?.name;
@@ -151,7 +134,7 @@ export default function StaffSales() {
       />
       <Metric
         label="Продано из меню"
-        value={`${sales.filter((s) => s.kind === 'cocktail').reduce((n, s) => n + s.quantity, 0)} ед.`}
+        value={`${menuQuantity} ед.`}
         hint={menuQuantitySummary(sales)}
         icon={<GlassWater size={18} />}
       />

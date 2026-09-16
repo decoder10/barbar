@@ -23,4 +23,7 @@ export default async (request: Request, context: { deploy: DeployInfo }) => {
     return json({ error: 'Меню временно недоступно.' }, 503);
   }
 };
-export const config = { path: '/api/menu' };
+export const config = {
+  path: '/api/menu',
+  rateLimit: { windowLimit: 120, windowSize: 60, aggregateBy: ['ip', 'domain'] },
+};

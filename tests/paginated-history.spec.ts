@@ -39,11 +39,11 @@ for (const worker of [false, true])
       historyUrls.push(r.request().url());
       const second = new URL(r.request().url()).searchParams.has('cursor');
       const rows = [...full.sales].reverse().slice(second ? 50 : 0, second ? 55 : 50);
+      // The server sends period totals with the first page only; the client keeps them.
       return r.fulfill({
         json: {
           rows: worker ? staffData({ ...full, sales: rows }).sales : rows,
-          groups,
-          total: 55,
+          ...(second ? {} : { groups, total: 55 }),
           nextCursor: second ? null : 'next-page',
         },
       });

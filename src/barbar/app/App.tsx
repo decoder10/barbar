@@ -1,4 +1,5 @@
-import { StockNotifications } from '../features/notifications/StockNotifications';
+import { StockAlerts } from '../features/notifications/StockAlerts';
+import { NotificationsButton } from '../features/notifications/NotificationsButton';
 import { useRouteScroll } from './use-route-scroll';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { LoadingStatus } from '../ui/loading';
@@ -219,6 +220,7 @@ function Workspace() {
               <Cloud size={16} />
               <span>{t(syncing ? 'Обновляем…' : connected ? 'Общие данные' : 'Нет связи')}</span>
             </span>
+            {hasData && <NotificationsButton />}
             {t(
               mode === 'cloud' && (
                 <button
@@ -354,7 +356,7 @@ function Workspace() {
         </Sheet>
       )}
       {compact && <SelectSheet />}
-      {hasData && <StockNotifications key={`${user?.id || role}`} />}
+      {hasData && <StockAlerts key={`${user?.id || role}`} />}
       {busy && <LoadingStatus label={activity || 'Сохраняем…'} className="action-progress" />}
       {t(
         notice && (

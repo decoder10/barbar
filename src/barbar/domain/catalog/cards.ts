@@ -2,6 +2,7 @@ import { barConfig } from '../../config';
 import { isGlassServing } from '../serving';
 import type { BarData, Cocktail } from '../types';
 import { compareCatalog, type CatalogSort } from './sort';
+import { recipeMissing } from './recipe-status';
 import { expandRecipe } from './sets';
 
 export type CardResource = 'cocktails' | 'alcohol';
@@ -72,7 +73,7 @@ export function cardPage(
               price: c.price,
               stock: portions(c, stock, data.cocktails),
               ready: ready(c),
-              recipeMissing: !c.ingredients.length && !c.noIngredients && !c.components?.length,
+              recipeMissing: recipeMissing({ ...c, managed: c.extraCosts?.length }),
               popularity: popularity.get(`cocktail:${c.id}`),
             }))
       : ['all', 'alcohol'].includes(query.category)
@@ -130,6 +131,20 @@ export function parseCardQuery(params: URLSearchParams): CardQuery & { date?: st
   )
     throw new Error('Некорректный запрос каталога.');
   return { resource, sort, offset, limit, search, category, ...(date ? { date } : {}) };
+}
+
+/** One request may ask for both card resources (`resources=cocktails,alcohol`); each gets its own query. */
+export function parseCardQueries(params: URLSearchParams): (CardQuery & { date?: string })[] {
+  const many = params.get('resources');
+  const list = many ? many.split(',') : [params.get('resource') || ''];
+  if (!list.length || list.length > 2 || new Set(list).size < list.length)
+    throw new Error('Некорректный запрос каталога.');
+  return list.map((resource) => {
+    const one = new URLSearchParams(params);
+    one.set('resource', resource);
+    one.delete('resources');
+    return parseCardQuery(one);
+  });
 }
 
 /** The same page for a worker's allowlisted products when the server read model is not in use. */

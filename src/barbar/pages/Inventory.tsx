@@ -18,7 +18,7 @@ import {
   Search,
   TriangleAlert,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { InventoryProduct, InventoryStock, RecipeShortages } from '../features/inventory/InventoryProduct';
 import { recipeShortages } from '../domain/shortages';
@@ -28,7 +28,8 @@ import { FilterSheet, MenuButton, Sheet, SheetActions, type SheetAction } from '
 import { useCompact } from '../ui/use-compact';
 import { InventoryViewSwitch, useInventoryView } from '../features/inventory/view-switch';
 import { formatMoney as money } from '../presentation/currency/format-money';
-import { ingredientVolume, priceBasis, priceUnit, round, stockTotals, volume } from '../domain/model';
+import { byId } from '../domain/lookup';
+import { ingredientVolume, priceUnit, round, unitBasis, volume } from '../domain/model';
 import type { Alcohol, Purchase } from '../domain/types';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
 import { AlcoholForm } from '../features/inventory/AlcoholForm';
@@ -60,7 +61,8 @@ export default function Inventory() {
   );
   const resets = resetHistory.enabled ? resetHistory.rows : [...(data.stockResets || [])].reverse();
   const inventory = useInventoryCalculations(data);
-  const quantities = useMemo(() => stockTotals(data), [data]);
+  // The same indexed totals the calculations hook already built; a second scan of the ledger is waste.
+  const quantities = inventory.quantities;
   const remaining = (id: string) => quantities.get(id) || 0;
   const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('owner-stock');
@@ -73,9 +75,10 @@ export default function Inventory() {
   const [purchase, setPurchase] = useState<string | null>(null);
   const [correction, setCorrection] = useState<Purchase | null>(null);
   const [reset, setReset] = useState<Alcohol | null>(null);
+  const alcoholById = byId(data.alcohol);
   const filtered = data.alcohol.filter(
     (a) =>
-      a.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) &&
+      a.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()) &&
       (category === 'all' || inventoryGroup(a) === category),
   );
   filtered.sort((a, b) =>
@@ -89,7 +92,7 @@ export default function Inventory() {
     .filter((a) => !a.unit || a.unit === 'ml')
     .reduce((n, a) => n + remaining(a.id), 0);
   const worth = data.alcohol.reduce(
-    (n, a) => n + (remaining(a.id) * inventory.averageCost(a.id)) / priceBasis(data, a.id),
+    (n, a) => n + (remaining(a.id) * inventory.averageCost(a.id)) / unitBasis(a.unit),
     0,
   );
   const shortages = recipeShortages(data.cocktails, remaining);
@@ -415,15 +418,21 @@ export default function Inventory() {
                         .map((p) => (
                           <tr key={p.id}>
                             <td>{t(new Date(`${p.date}T12:00:00`).toLocaleDateString(locale()))}</td>
-                            <td>{t(data.alcohol.find((a) => a.id === p.alcoholId)?.name)}</td>
+                            <td>{t(alcoholById.get(p.alcoholId)?.name)}</td>
                             <td>{t(ingredientVolume(data, p.alcoholId, p.ml))}</td>
                             <td>
                               {t(money(p.costPerLiter))} /{t(' ')}
-                              {t(priceUnit(data.alcohol.find((a) => a.id === p.alcoholId)?.unit))}
+                              {t(priceUnit(alcoholById.get(p.alcoholId)?.unit))}
                             </td>
                             <td>
                               <strong>
-                                {t(money(round((p.ml * p.costPerLiter) / priceBasis(data, p.alcoholId))))}
+                                {t(
+                                  money(
+                                    round(
+                                      (p.ml * p.costPerLiter) / unitBasis(alcoholById.get(p.alcoholId)?.unit),
+                                    ),
+                                  ),
+                                )}
                               </strong>
                             </td>
                             <td>
@@ -546,14 +555,18 @@ export default function Inventory() {
                 .map((p) => (
                   <div className="compact-list-row" key={p.id}>
                     <div>
-                      <strong>{t(data.alcohol.find((a) => a.id === p.alcoholId)?.name)}</strong>
+                      <strong>{t(alcoholById.get(p.alcoholId)?.name)}</strong>
                       <small>
                         {t(new Date(`${p.date}T12:00:00`).toLocaleDateString(locale()))} ·{' '}
                         {t(ingredientVolume(data, p.alcoholId, p.ml))} · {t(money(p.costPerLiter))} /{' '}
                         {t(priceUnit(unitOf(p.alcoholId)))}
                       </small>
                     </div>
-                    <b>{t(money(round((p.ml * p.costPerLiter) / priceBasis(data, p.alcoholId))))}</b>
+                    <b>
+                      {t(
+                        money(round((p.ml * p.costPerLiter) / unitBasis(alcoholById.get(p.alcoholId)?.unit))),
+                      )}
+                    </b>
                     <button
                       className="icon-button"
                       aria-label={t('Исправить / удалить')}

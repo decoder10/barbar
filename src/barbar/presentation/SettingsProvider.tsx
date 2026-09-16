@@ -1,5 +1,5 @@
 import { SettingsContext } from './settings-context';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { configureMoney } from './currency/format-money';
 import { setTranslations, t } from './i18n/runtime';
 import {
@@ -81,24 +81,29 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     };
   }, [preferences.currency]);
   configureMoney(preferences.currency, language, rates);
-  const update = async (nextLanguage: Language, currency: Currency, nextTheme?: Theme) => {
-    setPending(true);
-    try {
-      await updatePreferences({
-        language: nextLanguage,
-        currency,
-        ...(nextTheme || preferences.theme ? { theme: nextTheme || preferences.theme } : {}),
-      });
-    } catch (error) {
-      notify(error instanceof Error ? error.message : 'Не удалось сохранить настройки.', true);
-    } finally {
-      setPending(false);
-    }
-  };
+  const update = useCallback(
+    async (nextLanguage: Language, currency: Currency, nextTheme?: Theme) => {
+      setPending(true);
+      try {
+        await updatePreferences({
+          language: nextLanguage,
+          currency,
+          ...(nextTheme || preferences.theme ? { theme: nextTheme || preferences.theme } : {}),
+        });
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Не удалось сохранить настройки.', true);
+      } finally {
+        setPending(false);
+      }
+    },
+    [notify, preferences.theme, updatePreferences],
+  );
+  const settings = useMemo(
+    () => ({ language, currency: preferences.currency, theme, pending, rates, rateError, update }),
+    [language, preferences.currency, theme, pending, rates, rateError, update],
+  );
   return (
-    <SettingsContext.Provider
-      value={{ language, currency: preferences.currency, theme, pending, rates, rateError, update }}
-    >
+    <SettingsContext.Provider value={settings}>
       <PresentationContext.Provider value={`${language}:${preferences.currency}:${rates?.fetchedAt || ''}`}>
         <div key={`${user?.id || 'guest'}:${language}`} className="settings-root">
           {t(children)}

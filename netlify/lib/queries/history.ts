@@ -127,11 +127,13 @@ export async function handleHistory(request: Request, db: Db, users: IdentitySto
               .sort(sort as Record<string, 1 | -1>)
               .limit(51)
               .toArray();
-            const total = await db
-              .collection(collection)
-              .countDocuments(period, { session, maxTimeMS: 10000 });
+            // Period totals belong to the first page; later pages reuse them on the client,
+            // so a deep page costs one indexed find instead of a count and a period-wide aggregation.
+            const total = cursor
+              ? undefined
+              : await db.collection(collection).countDocuments(period, { session, maxTimeMS: 10000 });
             const groups =
-              collection === 'sales'
+              collection === 'sales' && !cursor
                 ? await db
                     .collection('sales')
                     .aggregate([{ $match: period }, ...salesGrouping(user.role === 'owner')], {
@@ -143,7 +145,7 @@ export async function handleHistory(request: Request, db: Db, users: IdentitySto
             const last = documents[49];
             return {
               rows: documents.slice(0, 50),
-              total,
+              ...(total === undefined ? {} : { total }),
               groups,
               nextCursor:
                 documents.length > 50

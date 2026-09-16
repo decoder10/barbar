@@ -200,6 +200,9 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
     expect(page.groups[0].quantity).toBe(550);
     const second = await (await handleHistory(get(path + '&cursor=' + page.nextCursor), db, identity)).json();
     expect(second.rows).toHaveLength(5);
+    // Period totals ride with the first page only: a deep page costs one indexed find.
+    expect(second.total).toBeUndefined();
+    expect(second.groups).toBeUndefined();
     expect(new Set([...page.rows, ...second.rows].map((r) => r.id)).size).toBe(55);
     const worker = await (await handleHistory(get(path, 'barbar'), db, identity)).json();
     expect(worker.groups[0].revenue).toBe(page.groups[0].revenue);

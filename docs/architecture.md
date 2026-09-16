@@ -124,3 +124,11 @@
 - `/menu` и `GET /api/menu` — публичное меню без входа ([подробности](guest-menu.md)).
 - `npm run dev:production-db` — локальный запуск с рабочей БД ([подробности](local-production-db.md)).
 - `npm run db:storage`, `npm run db:backup:scheduled` — заполнение хранилища и автоматические проверенные копии ([оценка хранилища](storage-assessment.md), [копии](database-backups.md)).
+
+## Этап 16.09.2026: общие модули, уведомления, чанки
+
+- Общие модули страниц: `domain/sales/day-totals.ts`, `domain/sales/popularity.ts`, `presentation/format-date.ts`, `domain/lookup.ts` (`byId`), `domain/reports/csv.ts`, `domain/catalog/recipe-status.ts`. Страницы компонуют их, а не повторяют расчёты.
+- Уведомления: колокольчик в шапке (`features/notifications/NotificationsButton.tsx`) открывает панель (`NotificationsPanel.tsx`, `ui/drawer.tsx`) с тумблером push и лентой `GET /api/barbar/notifications` (`netlify/lib/notifications/feed.ts`); живые предупреждения — `StockAlerts.tsx`; состояние — `use-stock-alerts.ts`, `use-notifications-feed.ts`; тексты — `domain/notifications/feed.ts`. Сотрудник получает только остатки.
+- Карточки: один запрос на оба ресурса (`resources=`, `parseCardQueries`); история: итоги периода только с первой страницей.
+- Сборка: чанки `react` и `photo-manifest` общие для рабочего пространства и `/menu`; один шрифт Manrope (`--display`). Замеры и проверки — [refactor-2026-09-16.md](refactor-2026-09-16.md).
+

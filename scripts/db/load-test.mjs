@@ -90,7 +90,9 @@ try {
       ...(command ? { body: JSON.stringify({ command }) } : {}),
     });
   let compactBytes = 0,
-    historyBytes = 0;
+    historyBytes = 0,
+    historyCursor = null,
+    deepBytes = 0;
   await measure('workingState', 60, 10, async () => {
     const r = await handleBarApi(request(), repo, identity);
     assert.equal(r.status, 200);
@@ -107,6 +109,22 @@ try {
     assert.equal(page.rows.length, 50);
     assert.equal(page.total, 50000);
     assert.equal(page.groups[0].operations, 50000);
+    historyCursor = page.nextCursor;
+  });
+  // A deep page must cost one indexed find: no period count, no period-wide grouping.
+  await measure('historyDeepPage', 12, 4, async () => {
+    const r = await handleHistory(
+      request(`/history?from=${day}&to=${day}&cursor=${historyCursor}`),
+      db,
+      identity,
+    );
+    assert.equal(r.status, 200);
+    const text = await r.text();
+    deepBytes = Buffer.byteLength(text);
+    const page = JSON.parse(text);
+    assert.equal(page.rows.length, 50);
+    assert.equal(page.total, undefined);
+    assert.equal(page.groups, undefined);
   });
   await measure('reportCold', 1, 1, async () => {
     const r = await handleReport(request(`/report?from=${day}&to=${day}`), db, identity);
@@ -150,6 +168,7 @@ try {
         products: seed.alcohol.length,
         compactBytes,
         historyPageBytes: historyBytes,
+        historyDeepPageBytes: deepBytes,
         fullBytes,
         reduction: ms(fullBytes / compactBytes),
         historyQuery: {

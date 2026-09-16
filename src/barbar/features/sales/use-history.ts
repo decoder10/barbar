@@ -38,6 +38,7 @@ export function useHistory<T = Sale>(
               ...result,
               rows: result.rows as T[],
               groups: result.groups || (previous?.key === key ? previous.value.groups : []),
+              total: result.total ?? (previous?.key === key ? previous.value.total : 0),
             },
           }));
       })

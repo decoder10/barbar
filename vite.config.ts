@@ -6,7 +6,18 @@ export default defineConfig({
   server: { port: 4001, strictPort: true },
   build: {
     // The public guest menu (`/menu`) is its own page and never downloads the workspace bundle.
-    rollupOptions: { input: { main: 'index.html', menu: 'menu.html' } },
+    rollupOptions: {
+      input: { main: 'index.html', menu: 'menu.html' },
+      output: {
+        // React and the photo manifest change on different schedules: separate chunks keep a
+        // photo edit from invalidating the cached framework, and both pages reuse the same files.
+        manualChunks(id) {
+          if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react';
+          if (id.includes('photo-manifest.json')) return 'photo-manifest';
+          return undefined;
+        },
+      },
+    },
     // CSP allows same-origin fonts only; keep even small subsets as cacheable files.
     assetsInlineLimit: (filePath) => (/\.(?:woff2?|ttf|otf)$/i.test(filePath) ? false : undefined),
   },

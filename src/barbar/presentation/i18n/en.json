@@ -1106,5 +1106,16 @@
   "Ещё действия": "More actions",
   "Новая позиция склада": "New stock item",
   "Сбросов пока нет": "No resets yet",
-  "Здесь появятся обнулённые остатки.": "Stock that was reset to zero will appear here."
+  "Здесь появятся обнулённые остатки.": "Stock that was reset to zero will appear here.",
+  "К списку": "Back to list",
+  "Пришедшие": "Received",
+  "Пока нет уведомлений.": "No notifications yet.",
+  "Push на этом устройстве": "Push on this device",
+  "Доставлено на устройства.": "Delivered to devices.",
+  "Ещё в очереди на доставку.": "Still queued for delivery.",
+  "Закончилось на складе": "Out of stock",
+  "Заканчивается на складе": "Running low in stock",
+  "Настройки push": "Push settings",
+  "Пришедшие уведомления": "Received notifications",
+  "Не удалось загрузить уведомления.": "Could not load notifications."
 }

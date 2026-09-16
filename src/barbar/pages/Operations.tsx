@@ -13,6 +13,7 @@ import { useBatches } from '../features/operations/use-batches';
 import { batchStatus } from '../domain/batches';
 import { businessToday } from '../domain/business-day';
 import { formatMoney } from '../presentation/currency/format-money';
+import { byId } from '../domain/lookup';
 import { unitLabel } from '../domain/model';
 import { t } from '../presentation/i18n/runtime';
 const labels = {
@@ -35,6 +36,7 @@ export default function Operations() {
   const [prefill, setPrefill] = useState<OperationPrefill | undefined>();
   const batches = useBatches();
   const today = businessToday();
+  const alcoholById = byId(data.alcohol);
   const quantity = (n: number) => new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(n);
   const statusLabel = { expired: 'Просрочена', soon: 'Скоро истекает', ok: 'В норме', none: 'Без срока' };
   return (
@@ -87,7 +89,7 @@ export default function Operations() {
                   <td>{m.reason}</td>
                   <td>
                     {m.lines.map((l, index) => {
-                      const a = data.alcohol.find((a) => a.id === l.alcoholId);
+                      const a = alcoholById.get(l.alcoholId);
                       return (
                         <div key={index}>
                           {a?.name}: {l.ml > 0 ? '+' : ''}
@@ -140,7 +142,7 @@ export default function Operations() {
               </thead>
               <tbody>
                 {batches.batches.flatMap((item) => {
-                  const product = data.alcohol.find((a) => a.id === item.outputId);
+                  const product = alcoholById.get(item.outputId);
                   const unit = unitLabel(product?.unit);
                   return [
                     ...item.batches.map((b) => {

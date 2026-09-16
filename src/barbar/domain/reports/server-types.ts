@@ -18,8 +18,9 @@ export interface SalesGroup {
 export interface HistoryPage<T = Sale> {
   rows: T[];
   nextCursor: string | null;
+  /** Period totals come with the first page only; later pages keep the loaded ones. */
   groups?: SalesGroup[];
-  total: number;
+  total?: number;
 }
 export type StaffHistory = HistoryPage<StaffSale>;
 export interface ServerReport {

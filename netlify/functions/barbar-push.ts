@@ -10,4 +10,7 @@ export default async (request: Request, context: { deploy: DeployInfo }) => {
     return json({ error: 'Уведомления временно недоступны.' }, 503);
   }
 };
-export const config = { path: '/api/barbar/push' };
+export const config = {
+  path: '/api/barbar/push',
+  rateLimit: { windowLimit: 60, windowSize: 60, aggregateBy: ['ip', 'domain'] },
+};

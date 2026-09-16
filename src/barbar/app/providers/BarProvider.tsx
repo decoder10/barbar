@@ -1,6 +1,15 @@
 import { loadWorking, type WorkingState } from '../../services/working-state';
 import { useAsyncTask, type AsyncTaskRunner } from '../../ui/use-async-task';
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { initialData, uid } from '../../domain/model';
 import type { Action, BarData, Command, Role, StaffData } from '../../domain/types';
 import type { Preferences } from '../../domain/identity/preferences';
@@ -138,82 +147,88 @@ export function BarProvider({ children }: { children: ReactNode }) {
     const timeout = window.setTimeout(() => setNotice(null), 5000);
     return () => window.clearTimeout(timeout);
   }, [notice]);
-  const run = async (action: Action, message = 'Сохранено') => {
-    if (saving.current || mode !== 'cloud') {
-      return false;
-    }
-    return (
-      (await perform(async () => {
-        ++sequence.current;
-        setNotice(null);
-        const key = JSON.stringify(action);
-        if (pending.current?.key !== key) {
-          pending.current = { key, command: { ...action, id: uid() } };
-        }
-        let warning: string | undefined;
-        try {
-          const result = await api('/api/barbar', {
-            method: 'POST',
-            headers: { 'X-Barbar-Protocol': '2' },
-            body: JSON.stringify({ command: pending.current.command, revision: revision.current }),
-          });
-          const next = await loadWorking(working.current, result);
-          working.current = next;
-          setData(next.data);
-          setStaffData(next.staffData);
-          setRole(next.role);
-          revision.current = next.revision;
-          setConnected(true);
-          warning = result.warning;
-          pending.current = null;
-          notify(warning || message, !!warning);
-          return true;
-        } catch (error) {
-          if (error instanceof ApiError && error.status === 401) {
-            setData(initialData());
-            setStaffData(null);
-            setUser(null);
-            setRole(null);
-            working.current = null;
-            setMode('login');
+  const run = useCallback(
+    async (action: Action, message = 'Сохранено') => {
+      if (saving.current || mode !== 'cloud') {
+        return false;
+      }
+      return (
+        (await perform(async () => {
+          ++sequence.current;
+          setNotice(null);
+          const key = JSON.stringify(action);
+          if (pending.current?.key !== key) {
+            pending.current = { key, command: { ...action, id: uid() } };
           }
-          if (error instanceof ApiError && [400, 403, 413].includes(error.status)) {
+          let warning: string | undefined;
+          try {
+            const result = await api('/api/barbar', {
+              method: 'POST',
+              headers: { 'X-Barbar-Protocol': '2' },
+              body: JSON.stringify({ command: pending.current.command, revision: revision.current }),
+            });
+            const next = await loadWorking(working.current, result);
+            working.current = next;
+            setData(next.data);
+            setStaffData(next.staffData);
+            setRole(next.role);
+            revision.current = next.revision;
+            setConnected(true);
+            warning = result.warning;
             pending.current = null;
+            notify(warning || message, !!warning);
+            return true;
+          } catch (error) {
+            if (error instanceof ApiError && error.status === 401) {
+              setData(initialData());
+              setStaffData(null);
+              setUser(null);
+              setRole(null);
+              working.current = null;
+              setMode('login');
+            }
+            if (error instanceof ApiError && [400, 403, 413].includes(error.status)) {
+              pending.current = null;
+            }
+            notify(error instanceof Error ? error.message : 'Не удалось сохранить. Повторите попытку.', true);
+            return false;
           }
-          notify(error instanceof Error ? error.message : 'Не удалось сохранить. Повторите попытку.', true);
-          return false;
-        }
-      }, 'Сохраняем…')) ?? false
-    );
-  };
-  const login = async (username: string, password: string) => {
-    try {
-      const auth = await perform(
-        () =>
-          api('/api/barbar/auth', {
-            method: 'POST',
-            body: JSON.stringify({ username, password }),
-          }),
-        'Входим…',
+        }, 'Сохраняем…')) ?? false
       );
-      if (!auth) return;
-      clearSessionFilters();
-      ++sequence.current;
-      setData(initialData());
-      setHasData(false);
-      setStaffData(null);
-      setUser(auth.user || null);
-      setRole(auth.role);
-      revision.current = null;
-      working.current = null;
-      pending.current = null;
-      setNotice(null);
-      setMode('cloud');
-    } catch (error) {
-      notify(error instanceof Error ? error.message : 'Не удалось войти.', true);
-    }
-  };
-  const logout = async () => {
+    },
+    [mode, notify, perform, saving],
+  );
+  const login = useCallback(
+    async (username: string, password: string) => {
+      try {
+        const auth = await perform(
+          () =>
+            api('/api/barbar/auth', {
+              method: 'POST',
+              body: JSON.stringify({ username, password }),
+            }),
+          'Входим…',
+        );
+        if (!auth) return;
+        clearSessionFilters();
+        ++sequence.current;
+        setData(initialData());
+        setHasData(false);
+        setStaffData(null);
+        setUser(auth.user || null);
+        setRole(auth.role);
+        revision.current = null;
+        working.current = null;
+        pending.current = null;
+        setNotice(null);
+        setMode('cloud');
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Не удалось войти.', true);
+      }
+    },
+    [notify, perform],
+  );
+  const logout = useCallback(async () => {
     if (saving.current) {
       return;
     }
@@ -238,39 +253,61 @@ export function BarProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       notify(error instanceof Error ? error.message : 'Не удалось выйти.', true);
     }
-  };
-  const updatePreferences = async (preferences: Preferences) => {
-    const result = await perform(() =>
-      api('/api/barbar/auth', { method: 'PATCH', body: JSON.stringify(preferences) }),
-    );
-    if (result) setUser(result.user);
-  };
-  return (
-    <Context.Provider
-      value={{
-        user,
-        updatePreferences,
-        data,
-        staffData,
-        role,
-        mode,
-        busy,
-        activity,
-        syncing,
-        hasData,
-        perform,
-        notice,
-        connected,
-        run,
-        login,
-        logout,
-        refresh,
-        notify,
-      }}
-    >
-      {children}
-    </Context.Provider>
+  }, [mode, notify, perform, saving]);
+  const updatePreferences = useCallback(
+    async (preferences: Preferences) => {
+      const result = await perform(() =>
+        api('/api/barbar/auth', { method: 'PATCH', body: JSON.stringify(preferences) }),
+      );
+      if (result) setUser(result.user);
+    },
+    [perform],
   );
+  // Every screen and every session filter reads this context: a new object each render
+  // re-rendered the whole workspace on each poll, so the value is built only when it changes.
+  const store = useMemo<Store>(
+    () => ({
+      user,
+      updatePreferences,
+      data,
+      staffData,
+      role,
+      mode,
+      busy,
+      activity,
+      syncing,
+      hasData,
+      perform,
+      notice,
+      connected,
+      run,
+      login,
+      logout,
+      refresh,
+      notify,
+    }),
+    [
+      user,
+      updatePreferences,
+      data,
+      staffData,
+      role,
+      mode,
+      busy,
+      activity,
+      syncing,
+      hasData,
+      perform,
+      notice,
+      connected,
+      run,
+      login,
+      logout,
+      refresh,
+      notify,
+    ],
+  );
+  return <Context.Provider value={store}>{children}</Context.Provider>;
 }
 export function useBar() {
   useContext(PresentationContext);

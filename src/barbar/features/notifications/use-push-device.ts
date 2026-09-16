@@ -3,6 +3,16 @@ import { api } from '../../services/api-client';
 import { useBar } from '../../app/providers/BarProvider';
 export const pushSupported = () =>
   typeof Notification !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
+let pushConfig: Promise<{ publicKey: string | null }> | undefined;
+/** The server's public key never changes within a session: one request, shared by every panel opening. */
+export function loadPushConfig() {
+  pushConfig ||= api('/api/barbar/push').catch((error: unknown) => {
+    pushConfig = undefined;
+    throw error;
+  });
+  return pushConfig;
+}
+export type PushDevice = ReturnType<typeof usePushDevice>;
 export function usePushDevice() {
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
   const [error, setError] = useState('');

@@ -35,10 +35,13 @@ export function writeSessionFilter(key: string, value: FilterValue) {
 
 export function clearSessionFilters() {
   try {
-    for (let index = sessionStorage.length - 1; index >= 0; index--) {
+    // Collect first: browsers may reorder `key(i)` after a removal, which skips entries mid-loop.
+    const keys: string[] = [];
+    for (let index = 0; index < sessionStorage.length; index++) {
       const key = sessionStorage.key(index);
-      if (key?.startsWith(prefix)) sessionStorage.removeItem(key);
+      if (key?.startsWith(prefix)) keys.push(key);
     }
+    for (const key of keys) sessionStorage.removeItem(key);
   } catch {
     // Storage restrictions must not prevent signing out.
   }

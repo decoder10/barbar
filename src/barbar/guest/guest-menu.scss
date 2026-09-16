@@ -183,9 +183,9 @@
 
   h2 {
     margin: 0;
-    font-family: 'Playfair Display', Georgia, serif;
     font-size: clamp(24px, 6vw, 32px);
-    font-weight: 500;
+    font-weight: 700;
+    letter-spacing: -0.015em;
   }
   span {
     color: var(--menu-muted);

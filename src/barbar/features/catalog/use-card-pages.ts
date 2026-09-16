@@ -52,12 +52,15 @@ export function useCardPages({
   const key = JSON.stringify([resourceKey, category, term, sort, date || '', local ? 'local' : 'server']);
   const localRef = useRef(local);
   localRef.current = local;
-  const request = useCallback(
-    async (resource: CardResource, offset: number, limit: number): Promise<CardPage> => {
-      const query = { resource, category, search: term, sort, offset, limit };
-      if (localRef.current) return localRef.current.page(resource, query);
+  /** First pages of every shown resource in one request: the server reads stock and popularity once. */
+  const firstPages = useCallback(
+    async (list: CardResource[], offset: number, limit: number): Promise<CardPage[]> => {
+      if (localRef.current)
+        return list.map((resource) =>
+          localRef.current!.page(resource, { resource, category, search: term, sort, offset, limit }),
+        );
       const params = new URLSearchParams({
-        resource,
+        [list.length > 1 ? 'resources' : 'resource']: list.join(','),
         category,
         q: term,
         sort,
@@ -65,9 +68,18 @@ export function useCardPages({
         limit: String(limit),
         ...(date ? { date } : {}),
       });
-      return api(`/api/barbar/catalog/cards?${params}`);
+      const result: { pages?: CardPage[] } & CardPage = await api(`/api/barbar/catalog/cards?${params}`);
+      return list.length > 1 ? result.pages! : [result];
     },
     [category, term, sort, date],
+  );
+  const request = useCallback(
+    async (resource: CardResource, offset: number, limit: number): Promise<CardPage> => {
+      const query = { resource, category, search: term, sort, offset, limit };
+      if (localRef.current) return localRef.current.page(resource, query);
+      return (await firstPages([resource], offset, limit))[0];
+    },
+    [category, term, sort, firstPages],
   );
   const [state, setState] = useState<{ key: string; buffers: Buffer[]; error: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -80,11 +92,7 @@ export function useCardPages({
     const counts = loaded.current.key === key ? loaded.current.counts : [];
     const list = resourceKey.split(',') as CardResource[];
     setLoading(true);
-    void Promise.all(
-      list.map((resource, index) =>
-        request(resource, 0, Math.min(200, Math.max(cardPageSize, counts[index] || 0))),
-      ),
-    )
+    void firstPages(list, 0, Math.min(200, Math.max(cardPageSize, ...counts.map((n) => n || 0))))
       .then((pages) => {
         if (current !== sequence.current) return;
         loaded.current = { key, counts: pages.map((p) => p.ids.length) };
@@ -105,7 +113,7 @@ export function useCardPages({
       .finally(() => {
         if (current === sequence.current) setLoading(false);
       });
-  }, [key, resourceKey, request, revision, localKey]);
+  }, [key, resourceKey, firstPages, revision, localKey]);
   const buffers = state?.key === key ? state.buffers : [];
   const list = resourceKey.split(',') as CardResource[];
   const items: CardItem[] = [];

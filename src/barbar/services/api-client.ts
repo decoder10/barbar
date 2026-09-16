@@ -2,6 +2,7 @@ import type { CatalogResponse, StockResponse, CatalogPartResponse } from '../dom
 import type { BarData, Role, StaffData } from '../domain/types';
 import type { UserProfile } from '../domain/identity/user';
 interface ApiResponses {
+  '/api/barbar/notifications': { items: import('../domain/notifications/feed').FeedItem[] };
   '/api/barbar/catalog': CatalogResponse;
   '/api/barbar/catalog/alcohol': CatalogPartResponse;
   '/api/barbar/catalog/cocktails': CatalogPartResponse;

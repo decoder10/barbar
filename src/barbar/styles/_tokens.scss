@@ -2,7 +2,8 @@
   --navy: #19273d;
   --pink: #ad4d78;
   --pink-light: #f6eaf0;
-  --serif: 'Playfair Display', Georgia, serif;
+  /* One family for the whole app: headings differ by weight and size, not by typeface. */
+  --display: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: light;
   --canvas: #f7f7f5;
   --surface: #fff;

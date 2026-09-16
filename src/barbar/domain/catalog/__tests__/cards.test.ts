@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { initialData, stockTotals } from '../../model';
-import { cardPage, parseCardQuery } from '../cards';
+import { cardPage, parseCardQueries, parseCardQuery } from '../cards';
+import { recipeMissing } from '../recipe-status';
 
 const data = initialData();
 data.cocktails = data.cocktails.map((c, i) =>
@@ -44,6 +45,26 @@ describe('server catalog card pages', () => {
     expect(cardPage(data, stock, { ...query, sort: 'popular' }).ids).toEqual(
       data.cocktails.slice(0, 24).map((c) => c.id),
     );
+  });
+
+  it('answers both resources from one request and rejects duplicates or extras', () => {
+    const both = parseCardQueries(
+      new URLSearchParams('resources=cocktails,alcohol&sort=popular&date=2026-09-16'),
+    );
+    expect(both.map((q) => q.resource)).toEqual(['cocktails', 'alcohol']);
+    expect(both.every((q) => q.sort === 'popular' && q.date === '2026-09-16')).toBe(true);
+    expect(parseCardQueries(new URLSearchParams('resource=alcohol'))).toHaveLength(1);
+    expect(() => parseCardQueries(new URLSearchParams('resources=alcohol,alcohol'))).toThrow();
+    expect(() => parseCardQueries(new URLSearchParams('resources=cocktails,alcohol,users'))).toThrow();
+  });
+
+  it('calls a recipe missing only when nothing explains what is poured', () => {
+    expect(recipeMissing({ ingredients: [] })).toBe(true);
+    expect(recipeMissing({ ingredients: [{ alcoholId: 'gin', ml: 50 }] })).toBe(false);
+    expect(recipeMissing({ ingredients: [], noIngredients: true })).toBe(false);
+    expect(recipeMissing({ ingredients: [], components: [{ cocktailId: 'x', quantity: 2 }] })).toBe(false);
+    // One rule for both roles: owner `extraCosts` and worker `managedIngredientIds` both count.
+    expect(recipeMissing({ ingredients: [], managed: 1 })).toBe(false);
   });
 
   it('keeps poured alcohol as a separate resource and validates queries', () => {

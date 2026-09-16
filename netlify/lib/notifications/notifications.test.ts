@@ -7,6 +7,8 @@ import { mongoRepository } from '../barbar-mongo';
 import { businessToday } from '../../../src/barbar/domain/business-day';
 import { handlePush, hash, type Device } from './subscriptions';
 import { deliverPurchaseNotices, deliverStockAlerts } from './deliver';
+import { handleNotificationsFeed } from './feed';
+import type { FeedItem } from '../../../src/barbar/domain/notifications/feed';
 import type { AlertEvent, PurchaseEvent } from './events';
 vi.mock('web-push', () => ({
   default: { sendNotification: vi.fn().mockResolvedValue({ statusCode: 201 }) },
@@ -162,5 +164,30 @@ describe.skipIf(!uri)('transactional alerts and push security in isolated MongoD
     expect((await db.collection<PurchaseEvent>('purchaseEvents').findOne())!.done).toBe(true);
     await deliverPurchaseNotices(db);
     expect(webpush.sendNotification).toHaveBeenCalledTimes(1);
+  });
+  it('lists what was queued, newest first, and keeps purchase money away from a worker', async () => {
+    const feed = (cookie: string) =>
+      handleNotificationsFeed(
+        new Request('https://barbar.test/api/barbar/notifications', {
+          headers: { cookie: `barbar_session=${cookie}` },
+        }),
+        db,
+        identity,
+      );
+    expect((await feed('unknown')).status).toBe(401);
+    const owner = (await (await feed('admin')).json()) as { items: FeedItem[] };
+    const kinds = owner.items.map((item) => item.kind);
+    expect(kinds).toContain('purchase');
+    expect(kinds).toContain('stock');
+    const stamps = owner.items.map((item) => item.createdAt);
+    expect(stamps).toEqual([...stamps].sort().reverse());
+    expect(owner.items.find((item) => item.kind === 'purchase')).toMatchObject({
+      delivered: true,
+      purchase: { name: 'Gin Beefeater', amount: 6440 },
+    });
+    const worker = (await (await feed('barbar')).json()) as { items: FeedItem[] };
+    expect(worker.items.length).toBeGreaterThan(0);
+    expect(worker.items.every((item) => item.kind === 'stock')).toBe(true);
+    expect(JSON.stringify(worker)).not.toMatch(/amount|cost|price|revenue/);
   });
 });

@@ -17,6 +17,8 @@ import { formatMoney as money } from '../presentation/currency/format-money';
 import { categoryLabel, ingredientVolume, recipeCategories } from '../domain/model';
 import type { Cocktail } from '../domain/types';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
+import { recipeMissing } from '../domain/catalog/recipe-status';
+import { byId } from '../domain/lookup';
 import { RecipeForm } from '../features/recipes/RecipeForm';
 import { t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
@@ -34,18 +36,20 @@ export default function Cocktails() {
   const [search, setSearch] = useSessionFilter<string>('search', '');
   const [sort, setSort] = useCatalogSort('owner-recipes');
   // Stock-linked bottles, glasses and piece goods are sold from stock and have no recipe to edit.
+  const alcoholById = byId(data.alcohol);
+  const cocktailById = byId(data.cocktails);
   const recipeItems = data.cocktails.filter(
     (c) => !c.stockAlcoholId && recipeCategories.some((k) => k.id === (c.category || 'cocktail')),
   );
   const items = recipeItems.filter(
     (c) =>
       (category === 'all' || (c.category || 'cocktail') === category) &&
-      c.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+      c.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
   );
   items.sort((a, b) =>
     compareCatalog(
-      { ...a, recipeMissing: !a.ingredients.length && !a.noIngredients && !a.components?.length },
-      { ...b, recipeMissing: !b.ingredients.length && !b.noIngredients && !b.components?.length },
+      { ...a, recipeMissing: recipeMissing({ ...a, managed: a.extraCosts?.length }) },
+      { ...b, recipeMissing: recipeMissing({ ...b, managed: b.extraCosts?.length }) },
       sort,
     ),
   );
@@ -151,15 +155,14 @@ export default function Cocktails() {
                           [
                             ...c.ingredients.map(
                               (i) =>
-                                `${data.alcohol.find((a) => a.id === i.alcoholId)?.name} ${ingredientVolume(data, i.alcoholId, i.ml)}`,
+                                `${alcoholById.get(i.alcoholId)?.name} ${ingredientVolume(data, i.alcoholId, i.ml)}`,
                             ),
                             ...(c.extraCosts || []).map(
-                              (i) =>
-                                `${data.alcohol.find((a) => a.id === i.alcoholId)?.name} ≈ ${money(i.cost)}`,
+                              (i) => `${alcoholById.get(i.alcoholId)?.name} ≈ ${money(i.cost)}`,
                             ),
                             ...(c.components || []).map(
                               (p) =>
-                                `${data.cocktails.find((x) => x.id === p.cocktailId)?.name || p.cocktailId} × ${p.quantity}`,
+                                `${cocktailById.get(p.cocktailId)?.name || p.cocktailId} × ${p.quantity}`,
                             ),
                           ],
                           c.noIngredients,
@@ -174,7 +177,7 @@ export default function Cocktails() {
                         {t(
                           c.ingredients
                             .filter((i) => inventory.stock(i.alcoholId) + 1e-7 < i.ml)
-                            .map((i) => data.alcohol.find((a) => a.id === i.alcoholId)?.name)
+                            .map((i) => alcoholById.get(i.alcoholId)?.name)
                             .join(', '),
                         )}
                       </ShortageNote>

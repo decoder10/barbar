@@ -4,7 +4,7 @@ import { applyCommand, stockTotals } from '../../src/barbar/domain/model';
 import type { BarData, Command } from '../../src/barbar/domain/types';
 import type { UserProfile } from '../../src/barbar/domain/identity/user';
 import { publicSnapshot } from './barbar-access';
-import { cardPage, parseCardQuery } from '../../src/barbar/domain/catalog/cards';
+import { cardPage, parseCardQueries } from '../../src/barbar/domain/catalog/cards';
 import { barConfig } from '../../src/barbar/config';
 import { businessDaysBefore } from '../../src/barbar/domain/business-day';
 import { authenticated, json, roleFor, sameOrigin } from './barbar-auth';
@@ -32,34 +32,44 @@ export const handleBarApi = async (
     const split = request.headers.get('X-Barbar-Protocol') === '2' && !!repository.readStock;
     if (new URL(request.url).pathname === '/api/barbar/catalog/cards') {
       if (request.method !== 'GET') return json({ error: 'Метод не поддерживается.' }, 405);
-      let query: ReturnType<typeof parseCardQuery>;
+      const params = new URL(request.url).searchParams;
+      // One screen asks for cocktails and poured alcohol at once: `resources` answers both in a
+      // single request, so stock and the popularity window are read once instead of twice.
+      const many = params.has('resources');
+      let queries: ReturnType<typeof parseCardQueries>;
       try {
-        query = parseCardQuery(new URL(request.url).searchParams);
+        queries = parseCardQueries(params);
       } catch (error) {
         return json({ error: (error as Error).message }, 400);
       }
       // Server-side search and order over the whole catalog; the page carries IDs and stock only.
-      const catalog = repository.readCatalog
-        ? await repository.readCatalog(undefined, query.resource)
-        : { catalogRevision: '', data: (await repository.read()).data };
+      const catalogs = await Promise.all(
+        queries.map((query) =>
+          repository.readCatalog
+            ? repository.readCatalog(undefined, query.resource)
+            : repository.read().then((s) => ({ catalogRevision: '', data: s.data })),
+        ),
+      );
       const stockSnapshot = repository.readStock ? await repository.readStock() : undefined;
       const stock = stockSnapshot?.stock
         ? new Map(stockSnapshot.stock.map((b) => [b.alcoholId, b.ml]))
         : stockTotals((await repository.read()).data);
       // «Most sold first» counts a window of business days ending on the requested day.
+      const first = queries[0];
       const popularity =
-        query.sort === 'popular' && query.date && repository.salesPopularity
+        first.sort === 'popular' && first.date && repository.salesPopularity
           ? await repository.salesPopularity(
-              businessDaysBefore(query.date, barConfig.presets.popularityDays - 1),
-              query.date,
+              businessDaysBefore(first.date, barConfig.presets.popularityDays - 1),
+              first.date,
             )
           : undefined;
-      return json({
-        ...cardPage(catalog.data!, stock, query, popularity),
-        catalogRevision: catalog.catalogRevision,
+      const pages = queries.map((query, index) => cardPage(catalogs[index].data!, stock, query, popularity));
+      const common = {
+        catalogRevision: catalogs[0].catalogRevision,
         revision: stockSnapshot?.revision || null,
         role,
-      });
+      };
+      return json(many ? { pages, ...common } : { ...pages[0], ...common });
     }
     const catalogRoute = new URL(request.url).pathname.match(
       /^\/api\/barbar\/catalog(?:\/(alcohol|cocktails))?$/,

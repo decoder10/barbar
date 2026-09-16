@@ -9,6 +9,7 @@ import { Empty, PageHeading } from '../ui/layout';
 import { categoryLabel, ingredientVolume, recipeCategories } from '../domain/model';
 import type { StaffRecipe } from '../domain/types';
 import { CatalogSortControl, compareCatalog, useCatalogSort } from '../features/catalog/sort';
+import { recipeMissing } from '../domain/catalog/recipe-status';
 import StaffCocktailForm from '../features/recipes/StaffCocktailForm';
 import { t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
@@ -34,8 +35,7 @@ export default function StaffRecipes() {
       (category === 'all' || c.category === category) &&
       c.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
   );
-  const missing = (c: StaffRecipe) =>
-    !c.ingredients.length && !c.noIngredients && !c.components?.length && !c.managedIngredientIds.length;
+  const missing = (c: StaffRecipe) => recipeMissing({ ...c, managed: c.managedIngredientIds.length });
   recipes.sort((a, b) =>
     compareCatalog(
       { name: a.name, recipeMissing: missing(a) },
