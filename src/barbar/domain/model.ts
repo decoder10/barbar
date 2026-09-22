@@ -1,3 +1,4 @@
+import { closeShift, validShifts, paidOrderTotals } from './shifts';
 import alcoholDefaults from '../data/alcohol.json' with { type: 'json' };
 import cocktailDefaults from '../data/cocktails.json' with { type: 'json' };
 import salesDefaults from '../data/sales/initial.json' with { type: 'json' };
@@ -485,6 +486,25 @@ export function validateData(value: unknown): BarData {
   ) {
     return fail('Некорректные заказы в файле.');
   }
+  if (d.shifts !== undefined && !validShifts(d.shifts)) return fail('Некорректные смены в файле.');
+  if (d.orders?.some((o) => o.status === 'open' && d.shifts?.some((s) => s.businessDay === o.businessDay)))
+    return fail('Открытый заказ в закрытой смене.');
+  if (d.shifts?.length) {
+    const byDay = new Map<string, Order[]>();
+    for (const order of d.orders || [])
+      byDay.set(order.businessDay, [...(byDay.get(order.businessDay) || []), order]);
+    for (const shift of d.shifts) {
+      const totals = paidOrderTotals(byDay.get(shift.businessDay) || []);
+      if (
+        totals.count !== shift.count ||
+        totals.revenue !== shift.revenue ||
+        Object.keys(totals.payments).some(
+          (method) => totals.payments[method] !== (shift.payments[method] || 0),
+        )
+      )
+        return fail('Некорректные смены в файле.');
+    }
+  }
   const orderIds = new Set((d.orders || []).map((o) => o.id));
   if (d.sales.some((s) => s.orderId !== undefined && !orderIds.has(s.orderId))) {
     return fail('Продажа ссылается на неизвестный заказ.');
@@ -571,7 +591,7 @@ const orderValid = (o: Order) =>
   (o.status !== 'open' || (o.closedAt === undefined && !o.payments?.length));
 const actorOf = (context: CommandContext) =>
   context.actor ? { id: context.actor.id, fullName: context.actor.fullName } : undefined;
-const tableCode = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+const tableCode = () => crypto.randomUUID().replace(/-/g, '');
 
 export function applyCommand(data: BarData, command: Command, context: CommandContext = {}): BarData {
   if (!command || !identifier(command.id)) {
@@ -583,7 +603,8 @@ export function applyCommand(data: BarData, command: Command, context: CommandCo
     resets(data).some((r) => r.id === command.id) ||
     data.stockMovements?.some((m) => m.id === command.id) ||
     data.expenses?.some((e) => e.id === command.id) ||
-    data.orders?.some((o) => o.id === command.id)
+    data.orders?.some((o) => o.id === command.id) ||
+    data.shifts?.some((s) => s.id === command.id)
   ) {
     return data;
   }
@@ -595,7 +616,15 @@ export function applyCommand(data: BarData, command: Command, context: CommandCo
     if (order.status !== 'open') return fail('Заказ уже закрыт. Откройте новый заказ.');
     return order;
   };
+  const assertOpenShift = (day: string) => {
+    if (next.shifts?.some((s) => s.businessDay === day))
+      return fail('Смена закрыта. Операции за этот день запрещены.');
+  };
   switch (command.type) {
+    case 'closeShift': {
+      next.shifts = [...(next.shifts || []), closeShift(next, command, context)];
+      break;
+    }
     case 'count':
     case 'writeoff':
     case 'prepare':
@@ -940,6 +969,9 @@ export function applyCommand(data: BarData, command: Command, context: CommandCo
     case 'sale': {
       // A receipt line always belongs to the current shift: the order keeps its own business day.
       const order = command.value?.orderId !== undefined ? openOrder(command.value.orderId) : undefined;
+      assertOpenShift(
+        order?.businessDay || (command.value?.businessDay === true ? businessToday() : command.value?.date),
+      );
       const v =
         command.value?.businessDay === true || order
           ? { ...command.value, date: businessToday() }
@@ -1108,6 +1140,9 @@ export function applyCommand(data: BarData, command: Command, context: CommandCo
       if (!sale) {
         return fail('Продажа не найдена.');
       }
+      const order = next.orders?.find((o) => o.id === sale.orderId);
+      assertOpenShift(order?.businessDay || sale.date);
+      if (order?.status === 'paid') return fail('Оплаченный заказ нельзя изменить.');
       sale.voided = true;
       break;
     }
@@ -1155,6 +1190,7 @@ export function applyCommand(data: BarData, command: Command, context: CommandCo
       break;
     }
     case 'openOrder': {
+      assertOpenShift(businessToday());
       if (command.tableId !== undefined) {
         const table = identifier(command.tableId)
           ? next.tables?.find((t) => t.id === command.tableId)
@@ -1175,6 +1211,7 @@ export function applyCommand(data: BarData, command: Command, context: CommandCo
     }
     case 'payOrder': {
       const order = openOrder(command.orderId);
+      assertOpenShift(order.businessDay);
       const lines = orderLines(next.sales, order.id);
       const total = orderTotal(lines);
       if (!lines.length) return fail('В заказе нет позиций. Добавьте напитки или отмените заказ.');

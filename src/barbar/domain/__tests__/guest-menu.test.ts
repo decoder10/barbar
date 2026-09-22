@@ -17,7 +17,9 @@ describe('guest menu', () => {
   it('exposes only guest fields and live selling prices', () => {
     const text = JSON.stringify(menu);
     expect(text).not.toMatch(/cost|ingredient|notes|stockAlcoholId|secret|9200|available/i);
-    expect(items.find((i) => i.name === 'Negroni')?.prices).toEqual([{ kind: 'portion', price: 2900 }]);
+    expect(items.find((i) => i.name === 'Negroni')?.prices).toEqual([
+      { kind: 'portion', price: 2900, productId: 'menu-005', productKind: 'cocktail' },
+    ]);
     expect(menu.sections.map((s) => s.id).slice(0, 4)).toEqual(['cocktail', 'tincture', 'set', 'shot']);
   });
 
@@ -38,7 +40,19 @@ describe('guest menu', () => {
       value: { ...data.alcohol.find((a) => a.id === 'vodka')!, pricePerLiter: 18000 },
     });
     expect(guestMenu(priced, 'r').sections.find((s) => s.id === 'alcohol')?.items).toContainEqual(
-      expect.objectContaining({ name: 'Vodka', prices: [{ kind: 'portion', price: 900, portion: '50 мл' }] }),
+      expect.objectContaining({
+        name: 'Vodka',
+        prices: [
+          {
+            kind: 'portion',
+            price: 900,
+            portion: '50 мл',
+            productId: 'vodka',
+            productKind: 'alcohol',
+            servingMl: 50,
+          },
+        ],
+      }),
     );
     expect(items.some((i) => i.name === 'Your cocktail')).toBe(false);
     const hidden = {
@@ -60,7 +74,7 @@ describe('guest menu', () => {
       value: { ...negroni, price: 3100, portion: '90 мл' },
     });
     expect(guestMenu(next, 'r2').sections[0].items.find((i) => i.name === 'Negroni')?.prices).toEqual([
-      { kind: 'portion', price: 3100, portion: '90 мл' },
+      { kind: 'portion', price: 3100, portion: '90 мл', productId: 'menu-005', productKind: 'cocktail' },
     ]);
   });
 });

@@ -102,7 +102,15 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
     const loader = vi.fn(async () => data);
     const { db, repo } = create(loader);
     const migrated = await repo.read();
-    const expected = { ...migrateBottleCatalog(data), stockResets: [], stockMovements: [], expenses: [] };
+    const expected = {
+      ...migrateBottleCatalog(data),
+      stockResets: [],
+      stockMovements: [],
+      expenses: [],
+      tables: [],
+      orders: [],
+      shifts: [],
+    };
     // One-time catalog upgrades (goods, merged duplicates) change the catalog only; the ledger is imported as is.
     expect({ ...migrated.data, alcohol: [], cocktails: [] }).toEqual({
       ...expected,

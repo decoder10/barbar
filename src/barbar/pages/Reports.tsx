@@ -1,3 +1,4 @@
+import { ShiftReport } from '../features/reports/ShiftReport';
 import { LoadingStatus } from '../ui/loading';
 import { useServerReport } from '../features/reports/use-server-report';
 import { useSessionFilter } from '../presentation/use-session-filter';
@@ -174,6 +175,7 @@ export default function Reports() {
           {t(businessDayHint)} · {displayCurrency()}
         </span>
       </div>
+      <ShiftReport from={chartFrom} to={chartTo > businessToday() ? businessToday() : chartTo} />
       {t(
         data.archived && (
           <p className="history-notice">

@@ -30,6 +30,14 @@ export function commandAudit(
     return table ? `стол «${table.name}»` : 'без стола';
   };
   switch (command.type) {
+    case 'closeShift':
+      summary = `Закрытие смены ${command.businessDay}: наличные ${command.countedCash} AMD`;
+      break;
+    case 'acceptGuestRequest':
+    case 'rejectGuestRequest':
+      targetId = command.requestId;
+      summary = `${command.type === 'acceptGuestRequest' ? 'Принята' : 'Отклонена'} гостевая заявка ${command.requestId}`;
+      break;
     case 'sale':
       summary = `Продажа: ${next.sales.find((s) => s.id === command.id)?.name || ''}${command.value?.orderId ? ` · ${tableLabel(command.value.orderId)}` : ''}`;
       break;

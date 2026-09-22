@@ -1,3 +1,4 @@
+import { ShiftCloseButton } from '../orders/ShiftCloseSheet';
 import type { ReactNode } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { businessToday } from '../../domain/business-day';
@@ -22,6 +23,7 @@ export function SalesDayToolbar({
   };
   return (
     <SalesFullscreen>
+      <ShiftCloseButton day={date} />
       {action && <div className="sales-create-action">{action}</div>}
       <div className="date-control">
         <button aria-label={t('Предыдущий день')} onClick={() => changeDate(-1)}>

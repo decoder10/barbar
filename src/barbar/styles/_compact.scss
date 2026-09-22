@@ -289,7 +289,9 @@
     left: 0;
     z-index: 27;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* Four sections plus "More": a fifth column keeps the bar one row high, so it cannot
+       grow over the receipt bar that sits just above it. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--line);
@@ -305,10 +307,19 @@
     justify-content: center;
     gap: 3px;
     min-height: 52px;
+    padding: 0 2px;
     border-radius: 12px;
     color: var(--muted);
     font-size: 12px;
     font-weight: 600;
+  }
+
+  .bottom-nav > a > span,
+  .bottom-nav > button > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .bottom-nav > .active {
@@ -361,6 +372,21 @@
   .heading-actions > .heading-more {
     flex: 0 0 48px;
     padding: 0;
+  }
+
+  /* Table actions keep their full labels; long translations scroll within the
+     row instead of spilling over neighbouring buttons and blocking clicks. */
+  .tables-heading .heading-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .tables-heading .heading-actions > .button,
+  .tables-heading .heading-actions > .sales-mode-toolbar {
+    flex: 0 0 auto;
+    margin: 0;
   }
 
   /* Metrics: one swipeable row of small tiles. */

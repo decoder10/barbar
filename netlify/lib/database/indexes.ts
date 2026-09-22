@@ -11,6 +11,7 @@ export const ledgerCollections = [
   'expenses',
   'tables',
   'orders',
+  'shifts',
 ] as const;
 
 const ledgerIndexes: Record<string, IndexDescription[]> = {
@@ -22,7 +23,12 @@ const ledgerIndexes: Record<string, IndexDescription[]> = {
     // Receipt lines: the open orders screen and payments read one order's sales at a time.
     { key: { orderId: 1 }, name: 'order_lines', partialFilterExpression: { orderId: { $exists: true } } },
   ],
-  orders: [{ key: { status: 1, businessDay: -1, openedAt: -1 } }, { key: { tableId: 1, status: 1 } }],
+  orders: [
+    { key: { businessDay: 1 } },
+    { key: { status: 1, businessDay: -1, openedAt: -1 } },
+    { key: { tableId: 1, status: 1 } },
+  ],
+  shifts: [{ key: { businessDay: 1 }, unique: true }],
   tables: [{ key: { code: 1 }, unique: true }],
   purchases: [{ key: { date: -1, id: -1 } }],
   expenses: [{ key: { date: -1, id: -1 } }],
@@ -48,6 +54,17 @@ const retired: Record<string, Record<string, Record<string, number>>> = {
 };
 
 async function buildLedgerIndexes(db: Db) {
+  await db
+    .collection('guestRequests')
+    .createIndexes([
+      { key: { purgeAt: 1 }, expireAfterSeconds: 0 },
+      { key: { tableId: 1, status: 1, expiresAt: 1 } },
+      { key: { status: 1, expiresAt: 1, createdAt: 1 } },
+    ]);
+  await db.collection('guestLimits').createIndex({ purgeAt: 1 }, { expireAfterSeconds: 0 });
+  await db
+    .collection('guestEvents')
+    .createIndexes([{ key: { expiresAt: 1 }, expireAfterSeconds: 0 }, { key: { done: 1, nextAttempt: 1 } }]);
   await Promise.all(
     ledgerCollections.map((name) =>
       db.collection(name).createIndexes([{ key: { _order: 1 } }, ...(ledgerIndexes[name] || [])]),
@@ -84,12 +101,13 @@ async function buildAuditIndexes(db: Db) {
     .createIndexes([
       { key: { createdAt: -1, id: -1 } },
       { key: { action: 1, createdAt: -1, id: -1 } },
+      { key: { targetId: 1, action: 1 } },
       { key: { 'actor.id': 1, createdAt: -1, id: -1 } },
       { key: { 'actor.id': 1, action: 1, createdAt: -1, id: -1 } },
     ]);
 }
 
 export const ensureLedgerIndexes = (db: Db) =>
-  oncePerDatabase(db, 'ledger-indexes-v3', () => buildLedgerIndexes(db));
+  oncePerDatabase(db, 'ledger-indexes-v4', () => buildLedgerIndexes(db));
 export const ensureAuditIndexes = (db: Db) =>
-  oncePerDatabase(db, 'audit-indexes-v1', () => buildAuditIndexes(db));
+  oncePerDatabase(db, 'audit-indexes-v2', () => buildAuditIndexes(db));

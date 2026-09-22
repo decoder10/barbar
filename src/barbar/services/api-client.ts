@@ -2,6 +2,12 @@ import type { CatalogResponse, StockResponse, CatalogPartResponse } from '../dom
 import type { BarData, Role, StaffData } from '../domain/types';
 import type { UserProfile } from '../domain/identity/user';
 interface ApiResponses {
+  '/api/barbar/guest-requests': { requests: import('../domain/guest-requests').GuestRequest[] };
+  [path: `/api/barbar/shifts?${string}`]: {
+    preview: import('../domain/shifts').ShiftPreview;
+    totals: ReturnType<typeof import('../domain/shifts').paidOrderTotals>;
+    shifts: import('../domain/types').Shift[];
+  };
   '/api/barbar/notifications': { items: import('../domain/notifications/feed').FeedItem[] };
   '/api/barbar/rates': import('../domain/identity/preferences').ExchangeRates;
   '/api/barbar/catalog': CatalogResponse;

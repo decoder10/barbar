@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { barConfig } from '../config';
-import type { GuestMenu, GuestMenuItem, GuestSectionId } from '../domain/guest-menu';
+import type { GuestMenu, GuestMenuItem, GuestSectionId, GuestPrice } from '../domain/guest-menu';
 import type { Language } from '../domain/identity/preferences';
 import type { MenuCategory } from '../domain/types';
 import { BottleArt, CocktailArt } from '../features/catalog/art';
@@ -89,11 +89,13 @@ export function MenuCard({
   language,
   saved,
   toggle,
+  add,
 }: {
   item: GuestMenuItem;
   language: Language;
   saved: boolean;
   toggle: (item: GuestMenuItem) => void;
+  add?: (price: GuestPrice) => void;
 }) {
   return (
     <article className="menu-card">
@@ -101,6 +103,17 @@ export function MenuCard({
       <div className="menu-card-body">
         <h3>{item.name}</h3>
         <MenuPrices item={item} language={language} />
+        {add && (
+          <div className="guest-add">
+            {item.prices
+              .filter((p) => p.productId)
+              .map((p) => (
+                <button type="button" key={p.productId} onClick={() => add(p)}>
+                  {t('В корзину')} · {t(p.portion || copy[p.kind === 'portion' ? 'menu' : p.kind][language])}
+                </button>
+              ))}
+          </div>
+        )}
       </div>
       <button
         type="button"

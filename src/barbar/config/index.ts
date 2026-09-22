@@ -77,6 +77,15 @@ export interface PaymentMethodsConfig {
   maxSplitParts: number;
 }
 export interface GuestMenuConfig {
+  orders: {
+    maxLines: number;
+    maxPortions: number;
+    maxCommentLength: number;
+    expiresMinutes: number;
+    retentionHours: number;
+    pendingPerTable: number;
+    submissionsPerMinute: number;
+  };
   languages: ('en' | 'ru' | 'hy')[];
   sectionOrder: string[];
   /** Spirits sold by the portion straight from stock; `{ml}` in the title is replaced by the portion. */
@@ -207,6 +216,9 @@ export function validateConfig(config: BarConfig = barConfig, ledgerMenuCategori
     if (id !== 'alcohol' && !categoryIds.includes(id)) problems.push(`guest sectionOrder: unknown ${id}`);
   for (const [key, value] of Object.entries(config.guest.copy))
     if (!localizedValid(value)) problems.push(`guest copy ${key}: needs ru, en and hy`);
+  for (const [key, value] of Object.entries(config.guest.orders))
+    if (!Number.isSafeInteger(value) || value <= 0)
+      problems.push(`guest orders ${key}: positive integer required`);
   const poured = config.guest.pouredAlcohol;
   if (!localizedValid(poured.title) || languagesOf(poured.title).some((v) => !v.includes('{ml}')))
     problems.push('guest pouredAlcohol.title: needs ru, en and hy with {ml}');

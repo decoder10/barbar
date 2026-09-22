@@ -1,3 +1,4 @@
+import { GuestRequests, useGuestRequests } from '../features/orders/GuestRequests';
 import { ArrowLeft, CheckCircle2, Zap } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -29,6 +30,7 @@ export default function OrderPage() {
   const { orderId = '' } = useParams();
   const [search] = useSearchParams();
   const navigate = useNavigate();
+  const guestFeed = useGuestRequests();
   const { data, role, run, busy } = useBar();
   const { tables, orders, sales, loading, refreshing, error } = useOrders();
   // `/orders/new` is a draft: the receipt is written with its first line, so nothing empty is left behind.
@@ -158,6 +160,7 @@ export default function OrderPage() {
           }}
         />
       </div>
+      {tableId && <GuestRequests tableId={tableId} feed={guestFeed} />}
       {selected && ownerProduct && (
         <SaleForm
           kind={selected.kind}

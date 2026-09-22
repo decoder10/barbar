@@ -167,5 +167,14 @@
       "en": "Could not refresh the menu. Prices may be out of date.",
       "hy": "Չհաջողվեց թարմացնել ճաշացանկը։ Գները կարող են հնացած լինել։"
     }
+  },
+  "orders": {
+    "maxLines": 20,
+    "maxPortions": 10,
+    "maxCommentLength": 200,
+    "expiresMinutes": 15,
+    "retentionHours": 24,
+    "pendingPerTable": 5,
+    "submissionsPerMinute": 10
   }
 }

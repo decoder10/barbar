@@ -1,3 +1,10 @@
+import {
+  acceptGuestRequest,
+  guestRequestStatus,
+  type GuestRequest,
+} from '../../src/barbar/domain/guest-requests';
+import { shiftPreview, paidOrderTotals } from '../../src/barbar/domain/shifts';
+import { guestOrderStore } from './guest-order-store';
 import { ensurePushIndexes } from './notifications/subscriptions';
 import { recordPurchaseEvent, recordStockAlerts } from './notifications/events';
 import { MongoClient, type ClientSession, type Db, type Document } from 'mongodb';
@@ -17,7 +24,11 @@ import { compactData, saveBalances, workingData } from './barbar-working';
 import { commandAudit, appendAudit } from './audit/store';
 import type { Repository, Snapshot } from './barbar-repository';
 
-import { ensureLedgerIndexes, ledgerCollections as collections } from './database/indexes';
+import {
+  ensureAuditIndexes,
+  ensureLedgerIndexes,
+  ledgerCollections as collections,
+} from './database/indexes';
 import { revisionQuery } from './queries/cache';
 import { seedFoodCatalog } from './database/food-catalog';
 import { convertGoodsCatalog, mergeGoodsCatalog } from './database/goods-catalog';
@@ -104,6 +115,7 @@ export function mongoRepository(
     }
     // Also upgrade indexes for an existing ledger; never reimport its catalog.
     await ensureLedgerIndexes(db);
+    await ensureAuditIndexes(db);
     await ensurePushIndexes(db);
     if (existing?.readModelVersion === 1) return;
     if (existing) {
@@ -187,6 +199,27 @@ export function mongoRepository(
     await ready;
   }
   return {
+    async readGuestRequests() {
+      await ensureReady();
+      return guestOrderStore(db, { migrations }).pending();
+    },
+    async readShifts(from, to) {
+      await ensureReady();
+      return client.withSession((session) =>
+        session.withTransaction(async () => {
+          const orders = (await db
+            .collection('orders')
+            .find({ businessDay: { $gte: from, $lte: to } }, { session, projection: { _id: 0, _order: 0 } })
+            .toArray()) as unknown as Order[];
+          const shifts = (await db
+            .collection('shifts')
+            .find({ businessDay: { $gte: from, $lte: to } }, { session, projection: { _id: 0, _order: 0 } })
+            .sort({ businessDay: -1 })
+            .toArray()) as unknown as NonNullable<BarData['shifts']>;
+          return { preview: shiftPreview(orders, from), totals: paidOrderTotals(orders), shifts };
+        }, transactionOptions),
+      );
+    },
     async readStock(known) {
       await ensureReady();
       if (known) {
@@ -582,9 +615,54 @@ export function mongoRepository(
               .findOne({ _id: command.expenseId as never }, { session, projection: { _id: 0, _order: 0 } });
             if (expense) current.expenses = [expense as unknown as NonNullable<BarData['expenses']>[number]];
           }
+          current.shifts = (await db
+            .collection('shifts')
+            .find({}, { session, projection })
+            .toArray()) as unknown as NonNullable<BarData['shifts']>;
+          if (command.type === 'closeShift') {
+            current.orders = (await db
+              .collection('orders')
+              .find({ businessDay: command.businessDay }, { session, projection })
+              .toArray()) as unknown as Order[];
+          }
+          let handledGuest: GuestRequest | undefined;
+          if (command.type === 'acceptGuestRequest' || command.type === 'rejectGuestRequest') {
+            const request =
+              typeof command.requestId === 'string'
+                ? ((await db
+                    .collection('guestRequests')
+                    .findOne(
+                      { _id: command.requestId as never },
+                      { session },
+                    )) as unknown as GuestRequest | null)
+                : null;
+            if (!request || guestRequestStatus(request) !== 'pending')
+              throw Object.assign(new Error('Заявка уже обработана или истекла.'), { status: 409 });
+            if (
+              command.type === 'acceptGuestRequest' &&
+              (await db
+                .collection('sales')
+                .findOne(
+                  { _id: { $in: request.lines.map((_, i) => `guest_${request.id}_${i}`) } as never },
+                  { session, projection: { _id: 1 } },
+                ))
+            )
+              throw Object.assign(new Error('Заявка уже обработана или истекла.'), { status: 409 });
+            handledGuest = request;
+            await loadTable(request.tableId);
+            await loadOpenOrdersOf(request.tableId);
+          }
           let next: BarData;
           try {
-            next = applyCommand(current, command, context);
+            if (command.type === 'acceptGuestRequest' && handledGuest) {
+              const accepted = acceptGuestRequest(current, handledGuest, command.lineIds, context);
+              next = accepted.data;
+              handledGuest = accepted.request;
+              next.operations = [...next.operations.slice(-999), command.id];
+            } else if (command.type === 'rejectGuestRequest' && handledGuest) {
+              next = { ...current, operations: [...current.operations.slice(-999), command.id] };
+              handledGuest = { ...handledGuest, status: 'rejected' };
+            } else next = applyCommand(current, command, context);
           } catch (error) {
             throw Object.assign(error instanceof Error ? error : new Error('Некорректная операция.'), {
               status: 400,
@@ -634,6 +712,20 @@ export function mongoRepository(
             { session },
           );
           if (!saved.matchedCount) throw new Error('Concurrent ledger revision');
+          if (handledGuest) {
+            await db.collection('guestRequests').updateOne(
+              { _id: handledGuest.id as never, status: 'pending' },
+              {
+                $set: {
+                  status: handledGuest.status,
+                  ...(handledGuest.acceptedLineIds
+                    ? { acceptedLineIds: handledGuest.acceptedLineIds, orderId: handledGuest.orderId }
+                    : {}),
+                },
+              },
+              { session },
+            );
+          }
           for (const name of collections) {
             const previous = new Map(rows(current, name).map((r) => [r.id, JSON.stringify(r)]));
             for (const [index, row] of rows(next, name).entries()) {
@@ -660,7 +752,8 @@ export function mongoRepository(
           }
           await saveBalances(db, session, next, previousBalances);
           await appendAudit(db, session, commandAudit(command, next, actor, current));
-          if (command.type === 'sale') await recordStockAlerts(db, session, command.id, current, next);
+          if (command.type === 'sale' || command.type === 'acceptGuestRequest')
+            await recordStockAlerts(db, session, command.id, current, next);
           if (command.type === 'purchase')
             await recordPurchaseEvent(db, session, command.id, next, command.value.id);
           const compact = compactData(next);

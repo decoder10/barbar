@@ -314,3 +314,57 @@ it('unchanged revisions skip full ledger reads, but a role change forces a fresh
   noPrivateFinancialData(body);
   expect(read).toHaveBeenCalledTimes(1);
 });
+
+it('serves worker guest requests and shift previews without ledger costs; range reports stay owner-only', async () => {
+  const repo = repository();
+  const data = (await repo.read()).data;
+  repo.readGuestRequests = async () => [
+    {
+      id: 'a'.repeat(32),
+      tableId: 'table',
+      tableName: '1',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 60000).toISOString(),
+      status: 'pending',
+      lines: [
+        {
+          id: 'line',
+          kind: 'alcohol',
+          productId: 'vodka',
+          name: 'Vodka',
+          unitPrice: 900,
+          quantity: 1,
+          servingMl: 50,
+        },
+      ],
+      comment: '',
+    },
+  ];
+  const get = (path: string) =>
+    handleBarApi(
+      new Request(origin + path, {
+        headers: { cookie: sessionCookie(new Request(origin), 'barbar').split(';')[0] },
+      }),
+      repo,
+    );
+  const guests = await get('/api/barbar/guest-requests');
+  expect(guests.status).toBe(200);
+  noPrivateFinancialData(await guests.json());
+  const day = await get('/api/barbar/shifts?from=2026-01-01');
+  expect(day.status).toBe(200);
+  expect(await day.json()).toMatchObject({ totals: { count: 0, revenue: 0 }, shifts: [] });
+  expect((await get('/api/barbar/shifts?from=2026-01-01&to=2026-01-02')).status).toBe(403);
+  const close = await handleBarApi(
+    request('barbar', {
+      id: 'close-shift',
+      type: 'closeShift',
+      businessDay: '2026-01-01',
+      expected: '[]',
+      countedCash: 0,
+    }),
+    repo,
+  );
+  expect(close.status).toBe(200);
+  noPrivateFinancialData(await close.json());
+  expect(data.sales.length).toBeGreaterThan(0);
+});

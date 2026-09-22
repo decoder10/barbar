@@ -12,6 +12,10 @@ export function useNotificationsFeed() {
   const [version, setVersion] = useState(0);
   const reload = useCallback(() => setVersion((n) => n + 1), []);
   useEffect(() => {
+    const timer = window.setInterval(reload, 15000);
+    return () => window.clearInterval(timer);
+  }, [reload]);
+  useEffect(() => {
     let active = true;
     setLoading(true);
     void api('/api/barbar/notifications')

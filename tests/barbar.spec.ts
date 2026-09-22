@@ -72,7 +72,8 @@ test('purchase, recipe costing, sale, report, cancellation and persistence', asy
     page.locator('.report-sales-table').getByRole('row').filter({ hasText: 'Gin tonic Beefeater' }),
   ).toContainText('4 400');
   const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Скачать CSV' }).click();
+  // The shift report adds its own CSV button to this screen; keep this on the day report.
+  await page.getByRole('button', { name: 'Скачать CSV', exact: true }).click();
   const csv = await downloadPromise;
   expect(csv.suggestedFilename()).toMatch(/barbar-report-.*\.csv/);
   await page.getByRole('link', { name: 'Продажи Каждый день' }).click();

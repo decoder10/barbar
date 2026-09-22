@@ -1,6 +1,8 @@
 services:
   mongodb:
-    image: mongo:8.0
+    # 8.2 carries the fix for SERVER-121912; MongoDB 8.0 refuses to start on Linux kernels 6.19+,
+    # which is what recent Docker Desktop VMs ship.
+    image: mongo:8.2
     command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
     ports:
       - '127.0.0.1:27017:27017'

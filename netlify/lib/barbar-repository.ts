@@ -129,6 +129,15 @@ export async function commitSnapshot(storage: Storage, current: Snapshot, next: 
 
 // Legacy file storage is retained only for migration and compatibility tests.
 export interface Repository {
+  readGuestRequests?: () => Promise<import('../../src/barbar/domain/guest-requests').GuestRequest[]>;
+  readShifts?: (
+    from: string,
+    to: string,
+  ) => Promise<{
+    preview: import('../../src/barbar/domain/shifts').ShiftPreview;
+    totals: ReturnType<typeof import('../../src/barbar/domain/shifts').paidOrderTotals>;
+    shifts: import('../../src/barbar/domain/types').Shift[];
+  }>;
   readStock?: (known?: string) => Promise<StockSnapshot>;
   readCatalog?: (
     known?: string,

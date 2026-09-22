@@ -28,20 +28,30 @@ export function QrCodeSvg({ value, label }: { value: string; label: string }) {
   );
 }
 
-export function GuestMenuQrModal({ close }: { close: () => void }) {
-  const url = guestMenuUrl();
+export function GuestMenuQrModal({
+  close,
+  table,
+}: {
+  close: () => void;
+  table?: { name: string; code: string };
+}) {
+  const url = table ? `${guestMenuUrl()}?table=${encodeURIComponent(table.code)}` : guestMenuUrl();
   const local = /^(localhost|127\.|\[::1\])/.test(window.location.hostname);
   const [copied, setCopied] = useState(false);
   return (
     <Modal
       title={t('Гостевое меню и QR-код')}
-      subtitle="Публичная страница без входа: названия, фото, порции и цены продажи."
+      subtitle={
+        table
+          ? 'Заказ со стола без регистрации. Заявку подтверждает сотрудник.'
+          : 'Публичная страница без входа: названия, фото, порции и цены продажи.'
+      }
       close={close}
     >
       <div className="guest-qr-card">
         <CatalogImage photo={photos['brand-logo']} alt="BAR BAR · Art Gallery" eager />
         <QrCodeSvg value={url} label={t('QR-код гостевого меню')} />
-        <strong>Menu · Меню · Ճաշացանկ</strong>
+        <strong>{table ? `${t('Стол')} ${table.name}` : 'Menu · Меню · Ճաշացանկ'}</strong>
         <small>{url.replace(/^https?:\/\//, '')}</small>
       </div>
       {local && (
@@ -57,7 +67,7 @@ export function GuestMenuQrModal({ close }: { close: () => void }) {
         )}
       </p>
       <div className="guest-qr-actions">
-        <a className="button secondary" href="/menu" target="_blank" rel="noreferrer">
+        <a className="button secondary" href={url} target="_blank" rel="noreferrer">
           {t('Открыть меню')}
         </a>
         <button

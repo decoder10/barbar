@@ -125,6 +125,17 @@ export interface Order {
   payments?: OrderPayment[];
   note?: string;
 }
+export interface Shift {
+  id: string;
+  businessDay: string;
+  closedAt: string;
+  closedBy?: OrderActor;
+  count: number;
+  revenue: number;
+  payments: Record<string, number>;
+  countedCash: number;
+  difference: number;
+}
 export interface StockReset {
   id: string;
   alcoholId: string;
@@ -148,9 +159,13 @@ export interface BarData {
   stockResets?: StockReset[];
   tables?: BarTable[];
   orders?: Order[];
+  shifts?: Shift[];
   archived?: { before: string; ingredients: (Ingredient & { cost: number })[]; count: number };
 }
 export type Action =
+  | { type: 'closeShift'; businessDay: string; expected: string; countedCash: number }
+  | { type: 'acceptGuestRequest'; requestId: string; lineIds: string[] }
+  | { type: 'rejectGuestRequest'; requestId: string }
   | OperationsAction
   | { type: 'alcohol'; value: Alcohol }
   | { type: 'cocktail'; value: Cocktail }

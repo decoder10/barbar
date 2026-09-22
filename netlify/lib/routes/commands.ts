@@ -10,6 +10,9 @@ import { HttpError } from '../http';
 
 /** Worker commands are an allowlist; the domain then validates every field of every command. */
 const workerCommands = [
+  'closeShift',
+  'acceptGuestRequest',
+  'rejectGuestRequest',
   'sale',
   'createCocktail',
   'updateRecipe',

@@ -1,3 +1,5 @@
+import { handleGuestOrder } from '../netlify/lib/guest-order-handler';
+import { guestOrderStore } from '../netlify/lib/guest-order-store';
 import { handlePush } from '../netlify/lib/notifications/subscriptions';
 import { handleNotificationsFeed } from '../netlify/lib/notifications/feed';
 import { safelyDeliverNotifications } from '../netlify/lib/notifications/deliver';
@@ -111,6 +113,9 @@ export function localApi(): Plugin {
         if (
           ![
             '/api/menu',
+            '/api/guest-order',
+            '/api/barbar/shifts',
+            '/api/barbar/guest-requests',
             '/api/barbar',
             '/api/barbar/catalog',
             '/api/barbar/catalog/alcohol',
@@ -134,7 +139,7 @@ export function localApi(): Plugin {
         try {
           const chunks: Buffer[] = [];
           let length = 0;
-          const limit = request.url?.split('?')[0] === '/api/barbar' ? 3_000_000 : 4096;
+          const limit = request.url?.split('?')[0] === '/api/barbar' ? 3_000_000 : 12000;
           for await (const chunk of request) {
             length += chunk.length;
             if (length > limit) {
@@ -156,28 +161,34 @@ export function localApi(): Plugin {
             headers,
             ...(!['GET', 'HEAD'].includes(request.method || 'GET') ? { body: Buffer.concat(chunks) } : {}),
           });
-          const result = request.url?.startsWith('/api/menu')
-            ? await handleGuestMenu(input, repository)
-            : request.url?.startsWith('/api/barbar/batches')
-              ? await handleBatches(input, db, users)
-              : request.url?.startsWith('/api/barbar/notifications')
-                ? await handleNotificationsFeed(input, db, users)
-                : request.url?.startsWith('/api/barbar/push')
-                  ? await handlePush(input, db, users)
-                  : request.url?.startsWith('/api/barbar/report')
-                    ? await handleReport(input, db, users)
-                    : request.url?.startsWith('/api/barbar/history')
-                      ? await handleHistory(input, db, users)
-                      : request.url?.startsWith('/api/barbar/audit')
-                        ? await handleAudit(input, db, users)
-                        : request.url?.startsWith('/api/barbar/rates')
-                          ? await handleRates(input)
-                          : request.url?.startsWith('/api/barbar/auth')
-                            ? await handleAuth(input, users)
-                            : request.url?.startsWith('/api/barbar/users')
-                              ? await handleUsers(input, users)
-                              : await handleBarApi(input, repository, users);
-          if (input.method === 'POST' && new URL(input.url).pathname === '/api/barbar' && result.ok)
+          const result = request.url?.startsWith('/api/guest-order')
+            ? await handleGuestOrder(input, guestOrderStore(db, { migrations: !profile.production }))
+            : request.url?.startsWith('/api/menu')
+              ? await handleGuestMenu(input, repository)
+              : request.url?.startsWith('/api/barbar/batches')
+                ? await handleBatches(input, db, users)
+                : request.url?.startsWith('/api/barbar/notifications')
+                  ? await handleNotificationsFeed(input, db, users)
+                  : request.url?.startsWith('/api/barbar/push')
+                    ? await handlePush(input, db, users)
+                    : request.url?.startsWith('/api/barbar/report')
+                      ? await handleReport(input, db, users)
+                      : request.url?.startsWith('/api/barbar/history')
+                        ? await handleHistory(input, db, users)
+                        : request.url?.startsWith('/api/barbar/audit')
+                          ? await handleAudit(input, db, users)
+                          : request.url?.startsWith('/api/barbar/rates')
+                            ? await handleRates(input)
+                            : request.url?.startsWith('/api/barbar/auth')
+                              ? await handleAuth(input, users)
+                              : request.url?.startsWith('/api/barbar/users')
+                                ? await handleUsers(input, users)
+                                : await handleBarApi(input, repository, users);
+          if (
+            input.method === 'POST' &&
+            ['/api/barbar', '/api/guest-order'].includes(new URL(input.url).pathname) &&
+            result.ok
+          )
             await safelyDeliverNotifications(db);
           response.writeHead(result.status, Object.fromEntries(result.headers));
           response.end(Buffer.from(await result.arrayBuffer()));

@@ -64,6 +64,11 @@ describe.skipIf(!uri)('query-driven indexes on an isolated local database', () =
     await db.collection('sales').createIndex({ date: 1, createdAt: 1 });
     await db.collection('purchases').createIndex({ date: 1, alcoholId: 1 });
     await db.collection('sales').createIndex({ productId: 1 }, { name: 'custom_product_lookup' });
+    // An existing deployment has already completed the previous index migrations.
+    await db.collection('appMigrations').insertMany([
+      { _id: 'ledger-indexes-v3' as never, completedAt: new Date() },
+      { _id: 'audit-indexes-v1' as never, completedAt: new Date() },
+    ]);
   }, 30000);
   afterAll(async () => {
     await db.dropDatabase();
@@ -183,5 +188,31 @@ describe.skipIf(!uri)('query-driven indexes on an isolated local database', () =
       calls++;
     });
     expect(calls).toBe(2);
+  });
+
+  it('upgrades existing deployments with shift uniqueness, guest TTLs and audit lookup', async () => {
+    await ensureLedgerIndexes(db);
+    await ensureAuditIndexes(db);
+    const names = (await db.collection('appMigrations').find().toArray()).map((m) => String(m._id));
+    expect(names).toEqual(expect.arrayContaining(['ledger-indexes-v4', 'audit-indexes-v2']));
+    const shifts = db.collection('shifts');
+    await shifts.insertOne({ businessDay: '2026-09-22', id: 'first' });
+    await expect(shifts.insertOne({ businessDay: '2026-09-22', id: 'second' })).rejects.toMatchObject({
+      code: 11000,
+    });
+    expect(await shifts.countDocuments()).toBe(1);
+    for (const [collection, field] of [
+      ['guestRequests', 'purgeAt'],
+      ['guestLimits', 'purgeAt'],
+      ['guestEvents', 'expiresAt'],
+    ]) {
+      const indexes = await db.collection(collection).indexes();
+      expect(indexes).toEqual(
+        expect.arrayContaining([expect.objectContaining({ key: { [field]: 1 }, expireAfterSeconds: 0 })]),
+      );
+    }
+    expect(await db.collection('auditEvents').indexes()).toEqual(
+      expect.arrayContaining([expect.objectContaining({ key: { targetId: 1, action: 1 } })]),
+    );
   });
 });

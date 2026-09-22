@@ -63,7 +63,11 @@ test('owner prints a QR card for the stable guest menu link', async ({ page }, t
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('img', { name: 'QR-код гостевого меню' })).toBeVisible();
   await expect(dialog).toContainText('127.0.0.1:4001/menu');
-  await expect(dialog.getByRole('link', { name: 'Открыть меню' })).toHaveAttribute('href', '/menu');
+  // Table cards append `?table=<code>`, so the link carries the same absolute address as the QR code.
+  await expect(dialog.getByRole('link', { name: 'Открыть меню' })).toHaveAttribute(
+    'href',
+    'http://127.0.0.1:4001/menu',
+  );
   await dialog.screenshot({ path: testInfo.outputPath('guest-qr-modal.png') });
 });
 

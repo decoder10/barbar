@@ -36,7 +36,23 @@ export async function handleNotificationsFeed(request: Request, db: Db, users: I
           done: boolean;
         }[])
       : [];
+  const guests = await db
+    .collection('guestEvents')
+    .find(
+      { expiresAt: { $gt: new Date() } },
+      { ...options, projection: { tableName: 1, createdAt: 1, done: 1 } },
+    )
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
   const items: FeedItem[] = [
+    ...guests.map((event) => ({
+      id: `guest:${event._id}`,
+      kind: 'guest' as const,
+      tableName: String(event.tableName),
+      createdAt: new Date(event.createdAt).toISOString(),
+      delivered: !!event.done,
+    })),
     ...stock.map((event) => ({
       id: `stock:${event._id}`,
       kind: 'stock' as const,

@@ -6,8 +6,9 @@ import { identity } from '../../../tests/identity-fixture';
 import { mongoRepository } from '../barbar-mongo';
 import { businessToday } from '../../../src/barbar/domain/business-day';
 import { handlePush, hash, type Device } from './subscriptions';
-import { deliverPurchaseNotices, deliverStockAlerts } from './deliver';
+import { deliverGuestRequests, deliverPurchaseNotices, deliverStockAlerts } from './deliver';
 import { handleNotificationsFeed } from './feed';
+import { guestOrderStore } from '../guest-order-store';
 import type { FeedItem } from '../../../src/barbar/domain/notifications/feed';
 import type { AlertEvent, PurchaseEvent } from './events';
 vi.mock('web-push', () => ({
@@ -189,5 +190,54 @@ describe.skipIf(!uri)('transactional alerts and push security in isolated MongoD
     expect(worker.items.length).toBeGreaterThan(0);
     expect(worker.items.every((item) => item.kind === 'stock')).toBe(true);
     expect(JSON.stringify(worker)).not.toMatch(/amount|cost|price|revenue/);
+  });
+  it('queues one guest event per request, pushes it to every device and shows it to both roles', async () => {
+    vi.mocked(webpush.sendNotification).mockClear();
+    const actor = (await identity.resolve('admin'))!;
+    await repo.execute!(
+      { type: 'saveTable', id: 'guest-table', value: { id: 'table', name: '12', order: 0, active: true } },
+      actor,
+    );
+    const table = (await db.collection<{ _id: string; code: string }>('tables').findOne({ _id: 'table' }))!;
+    const input = {
+      id: crypto.randomUUID().replaceAll('-', ''),
+      code: table.code,
+      comment: '',
+      lines: [{ id: 'one', kind: 'cocktail' as const, productId: data.cocktails[0].id, quantity: 1 }],
+    };
+    const store = guestOrderStore(db);
+    await Promise.all([store.submit(input), store.submit(input)]);
+    expect(await db.collection('guestEvents').countDocuments()).toBe(1);
+    // A request is not a sale: nothing may touch the ledger before a worker accepts it.
+    expect(await db.collection('sales').countDocuments({ _id: input.id as never })).toBe(0);
+    await Promise.all([deliverGuestRequests(db), deliverGuestRequests(db)]);
+    const calls = vi.mocked(webpush.sendNotification).mock.calls;
+    // Guest requests reach workers too, and are worth interrupting an open app for.
+    expect(calls.map(([target]) => target.endpoint).sort()).toEqual([
+      'https://fcm.googleapis.com/fcm/send/owner-device',
+      'https://fcm.googleapis.com/fcm/send/worker-device',
+    ]);
+    const payload = JSON.parse(calls[0][1] as string);
+    expect(payload).toMatchObject({ title: 'Заявка гостя', body: '12', url: '/' });
+    await deliverGuestRequests(db);
+    expect(vi.mocked(webpush.sendNotification).mock.calls).toHaveLength(2);
+    const guestItem = async (cookie: string) => {
+      const response = await handleNotificationsFeed(
+        new Request('https://barbar.test/api/barbar/notifications', {
+          headers: { cookie: `barbar_session=${cookie}` },
+        }),
+        db,
+        identity,
+      );
+      const body = (await response.json()) as { items: FeedItem[] };
+      return { body, item: body.items.find((i) => i.kind === 'guest') };
+    };
+    for (const cookie of ['admin', 'barbar']) {
+      const { body, item } = await guestItem(cookie);
+      expect(item).toMatchObject({ id: `guest:${input.id}`, tableName: '12', delivered: true });
+      // The public token, the access code and the request lines stay on the server.
+      expect(JSON.stringify(body)).not.toContain(table.code);
+      expect(JSON.stringify(item)).not.toMatch(/accessCode|unitPrice|lines/);
+    }
   });
 });

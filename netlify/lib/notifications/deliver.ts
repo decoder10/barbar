@@ -10,7 +10,7 @@ import {
 
 type Queued = Omit<AlertEvent, 'alerts'>;
 interface Channel {
-  collection: 'stockAlertEvents' | 'purchaseEvents';
+  collection: 'stockAlertEvents' | 'purchaseEvents' | 'guestEvents';
   /** Older events are closed without sending. */
   maxAge: number;
   ttl: number;
@@ -49,6 +49,20 @@ const purchases: Channel = {
   }),
 };
 
+const guests: Channel = {
+  collection: 'guestEvents',
+  maxAge: 15 * 60000,
+  ttl: 300,
+  ownersOnly: false,
+  foreground: true,
+  payload: (event, device) => ({
+    title:
+      device.language === 'en' ? 'Guest request' : device.language === 'hy' ? 'Հյուրի հայտ' : 'Заявка гостя',
+    body: (event as Queued & { tableName: string }).tableName,
+    tag: `guest-${event._id}`,
+    url: '/',
+  }),
+};
 /** Leased outbox; failures cannot undo the saved operation. Stable notification tags collapse rare retries. */
 async function deliver(db: Db, channel: Channel) {
   const config = pushConfig();
@@ -123,8 +137,10 @@ async function deliver(db: Db, channel: Channel) {
 }
 export const deliverStockAlerts = (db: Db) => deliver(db, stock);
 export const deliverPurchaseNotices = (db: Db) => deliver(db, purchases);
+export const deliverGuestRequests = (db: Db) => deliver(db, guests);
 export async function safelyDeliverNotifications(db: Db) {
   for (const [channel, run] of [
+    ['guest', deliverGuestRequests],
     ['stock', deliverStockAlerts],
     ['purchase', deliverPurchaseNotices],
   ] as const) {

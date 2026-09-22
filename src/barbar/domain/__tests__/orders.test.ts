@@ -48,7 +48,7 @@ describe('tables', () => {
   it('creates a table with a stable QR code and reissues it only on request', () => {
     const first = table(initialData());
     const code = first.tables![0].code;
-    expect(code).toMatch(/^[a-z0-9]{12}$/);
+    expect(code).toMatch(/^[a-z0-9]{32}$/);
     const renamed = table(first, 'Терраса');
     expect(renamed.tables![0]).toMatchObject({ name: 'Терраса', code });
     const reissued = table(renamed, 'Терраса', 'table-1', { newCode: true });

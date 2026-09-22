@@ -8,6 +8,9 @@ export type GuestSectionId = MenuCategory | 'alcohol';
 export const guestSectionOrder = barConfig.guest.sectionOrder as GuestSectionId[];
 export interface GuestPrice {
   kind: 'portion' | 'glass' | 'bottle';
+  productId?: string;
+  productKind?: 'cocktail' | 'alcohol';
+  servingMl?: number;
   /** Selling price in AMD, the same value used when a sale is recorded. */
   price: number;
   portion?: string;
@@ -59,6 +62,9 @@ export function guestMenu(data: Pick<BarData, 'alcohol' | 'cocktails'>, revision
     const price: GuestPrice = {
       kind: glass ? 'glass' : bottle ? 'bottle' : 'portion',
       price: c.price,
+      productId: c.id,
+      productKind: 'cocktail',
+      ...(glass && stock?.glassSizeMl ? { servingMl: stock.glassSizeMl } : {}),
       ...(portion ? { portion } : {}),
     };
     // Legacy glasses are not linked to stock while their bottle may be: match by the shared base name.
@@ -92,7 +98,14 @@ export function guestMenu(data: Pick<BarData, 'alcohol' | 'cocktails'>, revision
         image: 0,
         category: 'alcohol',
         prices: [
-          { kind: 'portion', price: round((a.pricePerLiter * portionMl) / 1000), portion: `${portionMl} мл` },
+          {
+            kind: 'portion',
+            productId: a.id,
+            productKind: 'alcohol',
+            servingMl: portionMl,
+            price: round((a.pricePerLiter * portionMl) / 1000),
+            portion: `${portionMl} мл`,
+          },
         ],
       });
   const rank = { glass: 0, portion: 1, bottle: 2 };

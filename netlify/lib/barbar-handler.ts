@@ -6,7 +6,7 @@ import { respondError } from './http';
 import { handleCards } from './routes/cards';
 import { catalogRoute, handleCatalog } from './routes/catalog';
 import { handleCommand } from './routes/commands';
-import { handleOrders } from './routes/orders';
+import { handleOrders, handleShifts, handleGuestRequests } from './routes/orders';
 import { handleWorkingRead } from './routes/working';
 
 /**
@@ -29,6 +29,8 @@ export const handleBarApi = async (
     const split = request.headers.get('X-Barbar-Protocol') === '2' && !!repository.readStock;
     const pathname = new URL(request.url).pathname;
     if (pathname === '/api/barbar/catalog/cards') return await handleCards(request, repository, role);
+    if (pathname === '/api/barbar/shifts') return await handleShifts(request, repository, role);
+    if (pathname === '/api/barbar/guest-requests') return await handleGuestRequests(request, repository);
     if (pathname === '/api/barbar/orders') return await handleOrders(request, repository, role);
     const catalog = catalogRoute(pathname);
     if (catalog)

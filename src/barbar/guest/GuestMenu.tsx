@@ -1,3 +1,5 @@
+import { useGuestOrder } from './use-guest-order';
+import { GuestCart } from './GuestCart';
 import { Grid2X2, Heart, LayoutGrid, List, Moon, Search, Sun, Utensils, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { barConfig } from '../config';
@@ -13,6 +15,7 @@ const { copy, languages } = barConfig.guest;
 export default function GuestMenuPage() {
   const { menu, error, reload } = useGuestMenu();
   const preferences = useGuestPreferences();
+  const guestOrder = useGuestOrder();
   const { language, setLanguage, theme, setTheme, view, setView, favorites, toggleFavorite, clearFavorites } =
     preferences;
   const [query, setQuery] = useState('');
@@ -214,6 +217,7 @@ export default function GuestMenuPage() {
             </div>
           </aside>
           <main className="menu-main">
+            <GuestCart order={guestOrder} />
             <div className="menu-mobile-favorites">{tab === 'favorites' && favoriteContent}</div>
             <div className="menu-browse" hidden={tab === 'favorites'}>
               <div className="menu-page-tools">
@@ -280,6 +284,11 @@ export default function GuestMenuPage() {
                               language={language}
                               saved={saved.has(favoriteKey(item))}
                               toggle={toggleFavorite}
+                              add={
+                                guestOrder.table && !guestOrder.saved
+                                  ? (price) => guestOrder.add(price, item.name)
+                                  : undefined
+                              }
                             />
                           ))}
                         </div>

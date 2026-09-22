@@ -534,3 +534,42 @@
   color: var(--danger);
   background: var(--danger-surface);
 }
+
+.guest-requests,
+.table-qr-list {
+  margin-block: 16px;
+}
+.guest-requests h2 {
+  font-size: 16px;
+}
+.guest-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block: 12px;
+}
+.guest-request-lines {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.guest-request-lines > label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  font-size: 14px;
+}
+.guest-request-lines > label span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.guest-request-lines input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.shift-history {
+  overflow-x: auto;
+}

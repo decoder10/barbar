@@ -1,3 +1,7 @@
+import { ShiftCloseButton } from '../features/orders/ShiftCloseSheet';
+import { GuestRequests, useGuestRequests } from '../features/orders/GuestRequests';
+import { GuestMenuQrModal } from '../features/guest/GuestMenuQr';
+import type { BarTable } from '../domain/types';
 import { Armchair, Settings2, X, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +33,8 @@ export default function Tables() {
   const { role, busy, run } = useBar();
   const navigate = useNavigate();
   const { tables, orders, sales, loading, error } = useOrders();
+  const feed = useGuestRequests();
+  const [qr, setQr] = useState<BarTable | null>(null);
   const [editing, setEditing] = useState(false);
   const linesByOrder = useMemo(() => {
     const groups = new Map<string, typeof sales>();
@@ -85,6 +91,7 @@ export default function Tables() {
           description="Откройте стол, добавьте напитки и примите оплату."
         >
           <SalesFullscreen home />
+          <ShiftCloseButton />
           {role === 'admin' && (
             <button
               type="button"
@@ -102,6 +109,7 @@ export default function Tables() {
           </button>
         </PageHeading>
       </div>
+      <GuestRequests feed={feed} />
       {error && <p role="alert">{t(error)}</p>}
       {loading && !error ? (
         <LoadingStatus label="Открываем столы…" />
@@ -150,6 +158,17 @@ export default function Tables() {
           )}
         </>
       )}
+      <details className="table-qr-list">
+        <summary>{t('QR-коды столов')}</summary>
+        <div className="guest-request-actions">
+          {active.map((table) => (
+            <button type="button" className="button secondary" key={table.id} onClick={() => setQr(table)}>
+              {table.name}
+            </button>
+          ))}
+        </div>
+      </details>
+      {qr && <GuestMenuQrModal table={qr} close={() => setQr(null)} />}
       {editing && <TablesEditor tables={tables} orders={orders} close={() => setEditing(false)} />}
     </>
   );
