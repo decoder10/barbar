@@ -1,27 +1,20 @@
 import { SalesDayToolbar } from '../features/sales/SalesDayToolbar';
-import { LoadMore } from '../ui/auto-reveal';
-import { useCardPages } from '../features/catalog/use-card-pages';
-import { cardPage } from '../domain/catalog/cards';
 import { BusyButton } from '../ui/loading';
 import { useHistory } from '../features/sales/use-history';
 import { Pagination } from '../ui/pagination';
-import { CategoryTabs } from '../ui/category-tabs';
-import { useSessionFilter } from '../presentation/use-session-filter';
 import { menuQuantitySummary } from '../domain/quantity-summary';
-import { useInventoryCalculations } from '../features/inventory/use-inventory-calculations';
 import {
   ArrowDownRight,
   ArrowUpRight,
   Banknote,
   GlassWater,
   Plus,
-  Search,
   ShoppingBag,
   Undo2,
+  Zap,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { AlcoholCard, CocktailCard, compositionText, stockPill } from '../features/catalog/cards';
+import { Link, useNavigate } from 'react-router-dom';
 import { Empty, Metric } from '../ui/layout';
 import { ExportButton } from '../ui/export';
 import { Modal } from '../ui/modal';
@@ -29,53 +22,24 @@ import { formatMoney as money } from '../presentation/currency/format-money';
 import { businessDayHint } from '../domain/business-day';
 import { businessDayLabel } from '../presentation/format-date';
 import { dayTotals } from '../domain/sales/day-totals';
-import { popularityWindow } from '../domain/sales/popularity';
-import { activeSales, categories, saleUnit, volume } from '../domain/model';
-import { expandRecipe } from '../domain/catalog/sets';
-import type { Alcohol, Cocktail, Sale } from '../domain/types';
-import { CatalogSortControl, salesSortDefault, useCatalogSort } from '../features/catalog/sort';
-import { SaleForm } from '../features/sales/SaleForm';
+import { activeSales, saleUnit, volume } from '../domain/model';
+import type { Sale } from '../domain/types';
+import { SalesCatalog } from '../features/sales/SalesCatalog';
 import { t } from '../presentation/i18n/runtime';
 import { useBar } from '../app/providers/BarProvider';
 import { useBusinessDate } from '../features/sales/use-business-date';
 import { DayReceipt } from '../features/sales/DayReceipt';
-import { FilterSheet } from '../ui/sheet';
 import { useCompact } from '../ui/use-compact';
 export default function Sales() {
   const { data, run, busy } = useBar();
-  const inventory = useInventoryCalculations(data);
+  const navigate = useNavigate();
   const compact = useCompact();
-  const [date, setDate, currentShift] = useBusinessDate();
-  const [category, setCategory] = useSessionFilter<string>('category', 'cocktail');
-  const [search, setSearch] = useSessionFilter<string>('search', '');
-  const [sort, setSort] = useCatalogSort('owner-sales', salesSortDefault);
-  const [selected, setSelected] = useState<{ kind: Sale['kind']; product: Alcohol | Cocktail } | null>(null);
+  const [date, setDate] = useBusinessDate();
   const [voiding, setVoiding] = useState<Sale | null>(null);
   const history = useHistory('sales', date);
   const allDaySales = history.enabled ? history.rows : data.sales.filter((s) => s.date === date);
   const totals = history.enabled ? history.groups : activeSales(data).filter((s) => s.date === date);
   const { revenue, cost, menuQuantity: count, pouredMl: ml, operations: operationCount } = dayTotals(totals);
-  // Card order and search come from server pages; a complete in-memory ledger pages locally.
-  const pages = useCardPages({
-    resources:
-      category === 'alcohol' ? ['alcohol'] : category === 'all' ? ['cocktails', 'alcohol'] : ['cocktails'],
-    category,
-    search,
-    sort,
-    date,
-    revision: data,
-    local: data.opening
-      ? undefined
-      : {
-          // The ledger object and the chosen day already identify the order; popularity is
-          // counted inside the page callback, not rebuilt on every render.
-          key: date,
-          page: (_resource, query) =>
-            cardPage(data, inventory.quantities, query, popularityWindow(data.sales, date)),
-        },
-  });
-  const cocktailById = new Map(data.cocktails.map((c) => [c.id, c]));
-  const alcoholById = new Map(data.alcohol.map((a) => [a.id, a]));
   const dayLabel = businessDayLabel(date);
   const metrics = (
     <section className="metrics">
@@ -106,15 +70,6 @@ export default function Sales() {
       />
     </section>
   );
-  const sortControl = (
-    <CatalogSortControl
-      value={sort}
-      onChange={(value) => {
-        setSort(value);
-      }}
-      options={['original', 'popular', 'available', 'name', 'name-desc', 'price', 'price-desc']}
-    />
-  );
   return (
     <>
       <h1 className="visually-hidden">{t('Продажи за день')}</h1>
@@ -122,104 +77,26 @@ export default function Sales() {
         date={date}
         onChange={setDate}
         action={
-          <Link className="button secondary" to="/cocktails">
-            <Plus size={15} />
-            {t(' Коктейль')}
-          </Link>
+          <>
+            <Link className="button primary" to="/orders/new">
+              <Zap size={15} />
+              {t(' Быстрая продажа')}
+            </Link>
+            <Link className="button secondary" to="/cocktails">
+              <Plus size={15} />
+              {t(' Коктейль')}
+            </Link>
+          </>
         }
       />
       <p className="business-day-hint">{t(businessDayHint)}</p>
       {!compact && metrics}
       <div className="sales-layout">
-        <section className="catalog">
-          <div className="section-title">
-            <div>
-              <h2>{t('Что наливаем?')}</h2>
-              <p>{t('Выберите напиток, чтобы записать продажу')}</p>
-            </div>
-          </div>
-          <div className="catalog-tools sales-catalog-tools">
-            <CategoryTabs
-              className="menu-categories"
-              value={category}
-              onChange={setCategory}
-              options={[
-                ['all', 'Всё'] as const,
-                ...categories.map((c) => [c.id, c.label] as const),
-                ['alcohol', 'В розлив'] as const,
-              ]}
-            />
-            {compact ? (
-              <FilterSheet active={sort !== salesSortDefault}>{sortControl}</FilterSheet>
-            ) : (
-              sortControl
-            )}
-            <label className="search">
-              <Search size={17} />
-              <input
-                aria-label={t('Поиск напитка')}
-                placeholder={t('Найти напиток…')}
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                }}
-              />
-            </label>
-          </div>
-          <div className="drink-grid">
-            {pages.items.map(({ resource, id }) => {
-              const c = resource === 'cocktails' ? cocktailById.get(id) : undefined;
-              const a = resource === 'alcohol' ? alcoholById.get(id) : undefined;
-              if (c) {
-                const lines = expandRecipe(c, data.cocktails);
-                const pill = stockPill({
-                  portions: lines.length ? inventory.portions(lines) : null,
-                  lines: lines.length,
-                  costLines: c.extraCosts?.length || 0,
-                  noIngredients: c.noIngredients,
-                });
-                return (
-                  <CocktailCard
-                    key={c.id}
-                    cocktail={c}
-                    detail={compositionText(
-                      [
-                        ...[...c.ingredients, ...(c.extraCosts || [])].map(
-                          (i) => alcoholById.get(i.alcoholId)?.name,
-                        ),
-                        ...(c.components || []).map(
-                          (p) => `${cocktailById.get(p.cocktailId)?.name || p.cocktailId} × ${p.quantity}`,
-                        ),
-                      ],
-                      c.noIngredients,
-                    )}
-                    footer={<span className={`stock-pill ${pill.low ? 'low' : ''}`}>{t(pill.label)}</span>}
-                    action={() => setSelected({ kind: 'cocktail', product: c })}
-                  />
-                );
-              }
-              if (a)
-                return (
-                  <AlcoholCard
-                    key={a.id}
-                    drink={a}
-                    ml={inventory.stock(a.id)}
-                    action={() => setSelected({ kind: 'alcohol', product: a })}
-                  />
-                );
-              return null;
-            })}
-          </div>
-          {pages.error && <p role="alert">{t(pages.error)}</p>}
-          {pages.hasMore && (
-            <LoadMore remaining={pages.remaining} loading={pages.loading} onMore={pages.more} />
-          )}
-          {t(
-            pages.ready && !pages.items.length && (
-              <Empty title={t('Напитки не найдены')} text="Попробуйте другое название или измените фильтр." />
-            ),
-          )}
-        </section>
+        <SalesCatalog
+          date={date}
+          filterKey="owner-sales"
+          onSelect={({ kind, id }) => navigate(`/orders/new?add=${kind}:${encodeURIComponent(id)}`)}
+        />
         <DayReceipt dayLabel={dayLabel} count={operationCount} total={money(revenue)} metrics={metrics}>
           <div className="receipt-lines">
             {t(
@@ -239,6 +116,7 @@ export default function Sales() {
                       <small>
                         {t(s.quantity)} {t(saleUnit(s))}
                         {t(s.servingMl ? ` · по ${s.servingMl} мл` : '')}
+                        {t(s.orderId ? ' · заказ' : '')}
                         {t(s.voided ? ' · отменена' : '')}
                       </small>
                     </div>
@@ -282,11 +160,6 @@ export default function Sales() {
           </div>
         </DayReceipt>
       </div>
-      {t(
-        selected && (
-          <SaleForm {...selected} date={date} currentShift={currentShift} close={() => setSelected(null)} />
-        ),
-      )}
       {t(
         voiding && (
           <Modal

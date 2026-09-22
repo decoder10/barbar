@@ -58,3 +58,25 @@ export function fixtureData(): BarData {
   }));
   return d;
 }
+
+/** Serves the tables board from an in-test ledger, the way `/api/barbar/orders` does on the server. */
+export async function mockOrders(
+  page: import('@playwright/test').Page,
+  ledger: () => BarData,
+  role: () => 'admin' | 'barbar' = () => 'admin',
+) {
+  const { staffSale } = await import('../netlify/lib/barbar-access');
+  const { ordersSnapshot } = await import('../src/barbar/domain/orders');
+  await page.route('**/api/barbar/orders', (route) => {
+    const data = ledger();
+    const snapshot = ordersSnapshot(data);
+    return route.fulfill({
+      json: {
+        role: role(),
+        revision: String(data.operations.length),
+        ...snapshot,
+        sales: role() === 'admin' ? snapshot.sales : snapshot.sales.map(staffSale),
+      },
+    });
+  });
+}

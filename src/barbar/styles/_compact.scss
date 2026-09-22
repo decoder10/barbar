@@ -404,10 +404,21 @@
 
   /* Sales: date, cocktail and fullscreen in one row; the day receipt sits in a bottom bar. */
   .sales-mode-toolbar {
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 12px;
     padding-bottom: 0;
     overflow: visible;
+  }
+
+  .sales-mode-toolbar > .sales-create-action {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .sales-mode-toolbar > .sales-create-action .button {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .sales-mode-toolbar > :first-child {
@@ -436,7 +447,7 @@
   }
 
   .sales-mode-toolbar > .date-control {
-    flex: 1 1 auto;
+    flex: 1 1 100%;
     flex-shrink: 1;
     min-width: 0;
     min-height: 48px;

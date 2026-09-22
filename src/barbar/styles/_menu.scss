@@ -27,21 +27,6 @@
   border-color: var(--line);
 }
 
-.sales-catalog-tools {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.sales-catalog-tools .menu-categories {
-  width: 100%;
-  margin: 0;
-}
-
-.sales-catalog-tools .search {
-  max-width: none !important;
-  width: 100%;
-}
-
 .image-options {
   grid-template-columns: repeat(6, 1fr);
   gap: 7px;
@@ -129,9 +114,6 @@
   .menu-categories button {
     font-size: 9px;
     padding: 9px 12px;
-  }
-  .sales-catalog-tools {
-    flex-wrap: nowrap;
   }
   .daily-file small {
     display: block;

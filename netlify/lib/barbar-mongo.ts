@@ -11,7 +11,7 @@ import {
   validateData,
 } from '../../src/barbar/domain/model';
 import { assertHistoricalStock, purchaseCostTotals } from './history-corrections';
-import type { BarData, Sale } from '../../src/barbar/domain/types';
+import type { BarData, BarTable, Order, Sale } from '../../src/barbar/domain/types';
 import { businessToday } from '../../src/barbar/domain/business-day';
 import { compactData, saveBalances, workingData } from './barbar-working';
 import { commandAudit, appendAudit } from './audit/store';
@@ -303,6 +303,30 @@ export function mongoRepository(
         .findOne({ _id: id as never }, { projection: { _id: 0, _order: 0 } })) || undefined) as
         Sale | undefined;
     },
+    async readOrders() {
+      await ensureReady();
+      return client.withSession((session) =>
+        session.withTransaction(async () => {
+          const meta = await state.findOne({ _id: 'state' }, { session, projection: { revision: 1 } });
+          const projection = { _id: 0, _order: 0 };
+          const tables = (await db
+            .collection('tables')
+            .find({}, { session, projection })
+            .toArray()) as unknown as BarTable[];
+          const orders = (await db
+            .collection('orders')
+            .find({ status: 'open' }, { session, projection })
+            .toArray()) as unknown as Order[];
+          const sales = orders.length
+            ? ((await db
+                .collection('sales')
+                .find({ orderId: { $in: orders.map((o) => o.id) }, voided: false }, { session, projection })
+                .toArray()) as unknown as Sale[])
+            : [];
+          return { revision: meta?.revision || null, tables, orders, sales };
+        }, transactionOptions),
+      );
+    },
     async readWorking() {
       await ensureReady();
       return client.withSession((session) =>
@@ -320,7 +344,7 @@ export function mongoRepository(
         }, transactionOptions),
       );
     },
-    async execute(command, actor) {
+    async execute(command, actor, context = {}) {
       if (!command || typeof command.id !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(command.id))
         throw Object.assign(new Error('Некорректная операция.'), { status: 400 });
       if (
@@ -358,7 +382,9 @@ export function mongoRepository(
                 ? 'stockMovements'
                 : command.type === 'expense'
                   ? 'expenses'
-                  : null;
+                  : command.type === 'openOrder'
+                    ? 'orders'
+                    : null;
           if (
             duplicateCollection &&
             (await db
@@ -444,7 +470,7 @@ export function mongoRepository(
             await db
               .collection<import('./barbar-working').Balance>('stockBalances')
               .updateOne({ _id: id }, { $set: { ml, cost } }, { upsert: true, session });
-            await appendAudit(db, session, commandAudit(command, current, actor));
+            await appendAudit(db, session, commandAudit(command, current, actor, current));
             const next: BarData = {
               ...current,
               operations,
@@ -466,18 +492,88 @@ export function mongoRepository(
               days: {},
             };
           }
-          if (command.type === 'void') {
-            const sale = await db
+          // The working copy holds balances, not sales. A sale loaded for a void or a receipt is credited
+          // back first, so `stock()` (balances − active sales) stays equal to the stored balance.
+          const projection = { _id: 0, _order: 0 };
+          const loadSales = (sales: Sale[]) => {
+            for (const sale of sales) {
+              if (sale.voided) continue;
+              for (const i of sale.ingredients) {
+                let balance = current.opening!.ingredients.find((b) => b.alcoholId === i.alcoholId);
+                if (!balance)
+                  current.opening!.ingredients.push((balance = { alcoholId: i.alcoholId, ml: 0, cost: 0 }));
+                balance.ml += i.ml;
+                balance.cost += i.cost;
+              }
+            }
+            current.sales = sales;
+          };
+          // Each command names the slices it needs; a collection loaded whole may also shrink (see the
+          // write-back below), a partial one only changes.
+          const fullyLoaded = new Set<CollectionName>();
+          const loadOrder = async (id: unknown) => {
+            const order =
+              typeof id === 'string'
+                ? ((await db
+                    .collection('orders')
+                    .findOne({ _id: id as never }, { session, projection })) as unknown as Order | null)
+                : null;
+            current.orders = order ? [order] : [];
+            return order;
+          };
+          const loadOpenOrdersOf = async (tableId: unknown) => {
+            if (typeof tableId !== 'string') return;
+            current.orders = (await db
+              .collection('orders')
+              .find({ tableId, status: 'open' }, { session, projection })
+              .toArray()) as unknown as Order[];
+          };
+          const loadTable = async (id: unknown) => {
+            const table =
+              typeof id === 'string'
+                ? ((await db
+                    .collection('tables')
+                    .findOne({ _id: id as never }, { session, projection })) as unknown as BarTable | null)
+                : null;
+            current.tables = table ? [table] : [];
+          };
+          const loadAllTables = async () => {
+            current.tables = (await db
+              .collection('tables')
+              .find({}, { session, projection })
+              .toArray()) as unknown as BarTable[];
+            fullyLoaded.add('tables');
+          };
+          if (command.type === 'void' || command.type === 'removeLine') {
+            const sale = (await db
               .collection('sales')
-              .findOne({ _id: command.saleId as never }, { session, projection: { _id: 0, _order: 0 } });
+              .findOne({ _id: command.saleId as never }, { session, projection })) as unknown as Sale | null;
             if (sale) {
-              current.sales = [sale as unknown as BarData['sales'][number]];
-              if (!sale.voided)
-                for (const i of sale.ingredients) {
-                  const balance = current.opening!.ingredients.find((b) => b.alcoholId === i.alcoholId)!;
-                  balance.ml += i.ml;
-                  balance.cost += i.cost;
-                }
+              loadSales([sale]);
+              if (sale.orderId) await loadOrder(sale.orderId);
+            }
+          }
+          if (command.type === 'sale' && command.value?.orderId !== undefined)
+            await loadOrder(command.value.orderId);
+          if (command.type === 'openOrder' && command.tableId !== undefined) {
+            await loadTable(command.tableId);
+            await loadOpenOrdersOf(command.tableId);
+          }
+          if (command.type === 'saveTable' || command.type === 'removeTable') {
+            // The duplicate-name check needs every table; deactivation and removal need its open receipt.
+            await loadAllTables();
+            await loadOpenOrdersOf(command.type === 'saveTable' ? command.value?.id : command.tableId);
+          }
+          if (command.type === 'payOrder' || command.type === 'cancelOrder') {
+            const order = await loadOrder(command.orderId);
+            if (order) {
+              loadSales(
+                (await db
+                  .collection('sales')
+                  .find({ orderId: order.id }, { session, projection })
+                  .toArray()) as unknown as Sale[],
+              );
+              if (order.tableId) await loadTable(order.tableId);
             }
           }
           if (command.type === 'voidExpense') {
@@ -488,7 +584,7 @@ export function mongoRepository(
           }
           let next: BarData;
           try {
-            next = applyCommand(current, command);
+            next = applyCommand(current, command, context);
           } catch (error) {
             throw Object.assign(error instanceof Error ? error : new Error('Некорректная операция.'), {
               status: 400,
@@ -553,8 +649,17 @@ export function mongoRepository(
               );
             }
           }
+          // Only a collection loaded whole can shrink: a row missing from `next` was removed, not unloaded.
+          for (const name of fullyLoaded) {
+            const kept = new Set(rows(next, name).map((r) => r.id));
+            const removed = rows(current, name).filter((r) => !kept.has(r.id));
+            if (removed.length)
+              await db
+                .collection(name)
+                .deleteMany({ _id: { $in: removed.map((r) => r.id) } as never }, { session });
+          }
           await saveBalances(db, session, next, previousBalances);
-          await appendAudit(db, session, commandAudit(command, next, actor));
+          await appendAudit(db, session, commandAudit(command, next, actor, current));
           if (command.type === 'sale') await recordStockAlerts(db, session, command.id, current, next);
           if (command.type === 'purchase')
             await recordPurchaseEvent(db, session, command.id, next, command.value.id);

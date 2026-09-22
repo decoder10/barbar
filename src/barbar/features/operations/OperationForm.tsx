@@ -1,3 +1,4 @@
+import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useBar } from '../../app/providers/BarProvider';
 import { Field } from '../../ui/fields';
@@ -122,6 +123,7 @@ export function OperationForm({
               ? 'Сумма, ֏'
               : `${kind === 'count' ? 'Фактический остаток' : kind === 'prepare' ? 'Выход партии' : 'Количество'}, ${unitLabel(product?.unit)}`
           }
+          hint={kind === 'prepare' ? 'Сколько готовой заготовки получилось' : undefined}
         >
           <input
             type="number"
@@ -153,12 +155,17 @@ export function OperationForm({
           </>
         )}
         {kind === 'prepare' && (
-          <>
-            <h3>{t('Ингредиенты на всю партию')}</h3>
-            {ingredients.map((i, index) => (
-              <div className="form-grid" key={index}>
-                <Field label="Ингредиент">
+          <section className="batch-ingredients">
+            <div className="ingredient-label">
+              <span>{t('Ингредиенты на всю партию')}</span>
+              <small>{t('Спишутся со склада, их стоимость перейдёт в партию')}</small>
+            </div>
+            {ingredients.map((i, index) => {
+              const unit = unitLabel(data.alcohol.find((a) => a.id === i.alcoholId)?.unit);
+              return (
+                <div className="ingredient-inputs" key={index}>
                   <select
+                    aria-label={t(`Ингредиент ${index + 1}`)}
                     required
                     value={i.alcoholId}
                     onChange={(e) =>
@@ -170,42 +177,50 @@ export function OperationForm({
                     <option value="">{t('Выберите')}</option>
                     {options}
                   </select>
-                </Field>
-                <Field
-                  label={`Количество, ${unitLabel(data.alcohol.find((a) => a.id === i.alcoholId)?.unit)}`}
-                >
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="any"
-                    required
-                    value={i.ml}
-                    onChange={(e) =>
-                      setIngredients((current) =>
-                        current.map((row, n) => (n === index ? { ...row, ml: e.target.value } : row)),
-                      )
-                    }
-                  />
-                </Field>
-                <button
-                  type="button"
-                  className="button secondary"
-                  disabled={ingredients.length === 1}
-                  onClick={() => setIngredients((current) => current.filter((_, n) => n !== index))}
-                >
-                  {t('Убрать')}
-                </button>
-              </div>
-            ))}
+                  <label>
+                    <input
+                      aria-label={t(`Количество ингредиента ${index + 1}, ${unit}`)}
+                      type="number"
+                      min="0.01"
+                      step="any"
+                      required
+                      placeholder="0"
+                      value={i.ml}
+                      onChange={(e) =>
+                        setIngredients((current) =>
+                          current.map((row, n) => (n === index ? { ...row, ml: e.target.value } : row)),
+                        )
+                      }
+                    />
+                    <span>{t(unit)}</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={t(`Убрать ингредиент ${index + 1}`)}
+                    title={t('Убрать')}
+                    disabled={ingredients.length === 1}
+                    onClick={() => setIngredients((current) => current.filter((_, n) => n !== index))}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              );
+            })}
             <button
               type="button"
-              className="button secondary"
-              disabled={ingredients.length >= 30}
+              className="text-link add-ingredient"
+              disabled={ingredients.length >= 30 || ingredients.some((i) => !i.alcoholId)}
               onClick={() => setIngredients((current) => [...current, { alcoholId: '', ml: '' }])}
             >
-              {t('Добавить ингредиент')}
+              <Plus size={15} />
+              {t(' Добавить ингредиент')}
             </button>
-            <Field label="Годен до (необязательно)">
+          </section>
+        )}
+        {kind === 'prepare' && (
+          <div className="form-grid">
+            <Field label="Годен до" hint="Необязательно">
               <input
                 type="date"
                 min={businessToday()}
@@ -213,7 +228,10 @@ export function OperationForm({
                 onChange={(e) => setExpires(e.target.value)}
               />
             </Field>
-          </>
+            <Field label="Название партии" hint="Например: партия 12.09">
+              <input required maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
+            </Field>
+          </div>
         )}
         {kind === 'expense' && (
           <div className="form-grid">
@@ -240,17 +258,11 @@ export function OperationForm({
             </Field>
           </div>
         )}
-        <Field
-          label={
-            kind === 'prepare'
-              ? 'Название партии / примечание'
-              : kind === 'expense'
-                ? 'Описание расхода'
-                : 'Причина / комментарий'
-          }
-        >
-          <input required maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
-        </Field>
+        {kind !== 'prepare' && (
+          <Field label={kind === 'expense' ? 'Описание расхода' : 'Причина / комментарий'}>
+            <input required maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
+          </Field>
+        )}
         <Submit>{t('Сохранить операцию')}</Submit>
       </form>
     </Modal>

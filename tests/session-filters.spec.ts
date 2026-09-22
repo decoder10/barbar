@@ -13,7 +13,7 @@ test('owner filters survive refresh and navigation, while another tab starts fre
   await context.route('**/api/barbar', (r) =>
     r.fulfill({ json: { data, role: 'admin', revision: 'filters' } }),
   );
-  await page.goto('/');
+  await page.goto('/sales');
   await page.getByRole('button', { name: 'Пиво', exact: true }).click();
   await page.getByPlaceholder('Найти напиток…').fill('379');
   await page.getByLabel('Сортировка', { exact: true }).selectOption('name-desc');
@@ -31,10 +31,10 @@ test('owner filters survive refresh and navigation, while another tab starts fre
   await expect(page.getByLabel('Месяц отчёта')).toHaveValue('2026-08');
   await expect(page.getByLabel('Показатель рейтинга')).toHaveValue('quantity');
   await expect(page.getByLabel('Целевая маржа', { exact: true })).toHaveValue('60');
-  await page.goto('/');
+  await page.goto('/sales');
   await expect(page.getByPlaceholder('Найти напиток…')).toHaveValue('379');
   const other = await context.newPage();
-  await other.goto('/');
+  await other.goto('/sales');
   await expect(other.getByPlaceholder('Найти напиток…')).toHaveValue('');
   // A fresh tab opens on the default order: the most sold items first.
   await expect(other.getByLabel('Сортировка', { exact: true })).toHaveValue('popular');
@@ -86,7 +86,7 @@ test('filters are isolated by identity and cleared on logout without clearing ot
     });
   });
   await page.route('**/api/barbar', (r) => r.fulfill({ json: { data, role: 'admin', revision: 'filters' } }));
-  await page.goto('/');
+  await page.goto('/sales');
   await page.getByPlaceholder('Найти напиток…').fill('Gin');
   userId = 'owner-b';
   await page.reload();

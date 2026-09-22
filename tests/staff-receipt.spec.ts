@@ -19,7 +19,7 @@ test('worker sees the owner receipt grouped by position, selling amounts but no 
   await page.route('**/api/barbar', (route) =>
     route.fulfill({ json: { role: 'barbar', staffData: staffData(data), revision: 'test' } }),
   );
-  await page.goto('/');
+  await page.goto('/sales');
   const receipt = page.getByRole('complementary', { name: 'Сводка продаж за день' });
   await expect(receipt.getByText(data.cocktails[0].name, { exact: true })).toHaveCount(1);
   await expect(receipt.getByRole('button', { name: 'История операций' })).toHaveCount(0);

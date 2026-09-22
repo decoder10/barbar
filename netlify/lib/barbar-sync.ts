@@ -6,7 +6,7 @@ import type {
   CatalogPartResponse,
 } from '../../src/barbar/domain/sync/contracts';
 import type { Repository, Snapshot, StockSnapshot } from './barbar-repository';
-import { staffData } from './barbar-access';
+import { staffData, staffSale } from './barbar-access';
 const blank = (): BarData => ({
   version: 1,
   alcohol: [],
@@ -74,6 +74,6 @@ export async function mutationResponse(
       role,
     ),
     ...(partial ? { partial: true, baseRevision: previous! } : {}),
-    ...(sale ? { sale: role === 'admin' ? sale : staffData({ ...blank(), sales: [sale] }).sales[0] } : {}),
+    ...(sale ? { sale: role === 'admin' ? sale : staffSale(sale) } : {}),
   };
 }

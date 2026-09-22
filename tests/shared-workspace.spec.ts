@@ -43,7 +43,7 @@ test('worker preferences persist across screens and refresh without exposing fin
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.getByLabel('Language', { exact: true }).selectOption('hy');
   await expect(page.locator('.preference-controls select').first()).toHaveValue('hy');
-  for (const path of ['/', '/inventory', '/cocktails']) {
+  for (const path of ['/sales', '/inventory', '/cocktails']) {
     await page.goto(path);
     await expect(page.locator('.preference-controls')).toBeVisible();
     await expect(page.locator('main h1')).toHaveCount(1);
@@ -52,12 +52,12 @@ test('worker preferences persist across screens and refresh without exposing fin
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     }
     await expect(page.locator('main')).not.toContainText(/Себестоимость|Прибыль|Закупочная/);
-    if (path === '/') await expect(page.locator('.drink-card').first()).toContainText('€');
+    if (path === '/sales') await expect(page.locator('.drink-card').first()).toContainText('€');
     else await expect(page.locator('main')).not.toContainText(/֏|\$|€|₽/);
   }
   expect(rates).toBeGreaterThan(0);
   await page.locator('.preference-controls select').first().selectOption('ru');
-  await page.goto('/');
+  await page.goto('/sales');
   await expect(page.getByRole('button', { name: 'История операций' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: /Отчёты|Журнал действий|Пользователи/ })).toHaveCount(0);
   const toolbar = page.locator('.sales-mode-toolbar');

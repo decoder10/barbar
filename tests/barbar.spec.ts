@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { staffData } from '../netlify/lib/barbar-access';
 import { applyCommand, today } from '../src/barbar/domain/model';
-import { fixtureData } from './fixtures';
+import { fixtureData, mockOrders } from './fixtures';
 async function workspace(page: import('@playwright/test').Page, oldSale = false, lowStock = false) {
   let data = fixtureData();
   if (lowStock) {
@@ -31,7 +31,8 @@ async function workspace(page: import('@playwright/test').Page, oldSale = false,
       await route.fulfill({ status: 400, json: { error: (error as Error).message } });
     }
   });
-  await page.goto('/');
+  await mockOrders(page, () => data);
+  await page.goto('/sales');
   await expect(page.getByLabel('Дата продаж')).toBeVisible();
 }
 test('login screen and configured owner login work through Node', async ({ page }) => {
@@ -60,9 +61,12 @@ test('purchase, recipe costing, sale, report, cancellation and persistence', asy
   await page.getByLabel('Количество порций').fill('2');
   await expect(page.getByRole('dialog')).toContainText('4 400 ֏');
   await page.getByRole('button', { name: 'Записать продажу' }).click();
+  await expect(page.getByRole('heading', { name: 'Без стола', level: 1 })).toBeVisible();
   await expect(page.locator('.receipt-line')).toContainText('Gin tonic Beefeater');
   await page.reload();
   await expect(page.locator('.receipt-line')).toContainText('2 порц.');
+  await page.getByRole('link', { name: 'Продажи Каждый день' }).click();
+  await expect(page.locator('.receipt-line')).toContainText('заказ');
   await page.getByRole('link', { name: 'Отчёты Всё в цифрах' }).click();
   await expect(
     page.locator('.report-sales-table').getByRole('row').filter({ hasText: 'Gin tonic Beefeater' }),
@@ -300,22 +304,31 @@ test('barbar sees quantities and read-only stock but cannot open admin pages', a
   await page.route('**/api/barbar', async (route) => {
     if (route.request().method() === 'POST') {
       const command = route.request().postDataJSON().command;
-      expect(command.type).toBe('sale');
+      expect(['sale', 'openOrder']).toContain(command.type);
       data = applyCommand(data, command);
     }
     await route.fulfill({ json: { staffData: staffData(data), revision: 'test', role: 'barbar' } });
   });
-  await page.goto('/');
+  await mockOrders(
+    page,
+    () => data,
+    () => 'barbar',
+  );
+  await page.goto('/sales');
   await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true, level: 1 })).toBeVisible();
-  await expect(page.getByRole('navigation').getByRole('link')).toHaveCount(3);
+  await expect(page.getByRole('navigation').getByRole('link')).toHaveCount(4);
   await expect(page.locator('body')).not.toContainText(/Валовая прибыль|Себестоимость|закупочные цены/);
   await page.getByRole('button', { name: new RegExp(product.name) }).click();
   await expect(page.getByRole('dialog')).not.toContainText(/Себестоимость|Прибыль/);
   await page.getByLabel('Количество порций').fill('2');
   await page.getByRole('button', { name: 'Записать продажу', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
-  await page.getByRole('button', { name: new RegExp(product.name) }).click();
+  // Inside the order a tap opens the same dialog: the quantity is always chosen.
+  await page.locator('.drink-card').filter({ hasText: product.name }).first().click();
   await page.getByRole('button', { name: 'Записать продажу', exact: true }).click();
+  await expect(page.getByRole('complementary', { name: 'Чек заказа' })).toContainText('3 порц.');
+  await expect(page.locator('body')).not.toContainText(/Себестоимость|Прибыль/);
+  await page.getByRole('link', { name: 'Продажи Каждый день' }).click();
   await expect(page.getByRole('complementary', { name: 'Сводка продаж за день' })).toContainText('3 порц.');
   await expect(page.getByRole('button', { name: /Отменить продажу|Скачать/ })).toHaveCount(0);
   await page.reload();
@@ -329,7 +342,7 @@ test('barbar sees quantities and read-only stock but cannot open admin pages', a
   for (const path of ['/reports', '/files']) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true, level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Столы', exact: true, level: 1 })).toBeVisible();
     await expect(page.locator('body')).not.toContainText(/Себестоимость|Прибыль/);
   }
   await page.setViewportSize({ width: 390, height: 844 });
@@ -371,7 +384,7 @@ test('barbar can create a cocktail with a gram recipe without seeing or setting 
           : { staffData: staffData(data), revision: 'test', role },
     });
   });
-  await page.goto('/');
+  await page.goto('/sales');
   const createButton = page
     .locator('.sales-mode-toolbar')
     .getByRole('button', { name: 'Коктейль', exact: true });

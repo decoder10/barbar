@@ -1,7 +1,7 @@
 import { initialData } from '../../src/barbar/domain/model';
 import type { AuditEvent } from './audit/store';
 import type { UserProfile } from '../../src/barbar/domain/identity/user';
-import type { BarData, Command, Sale } from '../../src/barbar/domain/types';
+import type { BarData, BarTable, Command, CommandContext, Order, Sale } from '../../src/barbar/domain/types';
 
 export type SalesPopularity = (from: string, to: string) => Promise<Map<string, number>>;
 export interface Storage {
@@ -26,6 +26,13 @@ export interface Snapshot {
   baseRevision?: string;
   changedStock?: NonNullable<BarData['opening']>['ingredients'];
   sale?: Sale;
+}
+/** Tables, open receipts and their active lines: what the tables board shows. */
+export interface OrdersSnapshot {
+  revision: string | null;
+  tables: BarTable[];
+  orders: Order[];
+  sales: Sale[];
 }
 export interface StockSnapshot {
   revision: string;
@@ -135,7 +142,8 @@ export interface Repository {
   /** Active sale operations per `kind:productId` over the business days from `from` to `to`. */
   salesPopularity?: SalesPopularity;
   readWorking?: () => Promise<Snapshot>;
-  execute?: (command: Command, actor: UserProfile) => Promise<Snapshot | null>;
+  readOrders?: () => Promise<OrdersSnapshot>;
+  execute?: (command: Command, actor: UserProfile, context?: CommandContext) => Promise<Snapshot | null>;
   readRevision?: () => Promise<string | null>;
   read: () => Promise<Snapshot>;
   commit: (

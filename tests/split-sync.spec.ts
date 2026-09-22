@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { fixtureData } from './fixtures';
+import { fixtureData, mockOrders } from './fixtures';
 import { compactData } from '../netlify/lib/barbar-working';
 import { publicCatalogPart, publicStock } from '../netlify/lib/barbar-sync';
 import { staffData } from '../netlify/lib/barbar-access';
@@ -68,6 +68,7 @@ for (const role of ['admin', 'barbar'] as const) {
         data = applyCommand(data, command);
         revision = `s${++writes + 1}`;
         const current = state();
+        if (command.type !== 'sale') return r.fulfill({ json: { ...current, partial: true, baseRevision } });
         const changed = current.stock!.filter(
           (b) => b.ml !== before.find((p) => p.alcoholId === b.alcoholId)!.ml,
         );
@@ -86,13 +87,21 @@ for (const role of ['admin', 'barbar'] as const) {
             : state(),
       });
     });
-    await page.goto('/');
+    await mockOrders(
+      page,
+      () => data,
+      () => role,
+    );
+    await page.goto('/sales');
     await page.getByPlaceholder('Найти напиток…').fill('Gin tonic Beefeater');
     await expect.poll(() => historyCalls).toBe(1);
     expect(catalogCalls).toBe(2);
     await page.locator('.drink-card').first().click();
     await page.getByRole('button', { name: 'Записать продажу', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(catalogCalls).toBe(2);
+    // Back on the day log, the new snapshot reloads history once; the catalog stays cached.
+    await page.getByRole('link', { name: 'Продажи Каждый день' }).click();
     await expect.poll(() => historyCalls).toBe(2);
     expect(catalogCalls).toBe(2);
     await page.getByRole('button', { name: 'Обновить данные', exact: true }).click();

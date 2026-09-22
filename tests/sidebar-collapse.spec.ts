@@ -21,7 +21,7 @@ for (const role of ['admin', 'barbar'] as const) {
         },
       }),
     );
-    await page.goto('/');
+    await page.goto('/sales');
     const controls = page.locator('.sales-mode-toolbar');
     await expect(controls.getByRole('button', { name: 'На весь экран', exact: true })).toBeVisible();
     const boxes = await controls

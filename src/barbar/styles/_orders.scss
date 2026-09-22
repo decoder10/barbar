@@ -1,0 +1,536 @@
+@use 'mixins' as *;
+
+/* Tables board */
+.tables-board {
+  @include fluid-grid(150px, 12px);
+  margin-bottom: 28px;
+}
+
+.table-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 118px;
+  padding: 16px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  transition:
+    box-shadow 0.18s,
+    transform 0.18s,
+    border-color 0.18s;
+}
+
+.table-tile:not(:disabled):hover {
+  box-shadow: 0 8px 25px #2323330d;
+}
+
+.table-tile:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.table-tile .table-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.table-tile > small {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.table-tile > strong {
+  margin-top: auto;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+
+.table-tile.free {
+  border-style: dashed;
+  background: transparent;
+}
+
+.table-tile.free .table-name {
+  color: var(--muted);
+}
+
+.table-tile.free:not(:disabled):hover .table-name {
+  color: var(--text);
+}
+
+.table-tile.open {
+  border-color: var(--pink);
+  background: var(--pink-light);
+}
+
+.table-tile.open > strong {
+  color: var(--pink);
+}
+
+.table-opener {
+  color: var(--muted);
+}
+
+.walk-in-orders h2 {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 12px;
+  letter-spacing: -0.2px;
+}
+
+.tables-empty {
+  margin-bottom: 20px;
+}
+
+/* Order screen */
+.order-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.order-heading .eyebrow {
+  font-size: 8px;
+  margin-bottom: 6px;
+}
+
+.order-heading h1 {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.7px;
+  line-height: 1.2;
+}
+
+.order-panel .receipt-heading h2 {
+  font-size: 15px;
+}
+
+.order-lines .receipt-line {
+  gap: 10px;
+}
+
+.line-stepper {
+  display: inline-flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.line-stepper .icon-button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.order-panel .pay-button {
+  min-height: 48px;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.order-panel .cancel-order {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.order-panel .receipt-total > small {
+  margin: 8px 0 14px;
+}
+
+/* Paid screen */
+.order-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 60vh;
+  text-align: center;
+}
+
+.order-done-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: var(--success-surface);
+  color: var(--success);
+}
+
+.order-done h1 {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.order-done-total {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.order-done-change {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.order-done-change strong {
+  color: var(--text);
+}
+
+.order-done-table {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.order-done-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.order-missing {
+  gap: 10px;
+}
+
+/* Payment sheet */
+.payment-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.payment-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.payment-total strong {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.9px;
+  color: var(--text);
+}
+
+.payment-split-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.payment-parts-count {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.payment-parts-count strong {
+  min-width: 24px;
+  font-size: 16px;
+  text-align: center;
+  color: var(--text);
+}
+
+.payment-parts-count .icon-button {
+  border: 1px solid var(--line);
+}
+
+.payment-part {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.payment-part-heading > span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.payment-methods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.payment-methods button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.payment-methods button.selected {
+  border-color: var(--pink);
+  background: var(--pink-light);
+  color: var(--pink);
+}
+
+.payment-cash {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payment-change {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.payment-change strong {
+  font-size: 16px;
+  color: var(--success);
+}
+
+.payment-remaining {
+  font-size: 12px;
+  color: var(--warning);
+}
+
+.payment-remaining.done {
+  color: var(--success);
+}
+
+.payment-submit {
+  min-height: 52px;
+  font-size: 14px;
+}
+
+.payment-methods-summary {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Tables editor */
+.tables-editor-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.tables-editor-add .field {
+  margin-bottom: 0;
+}
+
+.tables-editor-add .button {
+  min-height: 43px;
+}
+
+.tables-editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 50vh;
+  overflow: auto;
+}
+
+.tables-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.tables-editor-row.inactive {
+  opacity: 0.6;
+}
+
+.tables-editor-row form {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+}
+
+.tables-editor-row form input {
+  flex: 1;
+  min-width: 0;
+}
+
+.tables-editor-name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 40px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  text-align: left;
+  color: var(--text);
+}
+
+.tables-editor-name:hover:not(:disabled) {
+  background: var(--pink-light);
+}
+
+.tables-editor-name small {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+@include below(760px) {
+  .tables-board {
+    @include fluid-grid(140px, 10px);
+  }
+
+  .table-tile {
+    min-height: 104px;
+    padding: 14px;
+  }
+
+  .table-tile .table-name {
+    font-size: 22px;
+  }
+
+  .table-tile > small,
+  .table-opener {
+    font-size: 12px;
+  }
+
+  .table-tile > strong {
+    font-size: 18px;
+  }
+
+  .order-heading {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .order-heading h1 {
+    font-size: 20px;
+  }
+
+  .order-heading .eyebrow {
+    display: none;
+  }
+
+  .back-to-tables {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+
+  .order-bar > span:nth-child(2) small {
+    text-transform: none;
+  }
+
+  .sheet .order-panel .pay-button,
+  .sheet .order-panel .cancel-order {
+    min-height: 50px;
+    font-size: 14px;
+  }
+
+  .line-stepper .icon-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .payment-total strong {
+    font-size: 32px;
+  }
+
+  .payment-methods button {
+    min-height: 54px;
+    font-size: 15px;
+  }
+
+  .order-done-actions {
+    flex-direction: column;
+    width: 100%;
+    padding: 0 16px;
+  }
+
+  .order-done-actions .button {
+    width: 100%;
+  }
+
+  .tables-editor-add {
+    grid-template-columns: 1fr;
+  }
+
+  .tables-heading .heading-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .table-tile-close {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Focused-mode toolbar inside a heading row (order screen, tables board). */
+.order-heading > .sales-mode-toolbar,
+.heading-actions > .sales-mode-toolbar {
+  margin: 0 0 0 auto;
+  padding: 0;
+}
+
+.tables-heading > .page-heading {
+  margin-bottom: 20px;
+}
+
+/* Empty walk-in orders can be closed from the board. */
+.table-tile-wrap {
+  position: relative;
+}
+
+.table-tile-wrap > .table-tile {
+  width: 100%;
+  height: 100%;
+}
+
+.table-tile-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.table-tile-close:hover:not(:disabled),
+.tables-editor-row .icon-button.danger:hover:not(:disabled),
+.line-stepper .icon-button:first-child:hover:not(:disabled) {
+  color: var(--danger);
+  background: var(--danger-surface);
+}

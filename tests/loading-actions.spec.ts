@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fixtureData } from './fixtures';
+import { fixtureData, mockOrders } from './fixtures';
 import { applyCommand } from '../src/barbar/domain/model';
 
 function gate() {
@@ -20,6 +20,11 @@ test('sale is single-flight, freezes the form without borders, preserves values 
   await page.route('**/api/barbar', async (r) => {
     if (r.request().method() === 'POST') {
       const { command } = r.request().postDataJSON();
+      // The walk-in order itself is created before the dialog; only the sale is under test.
+      if (command.type === 'openOrder') {
+        data = applyCommand(data, command);
+        return r.fulfill({ json: { data, role: 'admin', revision: 'test' } });
+      }
       commands.push(command);
       if (commands.length === 1) {
         await hold.promise;
@@ -29,7 +34,8 @@ test('sale is single-flight, freezes the form without borders, preserves values 
     }
     return r.fulfill({ json: { data, role: 'admin', revision: 'test' } });
   });
-  await page.goto('/');
+  await mockOrders(page, () => data);
+  await page.goto('/sales');
   await page.locator('.drink-card').first().click();
   const dialog = page.getByRole('dialog');
   await page.getByLabel('Количество порций').fill('2');

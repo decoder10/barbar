@@ -18,7 +18,7 @@ test('snack recipes use snack products, their units and a collapsed own-category
       await route.fulfill({ status: 400, json: { error: (error as Error).message } });
     }
   });
-  await page.goto('/');
+  await page.goto('/sales');
   await page.getByRole('link', { name: /Меню и рецепты/ }).click();
   await page.getByRole('button', { name: 'Закуски', exact: true }).click();
   await page.getByRole('button', { name: /ЗАКУСКИ.*BarBar sandwich/ }).click();

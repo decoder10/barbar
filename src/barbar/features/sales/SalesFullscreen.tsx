@@ -1,40 +1,50 @@
-import { Maximize, Minimize } from 'lucide-react';
+import { Armchair, Maximize, Minimize, ShoppingBag } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { fullscreenMode, setFullscreenMode, useFullscreen } from '../../presentation/fullscreen-store';
 import { t } from '../../presentation/i18n/runtime';
 import { BusyButton } from '../../ui/loading';
 
-export function SalesFullscreen({ children }: { children?: ReactNode }) {
-  const [active, setActive] = useState(false);
-  const [pending, setPending] = useState(false);
-  const changing = useRef(false);
-  const ownsFullscreen = useRef(false);
-
+/**
+ * Keeps the document in step with the focused mode: the `sales-fullscreen` class, the browser's
+ * fullscreen and Escape. Mounted once in the workspace, so the mode survives route changes.
+ */
+export function FullscreenMode() {
+  const active = useFullscreen();
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('sales-fullscreen', active);
     return () => document.documentElement.classList.remove('sales-fullscreen');
   }, [active]);
-
   useEffect(() => {
     const onFullscreen = () => {
-      if (!document.fullscreenElement && ownsFullscreen.current) {
-        ownsFullscreen.current = false;
-        setActive(false);
-      }
+      if (!document.fullscreenElement && fullscreenMode() === 'browser') setFullscreenMode('off');
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.fullscreenElement && !document.querySelector('dialog[open]')) {
-        setActive(false);
-      }
+      if (event.key === 'Escape' && !document.fullscreenElement && !document.querySelector('dialog[open]'))
+        setFullscreenMode('off');
     };
     document.addEventListener('fullscreenchange', onFullscreen);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('fullscreenchange', onFullscreen);
       document.removeEventListener('keydown', onKey);
-      if (ownsFullscreen.current && document.fullscreenElement)
+      // Logging out unmounts the workspace: leave the browser's fullscreen with it.
+      if (fullscreenMode() === 'browser' && document.fullscreenElement)
         void document.exitFullscreen().catch(() => {});
+      setFullscreenMode('off');
     };
   }, []);
+  return null;
+}
+
+/**
+ * The focused-mode toolbar of a selling screen. With the sidebar hidden, it carries the one link the
+ * screen lacks: the board and the order link to «Продажи», the day log links to «Столы».
+ */
+export function SalesFullscreen({ children, home = false }: { children?: ReactNode; home?: boolean }) {
+  const active = useFullscreen();
+  const [pending, setPending] = useState(false);
+  const changing = useRef(false);
 
   const toggle = async () => {
     if (changing.current) return;
@@ -42,20 +52,20 @@ export function SalesFullscreen({ children }: { children?: ReactNode }) {
     setPending(true);
     try {
       if (active) {
-        setActive(false);
-        if (ownsFullscreen.current && document.fullscreenElement) await document.exitFullscreen();
-        ownsFullscreen.current = false;
+        const owned = fullscreenMode() === 'browser';
+        setFullscreenMode('off');
+        if (owned && document.fullscreenElement) await document.exitFullscreen();
       } else {
-        setActive(true);
+        setFullscreenMode('layout');
         window.scrollTo({ top: 0, behavior: 'instant' });
         if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-          ownsFullscreen.current = true;
+          setFullscreenMode('browser');
           await document.documentElement.requestFullscreen();
         }
       }
     } catch {
       // Mobile/embedded browsers may deny fullscreen; the focused layout still works.
-      ownsFullscreen.current = false;
+      setFullscreenMode('layout');
     } finally {
       changing.current = false;
       setPending(false);
@@ -64,6 +74,12 @@ export function SalesFullscreen({ children }: { children?: ReactNode }) {
 
   return (
     <div className="sales-mode-toolbar">
+      {active && (
+        <Link className="button secondary sales-fullscreen-tables" to={home ? '/sales' : '/'}>
+          {home ? <ShoppingBag size={17} /> : <Armchair size={17} />}
+          <span className="sales-fullscreen-label">{t(home ? 'Продажи' : 'Столы')}</span>
+        </Link>
+      )}
       <BusyButton
         className="button secondary"
         aria-pressed={active}

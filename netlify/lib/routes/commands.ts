@@ -9,7 +9,15 @@ import type { Repository, Snapshot } from '../barbar-repository';
 import { HttpError } from '../http';
 
 /** Worker commands are an allowlist; the domain then validates every field of every command. */
-const workerCommands = ['sale', 'createCocktail', 'updateRecipe'];
+const workerCommands = [
+  'sale',
+  'createCocktail',
+  'updateRecipe',
+  'openOrder',
+  'payOrder',
+  'cancelOrder',
+  'removeLine',
+];
 /** History edits must start from the state the client saw. */
 const historyCommands = ['restore', 'purge', 'correctPurchase'];
 
@@ -37,6 +45,8 @@ export async function handleCommand(
   const input = await parseInput(request);
   if (role !== 'admin' && !workerCommands.includes(input?.command?.type))
     return json({ error: 'Эта операция доступна только администратору.' }, 403);
+  // Who acts comes from the session, never from the body: receipts record the opener and the closer.
+  const context = { actor: { id: user.id, fullName: user.fullName } };
   const respond = async (snapshot: Snapshot, warning?: string) =>
     json({
       ...(split
@@ -45,7 +55,7 @@ export async function handleCommand(
       ...(warning ? { warning } : {}),
     });
   if (repository.execute) {
-    const result = await repository.execute(input.command, user);
+    const result = await repository.execute(input.command, user, context);
     if (result) return respond(result);
   }
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -61,7 +71,7 @@ export async function handleCommand(
       );
     let next: BarData;
     try {
-      next = applyCommand(current.data, input.command);
+      next = applyCommand(current.data, input.command, context);
     } catch (error) {
       return json({ error: error instanceof Error ? error.message : 'Некорректная операция.' }, 400);
     }
@@ -75,7 +85,11 @@ export async function handleCommand(
         },
         413,
       );
-    const result = await repository.commit(current, next, commandAudit(input.command, next, user));
+    const result = await repository.commit(
+      current,
+      next,
+      commandAudit(input.command, next, user, current.data),
+    );
     if (result.modified)
       return respond(
         repository.readWorking

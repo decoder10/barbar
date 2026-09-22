@@ -7,20 +7,25 @@ import { businessToday } from './business-day';
 import { isGlassServing } from './serving';
 import { componentsValid, expandExtraCosts, expandRecipe } from './catalog/sets';
 import { barConfig } from '../config';
+import { round } from './money';
+import { openOrderAt, orderLines, orderTotal, paymentMethod } from './orders';
 import { productGroupIds } from './inventory-groups';
 import {
   Alcohol,
   BarData,
+  BarTable,
   Cocktail,
   Command,
+  CommandContext,
   Ingredient,
   MenuCategory,
+  Order,
   PortionExpense,
   Purchase,
   Sale,
 } from './types';
 
-export const round = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+export { round };
 export const today = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Yerevan' }).format(new Date());
 export const money = (n: number) =>
   `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(n)} ֏`;
@@ -465,6 +470,26 @@ export function validateData(value: unknown): BarData {
     return fail('Некорректный журнал операций.');
   }
   if (
+    d.tables !== undefined &&
+    (!Array.isArray(d.tables) ||
+      new Set(d.tables.map((t) => t?.id)).size !== d.tables.length ||
+      !d.tables.every(tableValid))
+  ) {
+    return fail('Некорректные столы в файле.');
+  }
+  if (
+    d.orders !== undefined &&
+    (!Array.isArray(d.orders) ||
+      new Set(d.orders.map((o) => o?.id)).size !== d.orders.length ||
+      !d.orders.every(orderValid))
+  ) {
+    return fail('Некорректные заказы в файле.');
+  }
+  const orderIds = new Set((d.orders || []).map((o) => o.id));
+  if (d.sales.some((s) => s.orderId !== undefined && !orderIds.has(s.orderId))) {
+    return fail('Продажа ссылается на неизвестный заказ.');
+  }
+  if (
     d.archived &&
     (!dateValid(d.archived.before) ||
       !Number.isSafeInteger(d.archived.count) ||
@@ -500,7 +525,55 @@ export function purchaseCorrectionError(
   return null;
 }
 
-export function applyCommand(data: BarData, command: Command): BarData {
+const tableCodeValid = (s: unknown): s is string => typeof s === 'string' && /^[a-zA-Z0-9]{6,32}$/.test(s);
+const tableValid = (t: BarTable) =>
+  !!t &&
+  identifier(t.id) &&
+  nameValid(t.name) &&
+  t.name.length <= 40 &&
+  Number.isInteger(t.order) &&
+  t.order >= 0 &&
+  typeof t.active === 'boolean' &&
+  tableCodeValid(t.code);
+const actorValid = (a: unknown) =>
+  a === undefined ||
+  (!!a &&
+    typeof a === 'object' &&
+    identifier((a as { id: unknown }).id) &&
+    typeof (a as { fullName: unknown }).fullName === 'string');
+const isoValid = (s: unknown) => typeof s === 'string' && Number.isFinite(Date.parse(s));
+const paymentValid = (p: { method: unknown; amount: unknown; receivedCash?: unknown }) => {
+  const method = p ? paymentMethod(p.method) : undefined;
+  return (
+    !!method &&
+    number(p.amount, true) &&
+    (p.receivedCash === undefined ||
+      (method.change && number(p.receivedCash, true) && p.receivedCash >= p.amount - 1e-9))
+  );
+};
+const orderValid = (o: Order) =>
+  !!o &&
+  identifier(o.id) &&
+  (o.tableId === undefined || identifier(o.tableId)) &&
+  ['open', 'paid', 'cancelled'].includes(o.status) &&
+  dateValid(o.businessDay) &&
+  isoValid(o.openedAt) &&
+  actorValid(o.openedBy) &&
+  actorValid(o.closedBy) &&
+  (o.closedAt === undefined || isoValid(o.closedAt)) &&
+  (o.note === undefined || (typeof o.note === 'string' && o.note.length <= 200)) &&
+  (o.total === undefined || number(o.total)) &&
+  (o.payments === undefined ||
+    (Array.isArray(o.payments) &&
+      o.payments.every((p) => identifier(p.id) && paymentValid(p)) &&
+      new Set(o.payments.map((p) => p.id)).size === o.payments.length)) &&
+  (o.status !== 'paid' || (!!o.payments?.length && o.total !== undefined && o.closedAt !== undefined)) &&
+  (o.status !== 'open' || (o.closedAt === undefined && !o.payments?.length));
+const actorOf = (context: CommandContext) =>
+  context.actor ? { id: context.actor.id, fullName: context.actor.fullName } : undefined;
+const tableCode = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+
+export function applyCommand(data: BarData, command: Command, context: CommandContext = {}): BarData {
   if (!command || !identifier(command.id)) {
     return fail('Некорректная операция.');
   }
@@ -509,11 +582,19 @@ export function applyCommand(data: BarData, command: Command): BarData {
     data.sales.some((s) => s.id === command.id) ||
     resets(data).some((r) => r.id === command.id) ||
     data.stockMovements?.some((m) => m.id === command.id) ||
-    data.expenses?.some((e) => e.id === command.id)
+    data.expenses?.some((e) => e.id === command.id) ||
+    data.orders?.some((o) => o.id === command.id)
   ) {
     return data;
   }
   const next: BarData = JSON.parse(JSON.stringify(data));
+  const now = () => new Date().toISOString();
+  const openOrder = (orderId: unknown) => {
+    const order = identifier(orderId) ? next.orders?.find((o) => o.id === orderId) : undefined;
+    if (!order) return fail('Заказ не найден. Обновите экран столов.');
+    if (order.status !== 'open') return fail('Заказ уже закрыт. Откройте новый заказ.');
+    return order;
+  };
   switch (command.type) {
     case 'count':
     case 'writeoff':
@@ -857,8 +938,12 @@ export function applyCommand(data: BarData, command: Command): BarData {
       break;
     }
     case 'sale': {
+      // A receipt line always belongs to the current shift: the order keeps its own business day.
+      const order = command.value?.orderId !== undefined ? openOrder(command.value.orderId) : undefined;
       const v =
-        command.value?.businessDay === true ? { ...command.value, date: businessToday() } : command.value;
+        command.value?.businessDay === true || order
+          ? { ...command.value, date: businessToday() }
+          : command.value;
       if (next.archived && v?.date < next.archived.before) {
         return fail('История этого периода удалена. Выберите более позднюю дату.');
       }
@@ -952,6 +1037,7 @@ export function applyCommand(data: BarData, command: Command): BarData {
       if (!extraCosts.every((i) => number(i.cost, true))) return fail('Слишком большая стоимость продуктов.');
       const plain = v.kind === 'cocktail' && !!(product as Cocktail).noIngredients;
       const sale: Sale = {
+        ...(order ? { orderId: order.id } : {}),
         ...(glass && servingMl ? { servingMl } : {}),
         ...(extraCosts.length ? { extraCosts } : {}),
         id: command.id,
@@ -1023,6 +1109,107 @@ export function applyCommand(data: BarData, command: Command): BarData {
         return fail('Продажа не найдена.');
       }
       sale.voided = true;
+      break;
+    }
+    case 'removeLine': {
+      const sale = next.sales.find((s) => s.id === command.saleId);
+      if (!sale) return fail('Продажа не найдена.');
+      const order = sale.orderId ? next.orders?.find((o) => o.id === sale.orderId) : undefined;
+      if (!order || order.status !== 'open')
+        return fail('Убрать можно только позицию открытого заказа. Обратитесь к владельцу.');
+      sale.voided = true;
+      break;
+    }
+    case 'saveTable': {
+      const v = command.value;
+      if (!v || !identifier(v.id) || !nameValid(v.name) || v.name.length > 40)
+        return fail('Укажите название стола до 40 символов.');
+      if (!Number.isInteger(v.order) || v.order < 0 || typeof v.active !== 'boolean')
+        return fail('Проверьте порядок и состояние стола.');
+      const tables = next.tables || [];
+      const existing = tables.find((t) => t.id === v.id);
+      const name = v.name.trim();
+      if (tables.some((t) => t.id !== v.id && t.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase()))
+        return fail('Стол с таким названием уже есть.');
+      if (!v.active && openOrderAt(next.orders, v.id))
+        return fail('У стола есть открытый заказ. Сначала закройте его.');
+      const table: BarTable = {
+        id: v.id,
+        name,
+        order: v.order,
+        active: v.active,
+        code: existing && !command.newCode ? existing.code : tableCode(),
+      };
+      next.tables = existing ? tables.map((t) => (t.id === v.id ? table : t)) : [...tables, table];
+      break;
+    }
+    case 'removeTable': {
+      const table = identifier(command.tableId)
+        ? next.tables?.find((t) => t.id === command.tableId)
+        : undefined;
+      if (!table) return fail('Стол не найден. Обновите экран столов.');
+      // Past receipts keep the table id for history; only an open one holds the table back.
+      if (openOrderAt(next.orders, table.id))
+        return fail('У стола есть открытый заказ. Сначала закройте его.');
+      next.tables = next.tables!.filter((t) => t.id !== table.id);
+      break;
+    }
+    case 'openOrder': {
+      if (command.tableId !== undefined) {
+        const table = identifier(command.tableId)
+          ? next.tables?.find((t) => t.id === command.tableId)
+          : undefined;
+        if (!table || !table.active) return fail('Стол не найден. Обновите экран столов.');
+        if (openOrderAt(next.orders, table.id)) return fail('У этого стола уже есть открытый заказ.');
+      }
+      const order: Order = {
+        id: command.id,
+        ...(command.tableId !== undefined ? { tableId: command.tableId } : {}),
+        status: 'open',
+        businessDay: businessToday(),
+        openedAt: now(),
+        ...(context.actor ? { openedBy: actorOf(context) } : {}),
+      };
+      next.orders = [...(next.orders || []), order];
+      break;
+    }
+    case 'payOrder': {
+      const order = openOrder(command.orderId);
+      const lines = orderLines(next.sales, order.id);
+      const total = orderTotal(lines);
+      if (!lines.length) return fail('В заказе нет позиций. Добавьте напитки или отмените заказ.');
+      if (!number(command.expectedTotal, true) || Math.abs(command.expectedTotal - total) > 0.005)
+        return fail('Заказ изменился на другом устройстве. Проверьте сумму и повторите оплату.');
+      const payments = command.payments;
+      if (
+        !Array.isArray(payments) ||
+        !payments.length ||
+        payments.length > barConfig.payments.maxSplitParts ||
+        !payments.every(paymentValid)
+      )
+        return fail('Проверьте способы и суммы оплаты.');
+      if (Math.abs(round(payments.reduce((sum, p) => sum + p.amount, 0)) - total) > 0.005)
+        return fail('Сумма оплаты не совпадает с суммой заказа.');
+      order.status = 'paid';
+      order.total = total;
+      order.closedAt = now();
+      if (context.actor) order.closedBy = actorOf(context);
+      order.payments = payments.map((p, index) => ({
+        id: `${command.id}-${index + 1}`,
+        method: p.method,
+        amount: round(p.amount),
+        ...(p.receivedCash !== undefined && round(p.receivedCash) !== round(p.amount)
+          ? { receivedCash: round(p.receivedCash) }
+          : {}),
+      }));
+      break;
+    }
+    case 'cancelOrder': {
+      const order = openOrder(command.orderId);
+      for (const sale of orderLines(next.sales, order.id)) sale.voided = true;
+      order.status = 'cancelled';
+      order.closedAt = now();
+      if (context.actor) order.closedBy = actorOf(context);
       break;
     }
     case 'purge': {

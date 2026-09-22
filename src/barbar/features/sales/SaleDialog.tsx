@@ -6,6 +6,18 @@ import { round } from '../../domain/model';
 import type { Sale } from '../../domain/types';
 import { locale, t } from '../../presentation/i18n/runtime';
 
+/** A drink picked in the catalog: the page resolves the product for its role. */
+export interface CatalogSelection {
+  kind: Sale['kind'];
+  id: string;
+}
+/** What a sale dialog hands back: the page decides whether it is a standalone sale or a receipt line. */
+export interface SaleValue {
+  kind: Sale['kind'];
+  productId: string;
+  quantity: number;
+  servingMl?: number;
+}
 export interface SaleLine {
   id: string;
   name?: string;

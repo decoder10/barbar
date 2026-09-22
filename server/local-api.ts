@@ -116,6 +116,7 @@ export function localApi(): Plugin {
             '/api/barbar/catalog/alcohol',
             '/api/barbar/catalog/cocktails',
             '/api/barbar/catalog/cards',
+            '/api/barbar/orders',
             '/api/barbar/auth',
             '/api/barbar/users',
             '/api/barbar/rates',

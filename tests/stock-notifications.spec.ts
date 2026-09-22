@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fixtureData } from './fixtures';
+import { fixtureData, mockOrders } from './fixtures';
 import { staffData } from '../netlify/lib/barbar-access';
 import { applyCommand } from '../src/barbar/domain/model';
 import type { Command } from '../src/barbar/domain/types';
@@ -70,10 +70,18 @@ for (const role of ['admin', 'barbar'] as const) {
         },
       });
     });
-    await page.goto('/');
+    await mockOrders(
+      page,
+      () => data,
+      () => role,
+    );
+    await page.goto('/sales');
     await page.getByPlaceholder('Найти напиток…').fill('Gin tonic Beefeater');
     await expect(page.locator('.stock-alert')).toHaveCount(0);
     const sell = async (quantity: number) => {
+      // Every sale starts from the day log: a tap there opens a walk-in order with the dialog.
+      if (!page.url().endsWith('/sales'))
+        await page.getByRole('link', { name: 'Продажи Каждый день' }).click();
       await page.locator('.drink-card').first().click();
       await page.getByLabel('Количество порций', { exact: true }).fill(String(quantity));
       await page.getByRole('button', { name: 'Записать продажу', exact: true }).click();

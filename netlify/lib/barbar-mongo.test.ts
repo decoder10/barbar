@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { migrateBottleCatalog } from '../../src/barbar/domain/catalog/bottles';
 import { applyCommand, averageCost, initialData, stock } from '../../src/barbar/domain/model';
 import type { Command } from '../../src/barbar/domain/types';
+import type { UserProfile } from '../../src/barbar/domain/identity/user';
 import { handleBarApi } from '../../tests/identity-fixture';
 import { businessToday } from '../../src/barbar/domain/business-day';
 import { handleHistory } from './queries/history';
@@ -297,6 +298,116 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
     expect(full.stockMovements).toHaveLength(3);
     expect(full.expenses).toHaveLength(1);
     expect(await db.collection('auditEvents').countDocuments()).toBe(4);
+  });
+  it('runs receipts transactionally: lines deduct at once, a cancellation returns them, worker voids stay on the receipt', async () => {
+    const { db, repo } = create(async () => applyCommand(initialData(), purchase));
+    const owner: UserProfile = {
+      id: 'admin',
+      username: 'admin',
+      fullName: 'Owner',
+      email: '',
+      phone: '',
+      role: 'owner',
+      active: true,
+      createdAt: '',
+    };
+    const worker: UserProfile = { ...owner, id: 'w1', username: 'w1', fullName: 'Worker', role: 'worker' };
+    const run = (command: Command, actor: UserProfile = worker) =>
+      repo.execute!(command, actor, { actor: { id: actor.id, fullName: actor.fullName } });
+    await run(
+      { type: 'saveTable', id: 'save-table', value: { id: 't1', name: '1', order: 0, active: true } },
+      owner,
+    );
+    await expect(
+      run(
+        { type: 'saveTable', id: 'save-dup', value: { id: 't2', name: '1', order: 1, active: true } },
+        owner,
+      ),
+    ).rejects.toThrow('уже есть');
+    await run({ type: 'openOrder', id: 'order-1', tableId: 't1' });
+    await expect(run({ type: 'openOrder', id: 'order-2', tableId: 't1' })).rejects.toThrow(
+      'уже есть открытый заказ',
+    );
+    const line = (id: string, quantity: number): Command => ({
+      type: 'sale',
+      id,
+      value: { kind: 'alcohol', productId: 'vodka', quantity, date: businessToday(), orderId: 'order-1' },
+    });
+    const first = await run(line('line-1', 30));
+    expect(first!.sale).toMatchObject({ orderId: 'order-1', quantity: 30 });
+    expect(first!.changedStock?.find((b: { alcoholId: string }) => b.alcoholId === 'vodka')?.ml).toBe(70);
+    await run(line('line-2', 40));
+    await expect(run(line('line-3', 40))).rejects.toThrow('Недостаточно');
+    const board = await repo.readOrders!();
+    expect(board.orders.map((o) => o.id)).toEqual(['order-1']);
+    expect(board.sales.map((s) => s.id).sort()).toEqual(['line-1', 'line-2']);
+    expect(board.tables[0]).toMatchObject({ id: 't1', name: '1' });
+    // The worker takes a line off the open receipt; the same worker cannot void a standalone sale.
+    await run({ type: 'removeLine', id: 'void-2', saleId: 'line-2' });
+    expect((await db.collection('stockBalances').findOne({ _id: 'vodka' as never }))?.ml).toBe(70);
+    await run(
+      {
+        type: 'sale',
+        id: 'plain',
+        value: { kind: 'alcohol', productId: 'vodka', quantity: 10, date: businessToday() },
+      },
+      owner,
+    );
+    await expect(run({ type: 'removeLine', id: 'void-plain', saleId: 'plain' })).rejects.toThrow('владельцу');
+    await expect(
+      run({
+        type: 'payOrder',
+        id: 'pay-wrong',
+        orderId: 'order-1',
+        expectedTotal: 1,
+        payments: [{ method: 'cash', amount: 1 }],
+      }),
+    ).rejects.toThrow('изменился');
+    const paid = await run({
+      type: 'payOrder',
+      id: 'pay-1',
+      orderId: 'order-1',
+      expectedTotal: 540,
+      payments: [{ method: 'cash', amount: 540, receivedCash: 1000 }],
+    });
+    expect(paid!.changedStock).toEqual([]);
+    const order = await db.collection('orders').findOne({ _id: 'order-1' as never });
+    expect(order).toMatchObject({
+      status: 'paid',
+      total: 540,
+      closedBy: { id: 'w1' },
+      openedBy: { id: 'w1' },
+    });
+    // A retry of the same payment is an idempotent success.
+    expect(
+      (await run({
+        type: 'payOrder',
+        id: 'pay-1',
+        orderId: 'order-1',
+        expectedTotal: 540,
+        payments: [{ method: 'cash', amount: 540 }],
+      }))!.revision,
+    ).toBe(paid!.revision);
+    await expect(run(line('line-4', 10))).rejects.toThrow('уже закрыт');
+    await run({ type: 'openOrder', id: 'order-3', tableId: 't1' });
+    await run({
+      ...line('line-5', 20),
+      value: { ...(line('line-5', 20) as { value: object }).value, orderId: 'order-3' },
+    } as Command);
+    expect((await db.collection('stockBalances').findOne({ _id: 'vodka' as never }))?.ml).toBe(40);
+    await run({ type: 'cancelOrder', id: 'cancel-3', orderId: 'order-3' });
+    expect((await db.collection('stockBalances').findOne({ _id: 'vodka' as never }))?.ml).toBe(60);
+    expect((await db.collection('sales').findOne({ _id: 'line-5' as never }))?.voided).toBe(true);
+    expect((await repo.readOrders!()).orders).toEqual([]);
+    const full = (await repo.read()).data;
+    expect(full.orders).toHaveLength(2);
+    expect(full.tables).toHaveLength(1);
+    await run({ type: 'removeTable', id: 'remove-t1', tableId: 't1' }, owner);
+    expect(await db.collection('tables').countDocuments()).toBe(0);
+    expect(await db.collection('orders').countDocuments({ tableId: 't1' })).toBe(2);
+    expect((await db.collection('auditEvents').findOne({ _id: 'pay-1' as never }))?.summary).toContain(
+      'стол «1»',
+    );
   });
   it('preserves stock and valuation across purge, restore and cancellation', async () => {
     const { repo, db } = create(async () =>

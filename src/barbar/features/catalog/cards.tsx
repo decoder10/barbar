@@ -72,6 +72,7 @@ export function CocktailCard({
   footer,
   action,
   hidePrice,
+  icon,
 }: {
   cocktail: Pick<Cocktail, 'name' | 'image' | 'category' | 'serving' | 'price'>;
   detail: ReactNode;
@@ -79,12 +80,14 @@ export function CocktailCard({
   action: () => void;
   /** Roles without access to prices see the same card without the amount. */
   hidePrice?: boolean;
+  icon?: ReactNode;
 }) {
   return (
     <CatalogCard
       name={cocktail.name}
       action={action}
       detail={detail}
+      icon={icon}
       art={
         <CocktailArt
           image={menuImage(cocktail)}

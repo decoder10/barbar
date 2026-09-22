@@ -30,7 +30,7 @@ test('fluid warehouse grid, readable filters, stable product art and scroll-lock
     'aria-pressed',
     'true',
   );
-  await page.goto('/');
+  await page.goto('/sales');
   const art = page.locator('.drink-card .card-image').first();
   await art.scrollIntoViewIfNeeded();
   const before = await art.boundingBox();

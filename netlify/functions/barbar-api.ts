@@ -65,5 +65,6 @@ export const config = {
     '/api/barbar/catalog/alcohol',
     '/api/barbar/catalog/cocktails',
     '/api/barbar/catalog/cards',
+    '/api/barbar/orders',
   ],
 };

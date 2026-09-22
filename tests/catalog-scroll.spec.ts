@@ -3,7 +3,7 @@ import { fixtureData } from './fixtures';
 import { staffData } from '../netlify/lib/barbar-access';
 
 for (const role of ['admin', 'barbar'] as const) {
-  for (const path of ['/', '/cocktails']) {
+  for (const path of ['/sales', '/cocktails']) {
     test(`${role} ${path}: scrolling reveals catalog batches without extra API reads`, async ({ page }) => {
       const data = fixtureData();
       data.cocktails = Array.from({ length: 61 }, (_, index) => ({

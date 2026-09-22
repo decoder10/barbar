@@ -48,7 +48,7 @@ for (const worker of [false, true])
         },
       });
     });
-    await page.goto('/');
+    await page.goto('/sales');
     const receipt = page.locator('.day-receipt');
     await expect(receipt).toContainText('55');
     await expect(receipt).toContainText('550');

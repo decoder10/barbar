@@ -3,6 +3,7 @@ import guestMenu from './guest-menu.json' with { type: 'json' };
 import inventoryGroups from './inventory-groups.json' with { type: 'json' };
 import menuCategories from './menu-categories.json' with { type: 'json' };
 import presets from './presets.json' with { type: 'json' };
+import paymentMethods from './payment-methods.json' with { type: 'json' };
 
 export type Localized = { ru: string; en: string; hy: string };
 type StockCategory = 'alcohol' | 'mixer' | 'beer' | 'wine' | 'cognac' | 'food';
@@ -62,6 +63,19 @@ export interface PresetsConfig {
   popularityDays: number;
   storage: { limitMb: number; warningPercent: number };
 }
+export interface PaymentMethodConfig {
+  id: string;
+  label: Localized;
+  /** Cash-like: the payment sheet asks the received amount and shows the change. */
+  change: boolean;
+}
+export interface PaymentMethodsConfig {
+  methods: PaymentMethodConfig[];
+  /** Banknotes offered as quick «received» buttons, in AMD. */
+  cashQuickAmounts: number[];
+  /** How many guests one receipt can be split between. */
+  maxSplitParts: number;
+}
 export interface GuestMenuConfig {
   languages: ('en' | 'ru' | 'hy')[];
   sectionOrder: string[];
@@ -108,6 +122,7 @@ export const barConfig = {
   upgrades: catalogUpgrades as CatalogUpgradesConfig,
   presets: presets as PresetsConfig,
   guest: guestMenu as GuestMenuConfig,
+  payments: paymentMethods as PaymentMethodsConfig,
 };
 export type BarConfig = typeof barConfig;
 
@@ -227,5 +242,26 @@ export function validateConfig(config: BarConfig = barConfig, ledgerMenuCategori
     problems.push('batchExpirySoonDays must be a whole number of days');
   if (!(p.storage.limitMb > 0 && p.storage.warningPercent > 0 && p.storage.warningPercent <= 100))
     problems.push('storage: limitMb > 0 and warningPercent 1–100 are required');
+
+  const payments = config.payments;
+  unique(
+    'payment methods',
+    payments.methods.map((m) => m.id),
+  );
+  if (!payments.methods.length) problems.push('payment methods: at least one method is required');
+  for (const method of payments.methods) {
+    if (!/^[a-z][a-z0-9_-]{0,30}$/.test(method.id)) problems.push(`payment method ${method.id}: invalid id`);
+    if (!localizedValid(method.label))
+      problems.push(`payment method ${method.id}: label needs ru, en and hy`);
+    if (typeof method.change !== 'boolean')
+      problems.push(`payment method ${method.id}: change must be boolean`);
+  }
+  positive('cashQuickAmounts', payments.cashQuickAmounts);
+  if (!(
+    Number.isInteger(payments.maxSplitParts) &&
+    payments.maxSplitParts >= 2 &&
+    payments.maxSplitParts <= 20
+  ))
+    problems.push('maxSplitParts must be 2–20');
   return problems;
 }

@@ -8,22 +8,23 @@ import { bottleName, isGlassServing } from '../../domain/serving';
 import type { Alcohol, Cocktail, Sale } from '../../domain/types';
 import { t } from '../../presentation/i18n/runtime';
 import { useBar } from '../../app/providers/BarProvider';
-import { SaleDialog, saleQuantityLabel } from './SaleDialog';
+import { SaleDialog, saleQuantityLabel, type SaleValue } from './SaleDialog';
 
 export function SaleForm({
   kind,
   product,
   date,
-  currentShift,
   close,
+  onSubmit,
 }: {
   kind: Sale['kind'];
   product: Alcohol | Cocktail;
   date: string;
-  currentShift: boolean;
   close: () => void;
+  /** Resolves truthy once the sale is recorded; the dialog then closes. */
+  onSubmit: (value: SaleValue) => Promise<unknown>;
 }) {
-  const { data, run } = useBar();
+  const { data } = useBar();
   const inventory = useInventoryCalculations(data);
   const [quantity, setQuantity] = useState(kind === 'cocktail' ? '1' : '50');
   const cocktail = product as Cocktail;
@@ -158,20 +159,7 @@ export function SaleForm({
       disabled={!price || !hasRecipe || available < amount || amount <= 0}
       submit={async () => {
         if (
-          await run(
-            {
-              type: 'sale',
-              value: {
-                kind,
-                productId: product.id,
-                quantity: amount,
-                date,
-                businessDay: currentShift,
-                ...(glass ? { servingMl } : {}),
-              },
-            },
-            'Продажа записана. Остатки обновлены.',
-          )
+          await onSubmit({ kind, productId: product.id, quantity: amount, ...(glass ? { servingMl } : {}) })
         )
           close();
       }}

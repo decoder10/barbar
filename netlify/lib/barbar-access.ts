@@ -1,7 +1,38 @@
 import { goodsSaleUnit, stockTotals } from '../../src/barbar/domain/model';
 import { isGlassServing } from '../../src/barbar/domain/serving';
 import { expandRecipe } from '../../src/barbar/domain/catalog/sets';
-import type { BarData, Role, StaffData } from '../../src/barbar/domain/types';
+import type { BarData, Role, Sale, StaffData, StaffSale } from '../../src/barbar/domain/types';
+
+/** The worker's view of one sale: what was sold and for how much, never its cost or ingredients. */
+export const staffSale = ({
+  id,
+  date,
+  createdAt,
+  kind,
+  productId,
+  name,
+  quantity,
+  voided,
+  unit,
+  category,
+  servingMl,
+  revenue,
+  orderId,
+}: Sale): StaffSale => ({
+  id,
+  date,
+  createdAt,
+  kind,
+  productId,
+  name,
+  quantity,
+  revenue,
+  voided,
+  ...(unit ? { unit } : {}),
+  ...(category ? { category } : {}),
+  ...(servingMl ? { servingMl } : {}),
+  ...(orderId ? { orderId } : {}),
+});
 
 export function staffData(data: BarData): StaffData {
   const quantities = stockTotals(data);
@@ -89,35 +120,7 @@ export function staffData(data: BarData): StaffData {
           ready: a.pricePerLiter > 0,
         })),
     ],
-    sales: data.sales.map(
-      ({
-        id,
-        date,
-        createdAt,
-        kind,
-        productId,
-        name,
-        quantity,
-        voided,
-        unit,
-        category,
-        servingMl,
-        revenue,
-      }) => ({
-        id,
-        date,
-        createdAt,
-        kind,
-        productId,
-        name,
-        quantity,
-        revenue,
-        voided,
-        ...(unit ? { unit } : {}),
-        ...(category ? { category } : {}),
-        ...(servingMl ? { servingMl } : {}),
-      }),
-    ),
+    sales: data.sales.map(staffSale),
     ...(data.archived?.before || data.historyBefore
       ? { archivedBefore: data.archived?.before || data.historyBefore }
       : {}),

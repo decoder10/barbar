@@ -8,7 +8,7 @@ test('catalog serves AVIF, renders WebP fallback and retains contained image lay
   );
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/sales');
   const photo = page.locator('.drink-card .catalog-picture img').first();
   await photo.scrollIntoViewIfNeeded();
   await expect

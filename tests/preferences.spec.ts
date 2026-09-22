@@ -29,7 +29,7 @@ test('one auth request, user language persists, currency converts display only',
   await page.route('**/api/barbar', (route) =>
     route.fulfill({ json: { data, role: 'admin', revision: 'pref-test' } }),
   );
-  await page.goto('/');
+  await page.goto('/sales');
   await expect(page.getByLabel('Язык', { exact: true })).toBeVisible();
   expect(authCalls).toBe(1);
   await page.getByLabel('Язык', { exact: true }).selectOption('en');
@@ -62,7 +62,7 @@ test('worker has workflow sorting and shared preferences without cost controls',
   await page.route('**/api/barbar', (r) =>
     r.fulfill({ json: { staffData: staffData(data), role: 'barbar', revision: 'staff-sort' } }),
   );
-  await page.goto('/');
+  await page.goto('/sales');
   await page.getByLabel('Сортировка', { exact: true }).selectOption('available');
   await expect(page.getByLabel('Сортировка', { exact: true })).toHaveValue('available');
   await expect(page.getByLabel('Валюта отображения', { exact: true })).toBeVisible();

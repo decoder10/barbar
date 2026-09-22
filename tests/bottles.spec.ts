@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { staffData } from '../netlify/lib/barbar-access';
 import { migrateBottleCatalog } from '../src/barbar/domain/catalog/bottles';
 import { applyCommand, initialData, stock } from '../src/barbar/domain/model';
+import { mockOrders } from './fixtures';
 
 test('stock brands, bottle sizes, purchases, staff sales and wine servings', async ({ page }) => {
   let data = migrateBottleCatalog(initialData());
@@ -18,6 +19,11 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
       await route.fulfill({ status: 400, json: { error: (error as Error).message } });
     }
   });
+  await mockOrders(
+    page,
+    () => data,
+    () => role as 'admin' | 'barbar',
+  );
   await page.goto('/inventory');
   await expect(page.getByRole('heading', { name: 'Склад напитков' })).toBeVisible();
   await page.getByRole('button', { name: 'Новое пиво', exact: true }).click();
@@ -53,7 +59,7 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   await page.getByRole('button', { name: 'Добавить на склад', exact: true }).click();
   await expect(wineRow).toContainText('1 бут.');
   role = 'barbar';
-  await page.goto('/');
+  await page.goto('/sales');
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Продажи за день', exact: true, level: 1 })).toBeVisible();
   await page.getByRole('button', { name: 'Пиво', exact: true }).click();

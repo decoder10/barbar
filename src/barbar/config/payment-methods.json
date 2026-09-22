@@ -1,0 +1,10 @@
+{
+  "methods": [
+    { "id": "cash", "label": { "ru": "Наличные", "en": "Cash", "hy": "Կանխիկ" }, "change": true },
+    { "id": "card", "label": { "ru": "Карта", "en": "Card", "hy": "Քարտ" }, "change": false },
+    { "id": "transfer", "label": { "ru": "Перевод", "en": "Transfer", "hy": "Փոխանցում" }, "change": false },
+    { "id": "idram", "label": { "ru": "Idram", "en": "Idram", "hy": "Idram" }, "change": false }
+  ],
+  "cashQuickAmounts": [1000, 2000, 5000, 10000, 20000, 50000],
+  "maxSplitParts": 6
+}

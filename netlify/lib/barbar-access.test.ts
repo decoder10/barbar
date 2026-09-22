@@ -114,6 +114,7 @@ describe('role isolation', () => {
     'purchase',
     'correctPurchase',
     'void',
+    'saveTable',
     'resetStock',
     'restore',
     'purge',
@@ -125,6 +126,34 @@ describe('role isolation', () => {
     expect(result.status).toBe(403);
     expect(read).not.toHaveBeenCalled();
     expect(repo.commit).not.toHaveBeenCalled();
+  });
+  it('lets staff remove only a line of an open receipt', async () => {
+    const repo = repository();
+    const sale = (await repo.read()).data.sales.find((s) => !s.voided)!;
+    const refused = await handleBarApi(
+      request('barbar', { id: 'void-plain', type: 'removeLine', saleId: sale.id }),
+      repo,
+    );
+    expect(refused.status).toBe(400);
+    expect((await refused.json()).error).toContain('открытого заказа');
+    expect(repo.commit).not.toHaveBeenCalled();
+    expect((await handleBarApi(request('barbar', { id: 'order-1', type: 'openOrder' }), repo)).status).toBe(
+      200,
+    );
+    const line = {
+      id: 'line-1',
+      type: 'sale',
+      value: { kind: 'alcohol', productId: 'vodka', quantity: 50, date: '2026-09-10', orderId: 'order-1' },
+    };
+    expect((await handleBarApi(request('barbar', line), repo)).status).toBe(200);
+    const voided = await handleBarApi(
+      request('barbar', { id: 'void-line', type: 'removeLine', saleId: 'line-1' }),
+      repo,
+    );
+    expect(voided.status).toBe(200);
+    const data = (await repo.read()).data;
+    expect(data.sales.find((s) => s.id === 'line-1')?.voided).toBe(true);
+    expect(data.orders?.[0]).toMatchObject({ id: 'order-1', status: 'open', openedBy: { id: 'barbar' } });
   });
   it('lets staff create a recipe without money fields and cannot overwrite an existing item', async () => {
     const repo = repository();

@@ -65,6 +65,8 @@ export interface Purchase {
   costPerLiter: number;
 }
 export interface Sale {
+  /** The open receipt this line was added to; absent for a standalone sale. */
+  orderId?: string;
   servingMl?: number;
   unit?: 'bottle' | 'glass' | 'pcs';
   extraCosts?: (PortionExpense & { name: string })[];
@@ -82,6 +84,46 @@ export interface Sale {
   cost: number;
   ingredients: (Ingredient & { cost: number })[];
   voided: boolean;
+}
+/** A guest table; `code` is the unguessable part of its QR link. */
+export interface BarTable {
+  id: string;
+  name: string;
+  order: number;
+  active: boolean;
+  code: string;
+}
+/** Identifier of a method from `config/payment-methods.json`. */
+export type PaymentMethod = string;
+export interface OrderPayment {
+  id: string;
+  method: PaymentMethod;
+  amount: number;
+  /** Cash handed over, when it differs from the amount; the change is the difference. */
+  receivedCash?: number;
+}
+export type OrderStatus = 'open' | 'paid' | 'cancelled';
+export interface OrderActor {
+  id: string;
+  fullName: string;
+}
+/**
+ * A receipt: groups the sales added with its `orderId`. Lines are the sales themselves, so stock,
+ * costs, cancellations and reports keep working on sales; the order adds table, payment and status.
+ */
+export interface Order {
+  id: string;
+  tableId?: string;
+  status: OrderStatus;
+  businessDay: string;
+  openedAt: string;
+  openedBy?: OrderActor;
+  closedAt?: string;
+  closedBy?: OrderActor;
+  /** Revenue of active lines at closing; frozen with the payments. */
+  total?: number;
+  payments?: OrderPayment[];
+  note?: string;
 }
 export interface StockReset {
   id: string;
@@ -104,6 +146,8 @@ export interface BarData {
   sales: Sale[];
   operations: string[];
   stockResets?: StockReset[];
+  tables?: BarTable[];
+  orders?: Order[];
   archived?: { before: string; ingredients: (Ingredient & { cost: number })[]; count: number };
 }
 export type Action =
@@ -129,13 +173,32 @@ export type Action =
         date: string;
         businessDay?: boolean;
         servingMl?: number;
+        /** Adds the sale as a line of an open order; the order's business day is not changed. */
+        orderId?: string;
       };
     }
   | { type: 'void'; saleId: string }
+  /** Takes a line off an open receipt: the one cancellation a worker may make. */
+  | { type: 'removeLine'; saleId: string }
+  | { type: 'saveTable'; value: Pick<BarTable, 'id' | 'name' | 'order' | 'active'>; newCode?: boolean }
+  | { type: 'removeTable'; tableId: string }
+  | { type: 'openOrder'; tableId?: string }
+  | {
+      type: 'payOrder';
+      orderId: string;
+      /** Total the client showed; a changed receipt is refused instead of paid blindly. */
+      expectedTotal: number;
+      payments: { method: PaymentMethod; amount: number; receivedCash?: number }[];
+    }
+  | { type: 'cancelOrder'; orderId: string }
   | { type: 'resetStock'; alcoholId: string; expectedMl: number; expectedCost: number }
   | { type: 'restore'; value: BarData }
   | { type: 'purge'; before: string };
 export type Command = Action & { id: string };
+/** Who runs a command; the server resolves it from the session, never from the request body. */
+export interface CommandContext {
+  actor?: OrderActor;
+}
 
 export type Role = 'admin' | 'barbar';
 // Explicit allowlist: staff can read selling prices/revenue, never costs or the full ledger.
@@ -171,6 +234,7 @@ export type StaffSale = Pick<
   | 'unit'
   | 'servingMl'
   | 'revenue'
+  | 'orderId'
 >;
 export interface StaffRecipe extends Pick<
   Cocktail,

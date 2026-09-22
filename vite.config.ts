@@ -3,7 +3,8 @@ import react from '@vitejs/plugin-react';
 import { localApi } from './server/local-api';
 export default defineConfig({
   plugins: [react(), localApi()],
-  server: { port: 4001, strictPort: true },
+  // `npm run dev` opens the browser; CI and test runners set CI to keep the terminal quiet.
+  server: { port: 4001, strictPort: true, open: !process.env.CI },
   build: {
     // The public guest menu (`/menu`) is its own page and never downloads the workspace bundle.
     rollupOptions: {

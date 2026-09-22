@@ -32,21 +32,39 @@
     padding-top: 12px;
   }
 
+  /* One slim row: «Столы» on the left, the exit button on the right, nothing sticky. */
   .sales-mode-toolbar {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    padding-block: 8px;
-    background: var(--surface);
+    margin-bottom: 8px;
+    padding-bottom: 0;
+  }
+
+  .sales-mode-toolbar > .sales-fullscreen-tables {
+    margin-left: 0;
+    margin-right: auto;
+  }
+
+  .sales-mode-toolbar .button {
+    min-height: 38px;
+    padding: 6px 12px;
+    font-size: 11px;
   }
 
   .day-receipt {
-    top: 76px;
+    top: 12px;
+  }
+
+  .tables-heading .page-heading p,
+  .tables-heading .page-heading .eyebrow {
+    display: none;
   }
 }
 
 .sales-mode-toolbar > * {
   flex-shrink: 0;
+}
+.sales-create-action {
+  display: flex;
+  gap: 8px;
 }
 .sales-create-action .button {
   white-space: nowrap;

@@ -30,9 +30,9 @@ test('owner records a count, write-off, preparation and expense from the operati
   await page.getByRole('button', { name: 'Заготовка', exact: true }).click();
   await page.getByLabel('Готовая заготовка на складе').selectOption('tonic');
   await page.getByLabel(/Выход партии/).fill('100');
-  await page.getByLabel('Ингредиент', { exact: true }).selectOption('vodka');
-  await page.getByLabel(/Количество,/).fill('50');
-  await page.getByLabel('Название партии / примечание').fill('Тестовая партия');
+  await page.getByLabel('Ингредиент 1', { exact: true }).selectOption('vodka');
+  await page.getByLabel(/Количество ингредиента 1/).fill('50');
+  await page.getByLabel('Название партии', { exact: true }).fill('Тестовая партия');
   await page.getByRole('button', { name: 'Сохранить операцию' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(stock(data, 'vodka')).toBe(1930);

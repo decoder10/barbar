@@ -8,7 +8,7 @@ import { t } from '../presentation/i18n/runtime';
 export function Brand({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="brand">
-      <Link to="/" className="brand-home-link" aria-label={t('Продажи')} onClick={onNavigate}>
+      <Link to="/" className="brand-home-link" aria-label={t('Столы')} onClick={onNavigate}>
         <CatalogImage photo={photos['brand-logo']} alt="BAR BAR · ART GALLERY" eager />
       </Link>
       <small>CAFE & BAR MANAGEMENT</small>

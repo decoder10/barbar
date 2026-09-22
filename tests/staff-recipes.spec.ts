@@ -24,7 +24,7 @@ test('staff edits existing recipes and sees stock pictures and shortages without
     }
     await route.fulfill({ json: { staffData: staffData(data), role: 'barbar', revision: 'test' } });
   });
-  await page.goto('/');
+  await page.goto('/sales');
   await page.getByRole('link', { name: /Меню и рецепты/ }).click();
   await expect(page.getByRole('heading', { name: 'Меню и рецепты', exact: true })).toBeVisible();
   await page.getByLabel('Поиск рецепта').fill(original.name);

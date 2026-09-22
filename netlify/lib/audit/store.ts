@@ -18,17 +18,46 @@ export function commandAudit(
   command: import('../../../src/barbar/domain/types').Command,
   next: import('../../../src/barbar/domain/types').BarData,
   actor: UserProfile,
+  /** The state before the command, for summaries of what was removed. */
+  before: Pick<import('../../../src/barbar/domain/types').BarData, 'tables'>,
 ): AuditEvent {
   let targetId = command.id,
     summary: string = command.type;
   const name = (id: string) => next.alcohol.find((a) => a.id === id)?.name || id;
+  const tableLabel = (orderId: string) => {
+    const order = next.orders?.find((o) => o.id === orderId);
+    const table = order?.tableId ? next.tables?.find((t) => t.id === order.tableId) : undefined;
+    return table ? `стол «${table.name}»` : 'без стола';
+  };
   switch (command.type) {
     case 'sale':
-      summary = `Продажа: ${next.sales.find((s) => s.id === command.id)?.name || ''}`;
+      summary = `Продажа: ${next.sales.find((s) => s.id === command.id)?.name || ''}${command.value?.orderId ? ` · ${tableLabel(command.value.orderId)}` : ''}`;
+      break;
+    case 'saveTable':
+      targetId = command.value.id;
+      summary = `Стол «${command.value.name}»${command.value.active ? '' : ' отключён'}`;
+      break;
+    case 'removeTable':
+      targetId = command.tableId;
+      summary = `Стол удалён: ${before.tables?.find((t) => t.id === command.tableId)?.name || command.tableId}`;
+      break;
+    case 'openOrder':
+      summary = `Открыт заказ: ${tableLabel(command.id)}`;
+      break;
+    case 'payOrder': {
+      targetId = command.orderId;
+      const order = next.orders?.find((o) => o.id === command.orderId);
+      summary = `Оплата заказа: ${order?.total ?? command.expectedTotal} AMD · ${(order?.payments || command.payments).map((p) => `${p.method} ${p.amount}`).join(', ')} · ${tableLabel(command.orderId)}`;
+      break;
+    }
+    case 'cancelOrder':
+      targetId = command.orderId;
+      summary = `Отмена заказа: ${tableLabel(command.orderId)}`;
       break;
     case 'void':
+    case 'removeLine':
       targetId = command.saleId;
-      summary = `Отмена продажи: ${next.sales.find((s) => s.id === command.saleId)?.name || command.saleId}`;
+      summary = `${command.type === 'void' ? 'Отмена продажи' : 'Позиция убрана из заказа'}: ${next.sales.find((s) => s.id === command.saleId)?.name || command.saleId}`;
       break;
     case 'purchase':
       targetId = command.value.id;

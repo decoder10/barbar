@@ -4,6 +4,7 @@ import { useRouteScroll } from './use-route-scroll';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { LoadingStatus } from '../ui/loading';
 import {
+  Armchair,
   History,
   BarChart3,
   Boxes,
@@ -19,7 +20,6 @@ import {
   RefreshCw,
   Settings,
   ShoppingBag,
-  Sparkles,
   Users as UsersIcon,
   X,
 } from 'lucide-react';
@@ -33,6 +33,7 @@ import { useBar } from './providers/BarProvider';
 import { useCompact, useTablet } from '../ui/use-compact';
 import { Sheet } from '../ui/sheet';
 import { SelectSheet } from '../ui/select-sheet';
+import { FullscreenMode } from '../features/sales/SalesFullscreen';
 const Operations = lazy(() => import('../pages/Operations'));
 const Audit = lazy(() => import('../pages/Audit'));
 const Users = lazy(() => import('../pages/Users'));
@@ -44,8 +45,11 @@ const Inventory = lazy(() => import('../pages/Inventory'));
 const Cocktails = lazy(() => import('../pages/Cocktails'));
 const Reports = lazy(() => import('../pages/Reports'));
 const Backups = lazy(() => import('../pages/Backups'));
+const Tables = lazy(() => import('../pages/Tables'));
+const OrderPage = lazy(() => import('../pages/Order'));
 const navigation = [
-  { path: '/', label: 'Продажи', icon: ShoppingBag, caption: 'Каждый день' },
+  { path: '/', label: 'Столы', icon: Armchair, caption: 'Заказы и оплата' },
+  { path: '/sales', label: 'Продажи', icon: ShoppingBag, caption: 'Каждый день' },
   { path: '/inventory', label: 'Склад', icon: Boxes, caption: 'Напитки и закупки' },
   { path: '/cocktails', label: 'Меню и рецепты', icon: GlassWater, caption: 'Коктейли, настойки и всё меню' },
   { path: '/reports', label: 'Отчёты', icon: BarChart3, caption: 'Всё в цифрах' },
@@ -56,7 +60,8 @@ const navigation = [
 ];
 // Phones keep the daily sections under the thumb; the drawer holds everything else.
 const bottomNavigation = [
-  { path: '/', label: 'Продажи', icon: ShoppingBag },
+  { path: '/', label: 'Столы', icon: Armchair },
+  { path: '/sales', label: 'Продажи', icon: ShoppingBag },
   { path: '/inventory', label: 'Склад', icon: Boxes },
   { path: '/cocktails', label: 'Меню', icon: GlassWater },
 ];
@@ -98,6 +103,7 @@ function Workspace() {
     <div
       className={`app-shell${collapsed ? ' sidebar-collapsed' : ''}${drawer && menu ? ' sidebar-open' : ''}`}
     >
+      <FullscreenMode />
       <a className="skip-link" href="#content">
         {t('Перейти к содержимому')}
       </a>
@@ -124,7 +130,9 @@ function Workspace() {
         <nav aria-label={t('Основная навигация')}>
           {t(
             navigation
-              .filter((item) => role === 'admin' || ['/', '/inventory', '/cocktails'].includes(item.path))
+              .filter(
+                (item) => role === 'admin' || ['/', '/sales', '/inventory', '/cocktails'].includes(item.path),
+              )
               .map(({ path, label, icon: Icon, caption }) => (
                 <NavLink
                   key={path}
@@ -147,20 +155,6 @@ function Workspace() {
           )}
         </nav>
         <div className="sidebar-bottom">
-          <div className="sidebar-tip">
-            <Sparkles size={21} />
-            <h3>
-              {t('Меньше рутины.')}
-              <br />
-              {t('Больше хороших вечеров.')}
-            </h3>
-            <p>
-              {t('Все цифры здесь.')}
-              <br />
-              {t('Вы — ближе к гостям.')}
-            </p>
-            <span>THAT'S THE SPIRIT ↗</span>
-          </div>
           <div className="sidebar-footer">
             <span className="avatar">B</span>
             <div>
@@ -213,7 +207,12 @@ function Workspace() {
             </button>
             <span>{t('Рабочее пространство')}</span>
             <ChevronRight size={13} />
-            <strong>{t(navigation.find((n) => n.path === pathname)?.label || 'Barbar')}</strong>
+            <strong>
+              {t(
+                navigation.find((n) => n.path === pathname)?.label ||
+                  (pathname.startsWith('/orders/') ? 'Заказ' : 'Barbar'),
+              )}
+            </strong>
           </div>
           <div className="topbar-right">
             <span className={`sync-status ${connected ? '' : 'offline'}`}>
@@ -275,7 +274,9 @@ function Workspace() {
               }
             >
               <Routes>
-                <Route path="/" element={role === 'admin' ? <Sales /> : <StaffSales />} />
+                <Route path="/" element={<Tables />} />
+                <Route path="/orders/:orderId" element={<OrderPage />} />
+                <Route path="/sales" element={role === 'admin' ? <Sales /> : <StaffSales />} />
                 <Route path="/inventory" element={role === 'admin' ? <Inventory /> : <StaffInventory />} />
                 <Route path="/cocktails" element={role === 'admin' ? <Cocktails /> : <StaffRecipes />} />
                 <Route

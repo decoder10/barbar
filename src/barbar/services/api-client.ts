@@ -9,6 +9,14 @@ interface ApiResponses {
   '/api/barbar/catalog/cocktails': CatalogPartResponse;
   '/api/barbar/push': { publicKey: string | null; ok?: boolean };
   '/api/barbar/batches': { batches: import('../domain/batches').BatchStock[] };
+  '/api/barbar/orders': {
+    role: Role;
+    revision: string | null;
+    tables: import('../domain/types').BarTable[];
+    orders: import('../domain/types').Order[];
+    /** Active lines of the open orders: full sales for the owner, worker projection otherwise. */
+    sales: (import('../domain/types').Sale | import('../domain/types').StaffSale)[];
+  };
   [path: `/api/barbar/catalog/cards?${string}`]: import('../domain/catalog/cards').CardPage & {
     catalogRevision: string;
     revision: string | null;

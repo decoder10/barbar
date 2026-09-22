@@ -4,6 +4,8 @@ let dictionary: Record<string, string> = {};
 let fragments: RegExp | undefined;
 const cache = new Map<string, string>();
 export const locale = () => (language === 'hy' ? 'hy-AM' : language === 'en' ? 'en-US' : 'ru-RU');
+/** The active interface language, for texts that come localized from configuration. */
+export const currentLanguage = () => language;
 export function setTranslations(next: Language, messages: Record<string, string> = {}) {
   language = next;
   dictionary = messages;

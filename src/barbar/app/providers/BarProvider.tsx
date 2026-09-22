@@ -34,7 +34,8 @@ interface Store {
   perform: AsyncTaskRunner;
   notice: Notice;
   connected: boolean;
-  run: (action: Action, message?: string) => Promise<boolean>;
+  /** Resolves with the id the ledger recorded, so a screen can open what it just created; false on failure. */
+  run: (action: Action, message?: string) => Promise<false | { id: string }>;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -160,6 +161,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
           if (pending.current?.key !== key) {
             pending.current = { key, command: { ...action, id: uid() } };
           }
+          const id = pending.current.command.id;
           let warning: string | undefined;
           try {
             const result = await api('/api/barbar', {
@@ -177,7 +179,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
             warning = result.warning;
             pending.current = null;
             notify(warning || message, !!warning);
-            return true;
+            return { id };
           } catch (error) {
             if (error instanceof ApiError && error.status === 401) {
               setData(initialData());

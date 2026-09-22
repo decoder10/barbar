@@ -9,6 +9,8 @@ export const ledgerCollections = [
   'stockResets',
   'stockMovements',
   'expenses',
+  'tables',
+  'orders',
 ] as const;
 
 const ledgerIndexes: Record<string, IndexDescription[]> = {
@@ -17,7 +19,11 @@ const ledgerIndexes: Record<string, IndexDescription[]> = {
     { key: { date: -1, createdAt: -1, id: -1 } },
     // Only cancelled rows: countDocuments for report cancellations is index-only.
     { key: { date: 1 }, name: 'cancelled_sales_date', partialFilterExpression: { voided: true } },
+    // Receipt lines: the open orders screen and payments read one order's sales at a time.
+    { key: { orderId: 1 }, name: 'order_lines', partialFilterExpression: { orderId: { $exists: true } } },
   ],
+  orders: [{ key: { status: 1, businessDay: -1, openedAt: -1 } }, { key: { tableId: 1, status: 1 } }],
+  tables: [{ key: { code: 1 }, unique: true }],
   purchases: [{ key: { date: -1, id: -1 } }],
   expenses: [{ key: { date: -1, id: -1 } }],
   stockResets: [{ key: { date: -1, createdAt: -1, id: -1 } }],
@@ -84,6 +90,6 @@ async function buildAuditIndexes(db: Db) {
 }
 
 export const ensureLedgerIndexes = (db: Db) =>
-  oncePerDatabase(db, 'ledger-indexes-v2', () => buildLedgerIndexes(db));
+  oncePerDatabase(db, 'ledger-indexes-v3', () => buildLedgerIndexes(db));
 export const ensureAuditIndexes = (db: Db) =>
   oncePerDatabase(db, 'audit-indexes-v1', () => buildAuditIndexes(db));

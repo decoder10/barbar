@@ -19,5 +19,5 @@ export function useBusinessDate() {
     };
   }, []);
   const select = (date: string) => setChosen(date === businessToday() ? null : date);
-  return [chosen || current, select, chosen === null] as const;
+  return [chosen || current, select] as const;
 }

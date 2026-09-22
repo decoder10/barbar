@@ -11,7 +11,7 @@ for (const width of [390, 1440]) {
     await page.route('**/api/barbar', (r) =>
       r.fulfill({ json: { data, role: 'admin', revision: 'scroll-navigation' } }),
     );
-    await page.goto('/');
+    await page.goto('/sales');
     await expect(page.locator('.drink-card').first()).toBeVisible();
     const scrollDown = async () => {
       await page.evaluate(() => window.scrollTo(0, 900));
@@ -29,14 +29,14 @@ for (const width of [390, 1440]) {
       page.locator('.inventory-categories:visible, .category-select:visible').first(),
     ).toBeVisible();
     await scrollDown();
-    await navigate('/');
+    await navigate('/sales');
     await scrollDown();
     await page.goBack();
     await expect(page).toHaveURL(/\/inventory$/);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     await scrollDown();
     await page.goForward();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/sales$/);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     // Normal updates on the same page must not jump to the top.
     await scrollDown();
