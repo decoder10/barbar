@@ -33,13 +33,14 @@ export function TablesEditor({
           e.preventDefault();
           const trimmed = name.trim();
           if (!trimmed) return;
+          // A new table is the usual reason to open this dialog: done, back to the board.
           if (
             await save(
               { id: `table-${uid().slice(0, 8)}`, name: trimmed, order: tables.length, active: true },
               'Стол добавлен.',
             )
           )
-            setName('');
+            close();
         }}
       >
         <Field label="Новый стол">

@@ -146,7 +146,7 @@ export function ShiftCloseButton({ day }: { day?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className="button secondary" onClick={() => setOpen(true)}>
+      <button type="button" className="button secondary shift-close-button" onClick={() => setOpen(true)}>
         {t('Закрыть смену')}
       </button>
       {open && <ShiftCloseSheet initialDay={day} close={() => setOpen(false)} />}

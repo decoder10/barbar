@@ -112,9 +112,19 @@ export function guestOrderStore(db: Db, options: { migrations?: boolean } = {}) 
             );
             const alcohol = await db.collection('alcohol').find({}, { session }).toArray();
             const cocktails = await db.collection('cocktails').find({}, { session }).toArray();
+            // The same balances the ledger sells from: a drink shown as out of stock cannot be requested.
+            // A built read model has a row per product; none at all means stock is not known yet.
+            const balances = await db
+              .collection<{ _id: string; ml: number }>('stockBalances')
+              .find({}, { session, projection: { ml: 1 } })
+              .toArray();
             let lines: GuestRequest['lines'];
             try {
-              lines = quoteGuestRequest({ alcohol, cocktails } as unknown as BarData, input);
+              lines = quoteGuestRequest(
+                { alcohol, cocktails } as unknown as BarData,
+                input,
+                balances.length ? new Map(balances.map((b) => [b._id, b.ml])) : undefined,
+              );
             } catch (error) {
               throw new HttpError((error as Error).message);
             }
@@ -132,10 +142,18 @@ export function guestOrderStore(db: Db, options: { migrations?: boolean } = {}) 
               lines,
             };
             await requests.insertOne(request, { session });
+            // Staff see what was asked for without opening the board: names, portions and the menu total.
             await db.collection('guestEvents').insertOne(
               {
                 _id: input.id as never,
                 tableName: table.name,
+                lines: lines.map((l) => ({
+                  name: l.name,
+                  quantity: l.quantity,
+                  ...(l.servingMl ? { servingMl: l.servingMl } : {}),
+                })),
+                total: lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0),
+                ...(request.comment ? { comment: request.comment } : {}),
                 createdAt: now,
                 expiresAt: new Date(request.expiresAt),
                 nextAttempt: now,

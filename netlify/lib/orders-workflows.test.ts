@@ -8,6 +8,7 @@ import { shiftPreview } from '../../src/barbar/domain/shifts';
 import type { UserProfile } from '../../src/barbar/domain/identity/user';
 import type { Command } from '../../src/barbar/domain/types';
 import type { GuestRequestInput } from '../../src/barbar/domain/guest-requests';
+import { guestMenu } from '../../src/barbar/domain/guest-menu';
 
 const uri = process.env.BARBAR_TEST_MONGODB_URI;
 describe.skipIf(!uri)('guest orders and shifts (disposable MongoDB database)', () => {
@@ -171,6 +172,26 @@ describe.skipIf(!uri)('guest orders and shifts (disposable MongoDB database)', (
     ).rejects.toThrow(/обработана/);
     expect(await db.collection('sales').countDocuments()).toBe(1);
     expect(await db.collection('auditEvents').countDocuments({ _id: 'two-later' as never })).toBe(0);
+  });
+  it('refuses a drink the stock cannot pour before anything is written', async () => {
+    // Only vodka was bought: any other poured drink is shown as out of stock.
+    const price = guestMenu(initialData(), '')
+      .sections.flatMap((s) => s.items.flatMap((i) => i.prices))
+      .find((p) => p.productKind === 'alcohol' && p.productId !== 'vodka')!;
+    const { db, store, input } = await create([
+      { id: 'one', kind: 'alcohol', productId: price.productId!, quantity: 1, servingMl: price.servingMl },
+    ]);
+    await expect(store.submit(input)).rejects.toMatchObject({ status: 400 });
+    await expect(store.submit(input)).rejects.toThrow(/закончилась/);
+    expect(await db.collection('guestRequests').countDocuments()).toBe(0);
+    expect(await db.collection('guestEvents').countDocuments()).toBe(0);
+    // One portion on hand is enough to ask; staff settle larger quantities when they accept.
+    await store.submit({
+      ...input,
+      id: crypto.randomUUID().replaceAll('-', ''),
+      lines: [{ id: 'one', kind: 'alcohol', productId: 'vodka', quantity: 5, servingMl: 50 }],
+    });
+    expect(await db.collection('guestRequests').countDocuments()).toBe(1);
   });
   it('serializes payment and closing, refuses stale totals and persists one closed shift', async () => {
     const { db, repo, store, input } = await create();

@@ -105,6 +105,7 @@ export function SalesCatalog({
           drink={{ name: p.name, category: 'alcohol', color: '', pricePerLiter: (p.price || 0) * 1000 }}
           ml={p.available || 0}
           action={open}
+          selling
         />
       );
     const recipe = recipeById.get(p.id);
@@ -137,6 +138,7 @@ export function SalesCatalog({
         )}
         footer={<span className={`stock-pill ${pill.low ? 'low' : ''}`}>{t(pill.label)}</span>}
         action={open}
+        unavailable={pill.out}
       />
     );
   };
@@ -171,6 +173,7 @@ export function SalesCatalog({
           )}
           footer={<span className={`stock-pill ${pill.low ? 'low' : ''}`}>{t(pill.label)}</span>}
           action={() => onSelect({ kind: 'cocktail', id: c.id })}
+          unavailable={pill.out}
         />,
       ];
     }
@@ -181,6 +184,7 @@ export function SalesCatalog({
           drink={a}
           ml={inventory.stock(a.id)}
           action={() => onSelect({ kind: 'alcohol', id: a.id })}
+          selling
         />,
       ];
     return [];

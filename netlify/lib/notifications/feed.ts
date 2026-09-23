@@ -2,13 +2,14 @@ import type { Db } from 'mongodb';
 import { authenticated, json } from '../barbar-auth';
 import type { IdentityStore } from '../barbar-users';
 import type { StockAlert } from '../../../src/barbar/domain/notifications/stock-alerts';
-import type { PurchaseNotice } from '../../../src/barbar/domain/notifications/message';
+import type { GuestNotice, PurchaseNotice } from '../../../src/barbar/domain/notifications/message';
 import type { FeedItem } from '../../../src/barbar/domain/notifications/feed';
 
 /**
  * What was actually queued for delivery, newest first. Both collections are TTL-bound
  * (stock warnings a day, purchases a week), so this is a recent feed, not a full history.
  * Purchases carry money, so a worker receives stock warnings only — the same rule as delivery.
+ * Guest requests reach both roles with their lines and menu total, never prices per line or the table code.
  */
 export async function handleNotificationsFeed(request: Request, db: Db, users: IdentityStore) {
   const user = await authenticated(request, users);
@@ -36,20 +37,31 @@ export async function handleNotificationsFeed(request: Request, db: Db, users: I
           done: boolean;
         }[])
       : [];
-  const guests = await db
+  const guests = (await db
     .collection('guestEvents')
     .find(
       { expiresAt: { $gt: new Date() } },
-      { ...options, projection: { tableName: 1, createdAt: 1, done: 1 } },
+      { ...options, projection: { tableName: 1, lines: 1, total: 1, comment: 1, createdAt: 1, done: 1 } },
     )
     .sort({ createdAt: -1 })
     .limit(limit)
-    .toArray();
+    .toArray()) as unknown as (GuestNotice & { _id: string; createdAt: Date; done: boolean })[];
   const items: FeedItem[] = [
     ...guests.map((event) => ({
       id: `guest:${event._id}`,
       kind: 'guest' as const,
       tableName: String(event.tableName),
+      ...(Array.isArray(event.lines)
+        ? {
+            lines: event.lines.map(({ name, quantity, servingMl }) => ({
+              name,
+              quantity,
+              ...(servingMl ? { servingMl } : {}),
+            })),
+          }
+        : {}),
+      ...(typeof event.total === 'number' ? { total: event.total } : {}),
+      ...(event.comment ? { comment: event.comment } : {}),
       createdAt: new Date(event.createdAt).toISOString(),
       delivered: !!event.done,
     })),

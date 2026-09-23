@@ -7,6 +7,8 @@
   --menu-accent: #e4a0bd;
   --menu-accent-soft: #432b39;
   --menu-active-text: #fff0f6;
+  --menu-ok: #9ad7ae;
+  --menu-ok-soft: #1f3327;
   --menu-header-height: 88px;
   color-scheme: dark;
   min-height: 100dvh;
@@ -26,6 +28,8 @@
     --menu-accent: #843c59;
     --menu-accent-soft: #eedde5;
     --menu-active-text: #652840;
+    --menu-ok: #2b7046;
+    --menu-ok-soft: #e1f1e6;
     color-scheme: light;
   }
   button,
@@ -142,7 +146,8 @@
 }
 .menu-layout {
   display: grid;
-  grid-template-columns: 234px minmax(0, 1fr) 292px;
+  // The right column holds the cart with steppers and sent requests: it needs room for both.
+  grid-template-columns: 234px minmax(0, 1fr) 340px;
   max-width: 1920px;
   margin-inline: auto;
 }

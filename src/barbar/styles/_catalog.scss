@@ -56,7 +56,8 @@
 
 .sales-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 299px;
+  /* The receipt column fits long drink names, the steppers and a full amount on one line. */
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 23px;
   align-items: start;
 }
@@ -201,6 +202,43 @@
   padding: 5px 7px;
   border-radius: 4px;
   backdrop-filter: blur(6px);
+}
+
+/* Out of stock on a selling screen: plainly not for sale, still easy to read. */
+.drink-card.unavailable {
+  opacity: 1;
+  background: var(--surface-muted);
+  .card-image > :not(.card-stock-out) {
+    filter: grayscale(0.7);
+  }
+  // Photos sit on white in both themes: a veil in the card colour fades them either way.
+  .card-image::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--surface-muted);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  .card-content h3 {
+    color: var(--muted);
+  }
+  &:hover {
+    box-shadow: none;
+  }
+}
+/* Top right is free on every layout: the category badge is top left, photo credits bottom right. */
+.card-stock-out {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--danger-surface);
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .card-open {

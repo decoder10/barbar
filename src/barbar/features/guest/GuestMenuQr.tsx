@@ -1,3 +1,4 @@
+import { Check, Copy, ExternalLink, Printer } from 'lucide-react';
 import qrcode from 'qrcode-generator';
 import { useMemo, useState } from 'react';
 import { CatalogImage } from '../catalog/media/CatalogImage';
@@ -67,12 +68,21 @@ export function GuestMenuQrModal({
         )}
       </p>
       <div className="guest-qr-actions">
-        <a className="button secondary" href={url} target="_blank" rel="noreferrer">
-          {t('Открыть меню')}
+        <a
+          className="button secondary icon-only"
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={t('Открыть меню')}
+          title={t('Открыть меню')}
+        >
+          <ExternalLink size={19} aria-hidden="true" />
         </a>
         <button
           type="button"
-          className="button secondary"
+          className="button secondary icon-only"
+          aria-label={t(copied ? 'Ссылка скопирована' : 'Копировать ссылку')}
+          title={t(copied ? 'Ссылка скопирована' : 'Копировать ссылку')}
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(url);
@@ -82,11 +92,20 @@ export function GuestMenuQrModal({
             }
           }}
         >
-          {t(copied ? 'Ссылка скопирована' : 'Копировать ссылку')}
+          {copied ? <Check size={19} aria-hidden="true" /> : <Copy size={19} aria-hidden="true" />}
         </button>
-        <button type="button" className="button primary" onClick={() => window.print()}>
-          {t('Печать карточки')}
+        <button
+          type="button"
+          className="button primary icon-only"
+          aria-label={t('Печать карточки')}
+          title={t('Печать карточки')}
+          onClick={() => window.print()}
+        >
+          <Printer size={19} aria-hidden="true" />
         </button>
+        <span className="visually-hidden" role="status">
+          {copied ? t('Ссылка скопирована') : ''}
+        </span>
       </div>
     </Modal>
   );

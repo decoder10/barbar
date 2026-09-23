@@ -1,6 +1,6 @@
 import { barConfig } from '../../config';
 import { isGlassServing } from '../serving';
-import type { BarData, Cocktail } from '../types';
+import type { BarData, Cocktail, Ingredient } from '../types';
 import { compareCatalog, type CatalogSort } from './sort';
 import { recipeMissing } from './recipe-status';
 import { expandRecipe } from './sets';
@@ -36,14 +36,13 @@ export const cardSorts: CatalogSort[] = [
   'price-desc',
 ];
 
-const portions = (c: Cocktail, stock: Map<string, number>, cocktails: Cocktail[]) => {
-  const recipe = expandRecipe(c, cocktails);
-  return recipe.length
+/** Whole portions the stock still holds for an expanded recipe; null when it deducts nothing. */
+export const recipePortions = (recipe: Ingredient[], stock: Map<string, number>) =>
+  recipe.length
     ? Math.max(0, Math.floor(Math.min(...recipe.map((i) => ((stock.get(i.alcoholId) || 0) + 1e-7) / i.ml))))
-    : c.extraCosts?.length || c.noIngredients
-      ? null
-      : 0;
-};
+    : null;
+const portions = (c: Cocktail, stock: Map<string, number>, cocktails: Cocktail[]) =>
+  recipePortions(expandRecipe(c, cocktails), stock) ?? (c.extraCosts?.length || c.noIngredients ? null : 0);
 const ready = (c: Cocktail) =>
   c.price > 0 &&
   (!isGlassServing(c) || !!c.stockAlcoholId) &&

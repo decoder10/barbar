@@ -1,27 +1,38 @@
-import { useGuestOrder } from './use-guest-order';
+import { cartLineId, useGuestOrder } from './use-guest-order';
 import { GuestCart } from './GuestCart';
-import { Grid2X2, Heart, LayoutGrid, List, Moon, Search, Sun, Utensils, X } from 'lucide-react';
+import { Grid2X2, Heart, LayoutGrid, List, Moon, Search, ShoppingBag, Sun, Utensils, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { barConfig } from '../config';
 import type { GuestMenuItem, GuestSectionId } from '../domain/guest-menu';
 import { CatalogImage } from '../features/catalog/media/CatalogImage';
 import { photos } from '../features/catalog/media/photo-catalog';
-import { CategoryDialog, Favorites, MenuCard, SectionLinks, sectionTitle } from './menu-parts';
+import {
+  CategoryDialog,
+  Favorites,
+  MenuCard,
+  SectionLinks,
+  sectionTitle,
+  type MenuCartControls,
+} from './menu-parts';
+import { t } from '../presentation/i18n/runtime';
 import { useGuestMenu } from './use-guest-menu';
 import { favoriteKey, useGuestPreferences } from './use-guest-preferences';
 import './guest-menu.scss';
 
 const { copy, languages } = barConfig.guest;
+const wideQuery = '(min-width: 1280px)';
 export default function GuestMenuPage() {
   const { menu, error, reload } = useGuestMenu();
   const preferences = useGuestPreferences();
-  const guestOrder = useGuestOrder();
+  const guestOrder = useGuestOrder(menu);
   const { language, setLanguage, theme, setTheme, view, setView, favorites, toggleFavorite, clearFavorites } =
     preferences;
   const [query, setQuery] = useState('');
   const [active, setActive] = useState<GuestSectionId | null>(null);
   const [target, setTarget] = useState<GuestSectionId | null>(null);
-  const [tab, setTab] = useState<'menu' | 'favorites'>('menu');
+  const [tab, setTab] = useState<'menu' | 'favorites' | 'cart'>('menu');
+  // The cart lives in the right column on wide screens and in its own tab below: render it once.
+  const [wide, setWide] = useState(() => window.matchMedia(wideQuery).matches);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const chips = useRef<HTMLDivElement>(null);
   const ready = !!menu && preferences.ready;
@@ -45,12 +56,13 @@ export default function GuestMenuPage() {
     .filter((item) => saved.has(favoriteKey(item)));
   const currentSection = active || sections[0]?.id || null;
   useEffect(() => {
-    const wide = window.matchMedia('(min-width: 1280px)');
+    const query = window.matchMedia(wideQuery);
     const resize = () => {
-      if (wide.matches) setTab('menu');
+      setWide(query.matches);
+      if (query.matches) setTab('menu');
     };
-    wide.addEventListener('change', resize);
-    return () => wide.removeEventListener('change', resize);
+    query.addEventListener('change', resize);
+    return () => query.removeEventListener('change', resize);
   }, []);
   const selectSection = (id: GuestSectionId) => {
     setQuery('');
@@ -100,6 +112,21 @@ export default function GuestMenuPage() {
     setTab('favorites');
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+  const showCart = () => {
+    setTab('cart');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+  // The cart stays open after a request: a guest can add more while staff consider the first one.
+  const cart: MenuCartControls | undefined =
+    guestOrder.table && guestOrder.open
+      ? {
+          quantity: guestOrder.quantityOf,
+          add: guestOrder.add,
+          remove: (price) => guestOrder.remove(cartLineId(price)),
+          canAddLine: guestOrder.canAddLine,
+        }
+      : undefined;
+  const cartContent = <GuestCart order={guestOrder} language={language} />;
   const favoriteContent = (
     <Favorites items={favoriteItems} language={language} remove={toggleFavorite} clear={clearFavorites} />
   );
@@ -202,7 +229,7 @@ export default function GuestMenuPage() {
         )}
       </header>
       {ready ? (
-        <div className={`menu-layout${tab === 'favorites' ? ' showing-favorites' : ''}`}>
+        <div className={`menu-layout${tab !== 'menu' ? ` showing-${tab}` : ''}`}>
           <aside className="menu-sidebar">
             <h2>{copy.menu[language]}</h2>
             <SectionLinks
@@ -217,9 +244,9 @@ export default function GuestMenuPage() {
             </div>
           </aside>
           <main className="menu-main">
-            <GuestCart order={guestOrder} />
             <div className="menu-mobile-favorites">{tab === 'favorites' && favoriteContent}</div>
-            <div className="menu-browse" hidden={tab === 'favorites'}>
+            {!wide && tab === 'cart' && <div className="menu-mobile-cart">{cartContent}</div>}
+            <div className="menu-browse" hidden={tab !== 'menu'}>
               <div className="menu-page-tools">
                 <p>
                   {copy.menu[language]}
@@ -284,11 +311,7 @@ export default function GuestMenuPage() {
                               language={language}
                               saved={saved.has(favoriteKey(item))}
                               toggle={toggleFavorite}
-                              add={
-                                guestOrder.table && !guestOrder.saved
-                                  ? (price) => guestOrder.add(price, item.name)
-                                  : undefined
-                              }
+                              cart={cart}
                             />
                           ))}
                         </div>
@@ -313,6 +336,7 @@ export default function GuestMenuPage() {
             </footer>
           </main>
           <aside className="menu-favorites" aria-label={copy.favorites[language]}>
+            {wide && cartContent}
             {favoriteContent}
           </aside>
           <nav className="menu-bottom-nav" aria-label={copy.menu[language]}>
@@ -331,6 +355,15 @@ export default function GuestMenuPage() {
                 {favoriteItems.length > 0 && <b>{favoriteItems.length}</b>}
               </span>
             </button>
+            {guestOrder.table && (
+              <button type="button" aria-current={tab === 'cart' ? 'page' : undefined} onClick={showCart}>
+                <ShoppingBag size={21} />
+                <span>
+                  {t('Корзина')}
+                  {guestOrder.count > 0 && <b>{guestOrder.count}</b>}
+                </span>
+              </button>
+            )}
           </nav>
         </div>
       ) : (

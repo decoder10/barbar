@@ -218,7 +218,9 @@ describe.skipIf(!uri)('transactional alerts and push security in isolated MongoD
       'https://fcm.googleapis.com/fcm/send/worker-device',
     ]);
     const payload = JSON.parse(calls[0][1] as string);
-    expect(payload).toMatchObject({ title: 'Заявка гостя', body: '12', url: '/' });
+    // The table leads the title and the body lists what was asked for.
+    expect(payload).toMatchObject({ title: 'Стол 12 · Заявка гостя', url: '/' });
+    expect(payload.body).toContain(`${data.cocktails[0].name} × 1`);
     await deliverGuestRequests(db);
     expect(vi.mocked(webpush.sendNotification).mock.calls).toHaveLength(2);
     const guestItem = async (cookie: string) => {
@@ -234,10 +236,16 @@ describe.skipIf(!uri)('transactional alerts and push security in isolated MongoD
     };
     for (const cookie of ['admin', 'barbar']) {
       const { body, item } = await guestItem(cookie);
-      expect(item).toMatchObject({ id: `guest:${input.id}`, tableName: '12', delivered: true });
-      // The public token, the access code and the request lines stay on the server.
+      expect(item).toMatchObject({
+        id: `guest:${input.id}`,
+        tableName: '12',
+        delivered: true,
+        lines: [{ name: data.cocktails[0].name, quantity: 1 }],
+      });
+      expect(item).toHaveProperty('total');
+      // The public token, the access code and per-line prices or IDs stay on the server.
       expect(JSON.stringify(body)).not.toContain(table.code);
-      expect(JSON.stringify(item)).not.toMatch(/accessCode|unitPrice|lines/);
+      expect(JSON.stringify(item)).not.toMatch(/accessCode|unitPrice|productId|cost/);
     }
   });
 });

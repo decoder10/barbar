@@ -39,9 +39,11 @@ export const guestTokenValid = (value: unknown): value is string =>
 const bad = () => {
   throw new Error('Проверьте заявку: до 20 строк, 1–10 порций и комментарий до 200 символов.');
 };
+/** With `balances` a line the menu shows as out of stock is refused, the same rule as on the menu card. */
 export function quoteGuestRequest(
   data: Pick<BarData, 'alcohol' | 'cocktails'>,
   input: GuestRequestInput,
+  balances?: Map<string, number>,
 ): GuestRequestLine[] {
   if (
     !input ||
@@ -57,7 +59,7 @@ export function quoteGuestRequest(
     return bad();
   if (new Set(input.lines.map((l) => l?.id)).size !== input.lines.length) return bad();
   const prices = new Map(
-    guestMenu(data, '')
+    guestMenu(data, '', balances)
       .sections.flatMap((s) => s.items)
       .flatMap((i) => i.prices.map((p) => [`${p.productKind}:${p.productId}`, p] as const)),
   );
@@ -77,6 +79,7 @@ export function quoteGuestRequest(
     const product = (line.kind === 'alcohol' ? data.alcohol : data.cocktails).find(
       (p) => p.id === line.productId,
     )!;
+    if (price.available === false) throw new Error(`Позиция закончилась: ${product.name}`);
     return {
       id: line.id,
       kind: line.kind,
@@ -147,4 +150,11 @@ export function acceptGuestRequest(
     data: next,
     request: { ...request, status: 'accepted' as const, acceptedLineIds: [...lineIds], orderId: order.id },
   };
+}
+/** Pending requests per table, each list oldest first, tables in the order they first asked. */
+export function requestsByTable(requests: GuestRequest[]) {
+  const groups = new Map<string, GuestRequest[]>();
+  for (const r of [...requests].sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
+    groups.set(r.tableId, [...(groups.get(r.tableId) || []), r]);
+  return groups;
 }

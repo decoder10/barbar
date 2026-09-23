@@ -1,9 +1,10 @@
 import { ShiftCloseButton } from '../features/orders/ShiftCloseSheet';
-import { GuestRequests, useGuestRequests } from '../features/orders/GuestRequests';
+import { GuestRequestSheet, GuestRequests, useGuestRequests } from '../features/orders/GuestRequests';
+import { requestsByTable as groupRequests } from '../domain/guest-requests';
 import { GuestMenuQrModal } from '../features/guest/GuestMenuQr';
 import type { BarTable } from '../domain/types';
-import { Armchair, Settings2, X, Zap } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Armchair, BellRing, Settings2, X, Zap } from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBar } from '../app/providers/BarProvider';
 import { TablesEditor } from '../features/orders/TablesEditor';
@@ -35,6 +36,8 @@ export default function Tables() {
   const { tables, orders, sales, loading, error } = useOrders();
   const feed = useGuestRequests();
   const [qr, setQr] = useState<BarTable | null>(null);
+  // The table whose pending requests are open: all of them, not only the first.
+  const [requestTable, setRequestTable] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const linesByOrder = useMemo(() => {
     const groups = new Map<string, typeof sales>();
@@ -43,17 +46,46 @@ export default function Tables() {
     return groups;
   }, [sales]);
   const byTable = new Map(orders.filter((o) => o.tableId).map((o) => [o.tableId!, o]));
+  const requestsByTable = groupRequests(feed.requests);
   const tableById = byId(tables);
   const active = tables.filter((table) => table.active);
   const walkIns = orders.filter((o) => !o.tableId || !tableById.get(o.tableId)?.active);
   // The receipt is created with its first line, so a table someone only glanced at stays free.
   const openAt = (tableId?: string) =>
     navigate(tableId ? `/orders/new?table=${encodeURIComponent(tableId)}` : '/orders/new');
+  /** A table tile; a pending guest request adds its own strip below, apart from the receipt. */
+  const wrap = (key: string, tableId: string | undefined, name: string, children: ReactNode) => {
+    const pending = (tableId && requestsByTable.get(tableId)) || [];
+    const lines = pending.reduce((sum, r) => sum + r.lines.length, 0);
+    return (
+      <div className={`table-tile-wrap${pending.length ? ' has-guest-request' : ''}`} key={key}>
+        {children}
+        {pending.length > 0 && (
+          <button
+            type="button"
+            className="table-guest-request"
+            aria-label={`${t(pending.length > 1 ? 'Заявки гостей' : 'Заявка гостя')} · ${t(name)} · ${t(`${lines} позиций`)}`}
+            onClick={() => setRequestTable(tableId!)}
+          >
+            <BellRing size={16} aria-hidden="true" />
+            <span>{t(pending.length > 1 ? 'Заявки гостей' : 'Заявка гостя')}</span>
+            <b>
+              {pending.length > 1 ? `${pending.length} · ` : ''}
+              {t(`${lines} позиций`)}
+            </b>
+          </button>
+        )}
+      </div>
+    );
+  };
   const tile = (order: Order, name: string) => {
     const lines = linesByOrder.get(order.id) || [];
     const count = receiptCount(lines);
-    return (
-      <div className="table-tile-wrap" key={order.id}>
+    return wrap(
+      order.id,
+      order.tableId,
+      name,
+      <>
         <button
           type="button"
           className="table-tile open"
@@ -79,7 +111,7 @@ export default function Tables() {
             <X size={15} />
           </button>
         )}
-      </div>
+      </>,
     );
   };
   return (
@@ -109,7 +141,7 @@ export default function Tables() {
           </button>
         </PageHeading>
       </div>
-      <GuestRequests feed={feed} />
+      <GuestRequests feed={feed} open={setRequestTable} />
       {error && <p role="alert">{t(error)}</p>}
       {loading && !error ? (
         <LoadingStatus label="Открываем столы…" />
@@ -134,17 +166,19 @@ export default function Tables() {
             {active.map((table) => {
               const order = byTable.get(table.id);
               if (order) return tile(order, table.name);
-              return (
+              return wrap(
+                table.id,
+                table.id,
+                table.name,
                 <button
                   type="button"
-                  key={table.id}
                   className="table-tile free"
                   disabled={busy}
                   onClick={() => openAt(table.id)}
                 >
                   <span className="table-name">{t(table.name)}</span>
                   <small>{t('Свободен')}</small>
-                </button>
+                </button>,
               );
             })}
           </div>
@@ -168,6 +202,13 @@ export default function Tables() {
           ))}
         </div>
       </details>
+      {requestTable && (
+        <GuestRequestSheet
+          requests={requestsByTable.get(requestTable) || []}
+          close={() => setRequestTable(null)}
+          reload={feed.reload}
+        />
+      )}
       {qr && <GuestMenuQrModal table={qr} close={() => setQr(null)} />}
       {editing && <TablesEditor tables={tables} orders={orders} close={() => setEditing(false)} />}
     </>

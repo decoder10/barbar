@@ -8,6 +8,8 @@ import {
   GlassWater,
   Heart,
   Martini,
+  Minus,
+  Plus,
   Wine,
   X,
 } from 'lucide-react';
@@ -66,12 +68,18 @@ export function MenuPhoto({ item }: { item: GuestMenuItem }) {
     </div>
   );
 }
+export const menuLocale = (language: Language) =>
+  language === 'en' ? 'en-US' : language === 'hy' ? 'hy-AM' : 'ru-RU';
+export const menuNumber = (language: Language) => new Intl.NumberFormat(menuLocale(language));
 export function MenuPrices({ item, language }: { item: GuestMenuItem; language: Language }) {
-  const number = new Intl.NumberFormat(language === 'en' ? 'en-US' : language === 'hy' ? 'hy-AM' : 'ru-RU');
+  const number = menuNumber(language);
   return (
     <div className={`menu-card-prices${item.prices.length === 1 ? ' single' : ''}`}>
       {item.prices.map((price, index) => (
-        <span key={`${price.kind}-${index}`} className="menu-price">
+        <span
+          key={`${price.kind}-${index}`}
+          className={`menu-price${price.available === false ? ' unavailable' : ''}`}
+        >
           {(price.kind !== 'portion' || price.portion) && (
             <small>
               {price.kind === 'portion' ? t(price.portion || '') : copy[price.kind][language]}
@@ -84,34 +92,118 @@ export function MenuPrices({ item, language }: { item: GuestMenuItem; language: 
     </div>
   );
 }
+/** Cart actions of a table guest; absent on the read-only menu. */
+export interface MenuCartControls {
+  quantity: (price: GuestPrice) => number;
+  add: (price: GuestPrice, name: string) => void;
+  remove: (price: GuestPrice) => void;
+  canAddLine: boolean;
+}
+/** «− N +» for one cart line: the same control on the card and in the cart. */
+export function QuantityStepper({
+  name,
+  quantity,
+  decrease,
+  increase,
+  canIncrease = true,
+}: {
+  name: string;
+  quantity: number;
+  decrease: () => void;
+  increase: () => void;
+  canIncrease?: boolean;
+}) {
+  return (
+    <div className="guest-stepper" role="group" aria-label={`${t('Количество')}: ${name}`}>
+      <button
+        type="button"
+        aria-label={`${t('Уменьшить количество')}: ${name}`}
+        title={t('Уменьшить количество')}
+        onClick={decrease}
+      >
+        <Minus size={18} aria-hidden="true" />
+      </button>
+      <output aria-live="polite">{quantity}</output>
+      <button
+        type="button"
+        aria-label={`${t('Увеличить количество')}: ${name}`}
+        title={t('Увеличить количество')}
+        disabled={!canIncrease || quantity >= barConfig.guest.orders.maxPortions}
+        onClick={increase}
+      >
+        <Plus size={18} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
 export function MenuCard({
   item,
   language,
   saved,
   toggle,
-  add,
+  cart,
 }: {
   item: GuestMenuItem;
   language: Language;
   saved: boolean;
   toggle: (item: GuestMenuItem) => void;
-  add?: (price: GuestPrice) => void;
+  cart?: MenuCartControls;
 }) {
+  const sellable = item.prices.filter((p) => p.productId);
+  // A portion name is needed only to tell several prices of one drink apart.
+  const portion = (p: GuestPrice) =>
+    sellable.length > 1 ? t(p.portion || copy[p.kind === 'portion' ? 'menu' : p.kind][language]) : undefined;
+  // Without stock data (an older response) the card simply shows no availability.
+  const known = sellable.filter((p) => p.available !== undefined);
+  const soldOut = known.length > 0 && known.every((p) => !p.available);
   return (
-    <article className="menu-card">
+    <article className={`menu-card${soldOut ? ' sold-out' : ''}`}>
       <MenuPhoto item={item} />
       <div className="menu-card-body">
         <h3>{item.name}</h3>
+        {known.length > 0 && (
+          <span className={`menu-stock ${soldOut ? 'out' : 'in'}`}>
+            {t(soldOut ? 'Нет в наличии' : 'В наличии')}
+          </span>
+        )}
         <MenuPrices item={item} language={language} />
-        {add && (
+        {cart && (
           <div className="guest-add">
-            {item.prices
-              .filter((p) => p.productId)
-              .map((p) => (
-                <button type="button" key={p.productId} onClick={() => add(p)}>
-                  {t('В корзину')} · {t(p.portion || copy[p.kind === 'portion' ? 'menu' : p.kind][language])}
-                </button>
-              ))}
+            {sellable.map((p) => {
+              const quantity = cart.quantity(p);
+              const label = portion(p);
+              return (
+                <div className="guest-add-row" key={p.productId}>
+                  {quantity > 0 ? (
+                    <>
+                      {label && <small>{label}</small>}
+                      <QuantityStepper
+                        name={label ? `${item.name} · ${label}` : item.name}
+                        quantity={quantity}
+                        canIncrease={p.available !== false}
+                        decrease={() => cart.remove(p)}
+                        increase={() => cart.add(p, item.name)}
+                      />
+                    </>
+                  ) : p.available === false ? (
+                    <button type="button" disabled>
+                      <span>
+                        {t('Нет в наличии')}
+                        {label ? ` · ${label}` : ''}
+                      </span>
+                    </button>
+                  ) : (
+                    <button type="button" disabled={!cart.canAddLine} onClick={() => cart.add(p, item.name)}>
+                      <Plus size={17} aria-hidden="true" />
+                      <span>
+                        {t('В корзину')}
+                        {label ? ` · ${label}` : ''}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

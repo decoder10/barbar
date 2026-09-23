@@ -131,14 +131,15 @@
   color: var(--text);
 }
 
+/* The pay button stands apart from the total above it. */
 .order-panel .pay-button {
   min-height: 48px;
-  margin-top: 4px;
+  margin-top: 12px;
   font-size: 13px;
 }
 
 .order-panel .cancel-order {
-  margin-top: 8px;
+  margin-top: 10px;
   font-size: 11px;
   color: var(--muted);
 }
@@ -497,6 +498,12 @@
   }
 }
 
+/* «Закрыть смену» never wraps, even in the compact fullscreen toolbar. */
+.shift-close-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 /* Focused-mode toolbar inside a heading row (order screen, tables board). */
 .order-heading > .sales-mode-toolbar,
 .heading-actions > .sales-mode-toolbar {
@@ -535,12 +542,152 @@
   background: var(--danger-surface);
 }
 
+/* Guest requests: amber, apart from pink open receipts and dashed free tables. */
+.table-tile-wrap.has-guest-request {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-tile-wrap.has-guest-request > .table-tile {
+  flex: 1;
+  height: auto;
+  border-color: var(--warning);
+  border-style: solid;
+  border-bottom-width: 0;
+  border-radius: 12px 12px 0 0;
+}
+
+.table-guest-request {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 7px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--warning);
+  border-radius: 0 0 12px 12px;
+  background: var(--warning-surface);
+  color: var(--warning);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.table-guest-request > span {
+  white-space: nowrap;
+}
+
+/* The count moves under the label on narrow tiles instead of breaking words. */
+.table-guest-request > b {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.table-guest-request:hover,
+.guest-request-chip:hover {
+  filter: brightness(0.97);
+}
+
 .guest-requests,
 .table-qr-list {
   margin-block: 16px;
 }
 .guest-requests h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 16px;
+  color: var(--warning);
+}
+.guest-request-queue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block: 12px;
+}
+.guest-request-chip {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 2px 10px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 1px solid var(--warning);
+  border-radius: 10px;
+  background: var(--warning-surface);
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+}
+.guest-request-chip > strong {
+  color: var(--warning);
+  font-size: 15px;
+}
+.guest-request-chip {
+  max-width: min(100%, 360px);
+}
+.guest-request-chip > small,
+.guest-request-chip > .guest-request-items {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 12px;
+}
+/* What the table asked for, on one line; the sheet shows every line. */
+.guest-request-chip > .guest-request-items {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.guest-request-list {
+  display: grid;
+  gap: 14px;
+}
+.guest-request-card {
+  padding: 12px 14px 4px;
+  border: 1px solid var(--warning);
+  border-radius: 12px;
+  background: var(--surface);
+  > header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    strong {
+      color: var(--warning);
+      font-size: 14px;
+    }
+    small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+  }
+}
+.guest-request-comment {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  small {
+    color: var(--muted);
+    font-size: 12px;
+  }
+}
+.guest-request-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  strong {
+    font-size: 16px;
+  }
 }
 .guest-request-actions {
   display: flex;

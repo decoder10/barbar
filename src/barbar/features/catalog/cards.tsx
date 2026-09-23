@@ -14,6 +14,7 @@ export function CatalogCard({
   footer,
   action,
   icon,
+  unavailable,
 }: {
   name: string;
   art: ReactNode;
@@ -22,12 +23,20 @@ export function CatalogCard({
   footer: ReactNode;
   action: () => void;
   icon?: ReactNode;
+  /** Selling screens only: nothing left to pour, so the card cannot start a sale. */
+  unavailable?: boolean;
 }) {
   return (
-    <button className="drink-card" onClick={action}>
+    <button
+      className={`drink-card${unavailable ? ' unavailable' : ''}`}
+      onClick={action}
+      disabled={unavailable}
+      title={unavailable ? t('Нет в наличии') : undefined}
+    >
       <div className="card-image">
         {art}
         <span className="card-badge">{t(badge)}</span>
+        {unavailable && <span className="card-stock-out">{t('Нет в наличии')}</span>}
         <span className="card-open" aria-hidden="true">
           {icon || <ArrowUpRight size={17} />}
         </span>
@@ -48,7 +57,10 @@ export const compositionText = (
   empty = 'Добавьте состав в редакторе',
 ) => names.filter(Boolean).join(' · ') || (noIngredients ? 'Без ингредиентов' : empty);
 
-/** Stock state of a menu item for owner and worker cards. `portions` is null when nothing is deducted. */
+/**
+ * Stock state of a menu item for owner and worker cards. `portions` is null when nothing is deducted.
+ * `out`: a recipe the stock cannot pour even once, which the ledger would refuse to sell.
+ */
 export function stockPill({
   portions,
   lines,
@@ -60,10 +72,10 @@ export function stockPill({
   costLines: number;
   noIngredients?: boolean;
 }) {
-  if (noIngredients) return { label: 'Без ингредиентов', low: false };
-  if (!lines && costLines) return { label: 'По стоимости', low: false };
-  if (lines && portions) return { label: `${portions} порц.`, low: false };
-  return { label: lines ? 'Нет запаса' : 'Нет состава', low: true };
+  if (noIngredients) return { label: 'Без ингредиентов', low: false, out: false };
+  if (!lines && costLines) return { label: 'По стоимости', low: false, out: false };
+  if (lines && portions) return { label: `${portions} порц.`, low: false, out: false };
+  return { label: lines ? 'Нет запаса' : 'Нет состава', low: true, out: !!lines };
 }
 
 export function CocktailCard({
@@ -73,6 +85,7 @@ export function CocktailCard({
   action,
   hidePrice,
   icon,
+  unavailable,
 }: {
   cocktail: Pick<Cocktail, 'name' | 'image' | 'category' | 'serving' | 'price'>;
   detail: ReactNode;
@@ -81,6 +94,7 @@ export function CocktailCard({
   /** Roles without access to prices see the same card without the amount. */
   hidePrice?: boolean;
   icon?: ReactNode;
+  unavailable?: boolean;
 }) {
   return (
     <CatalogCard
@@ -88,6 +102,7 @@ export function CocktailCard({
       action={action}
       detail={detail}
       icon={icon}
+      unavailable={unavailable}
       art={
         <CocktailArt
           image={menuImage(cocktail)}
@@ -111,16 +126,20 @@ export function AlcoholCard({
   drink,
   ml,
   action,
+  selling,
 }: {
   drink: Pick<Alcohol, 'name' | 'category' | 'color' | 'pricePerLiter'> &
     Partial<Pick<Alcohol, 'menuCategory'>>;
   ml: number;
   action: () => void;
+  /** On a selling screen an empty bottle cannot be poured. */
+  selling?: boolean;
 }) {
   return (
     <CatalogCard
       name={drink.name}
       action={action}
+      unavailable={selling && ml <= 0}
       art={<BottleArt drink={drink} />}
       badge={drink.category === 'mixer' ? 'МИКСЕР' : 'АЛКОГОЛЬ'}
       icon={<Plus size={17} />}

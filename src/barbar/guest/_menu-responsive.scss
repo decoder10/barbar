@@ -1,3 +1,8 @@
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .menu-layout {
+    grid-template-columns: 234px minmax(0, 1fr) 312px;
+  }
+}
 @media (max-width: 1279px) {
   .guest-menu {
     --menu-header-height: 144px;
@@ -60,8 +65,13 @@
   .menu-favorites {
     display: none;
   }
-  .menu-mobile-favorites {
+  .menu-mobile-favorites,
+  .menu-mobile-cart {
     display: block;
+  }
+  .menu-mobile-cart .guest-cart {
+    max-width: 640px;
+    margin-inline: auto;
   }
   .menu-main {
     padding: 20px 24px 76px;
@@ -83,8 +93,15 @@
       justify-content: center;
       gap: 10px;
       min-height: 62px;
+      min-width: 0;
       flex: 1;
       color: var(--menu-muted);
+    }
+    button > span {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     button[aria-current='page'] {
       color: var(--menu-accent);

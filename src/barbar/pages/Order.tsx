@@ -133,6 +133,8 @@ export default function OrderPage() {
         </div>
         <SalesFullscreen home />
       </div>
+      {/* Above the catalog: a table's pending requests must be seen, not found below the drinks. */}
+      {tableId && <GuestRequests tableId={tableId} feed={guestFeed} />}
       <div className="sales-layout">
         <SalesCatalog date={date} filterKey="order" heading={false} onSelect={setSelected} />
         <OrderReceipt
@@ -160,7 +162,6 @@ export default function OrderPage() {
           }}
         />
       </div>
-      {tableId && <GuestRequests tableId={tableId} feed={guestFeed} />}
       {selected && ownerProduct && (
         <SaleForm
           kind={selected.kind}

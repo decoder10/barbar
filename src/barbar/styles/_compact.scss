@@ -211,7 +211,7 @@
     top: 0;
     z-index: 25;
     height: calc(54px + env(safe-area-inset-top, 0px));
-    padding: env(safe-area-inset-top, 0px) 58px 0 16px;
+    padding: env(safe-area-inset-top, 0px) 8px 0 16px;
   }
 
   .breadcrumb > strong {
@@ -233,30 +233,6 @@
   .topbar .icon-button {
     width: 42px;
     height: 42px;
-  }
-
-  .stock-notifications-toggle {
-    top: calc(env(safe-area-inset-top, 0px) + 6px);
-    right: 12px;
-    bottom: auto;
-    z-index: 26;
-    width: 42px;
-    min-height: 42px;
-    height: 42px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-    color: var(--muted);
-  }
-
-  .stock-notifications-toggle > span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 
   .stock-alerts {
@@ -457,6 +433,12 @@
     padding: 0;
   }
 
+  /* The only labelled button of the row: keep «Закрыть смену» on one line. */
+  .sales-mode-toolbar > .shift-close-button {
+    width: auto;
+    padding: 0 14px;
+  }
+
   .sales-fullscreen-label {
     position: absolute;
     width: 1px;
@@ -558,8 +540,7 @@
   }
 
   .sales-fullscreen {
-    .bottom-nav,
-    .stock-notifications-toggle {
+    .bottom-nav {
       display: none;
     }
 

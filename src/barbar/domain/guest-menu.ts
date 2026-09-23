@@ -1,4 +1,6 @@
 import { barConfig } from '../config';
+import { recipePortions } from './catalog/cards';
+import { expandRecipe } from './catalog/sets';
 import { round } from './model';
 import { bottleName, isGlassServing } from './serving';
 import type { BarData, MenuCategory } from './types';
@@ -14,6 +16,8 @@ export interface GuestPrice {
   /** Selling price in AMD, the same value used when a sale is recorded. */
   price: number;
   portion?: string;
+  /** Whether the stock still holds one portion; absent when stock was not read. Never a quantity. */
+  available?: boolean;
 }
 export interface GuestMenuItem {
   id: string;
@@ -35,9 +39,19 @@ export interface GuestMenu {
 
 const portionText = (value?: string) => value?.trim() || undefined;
 
-/** Public allowlist: names, selling prices, portions and photos only. No costs, stock, recipes or IDs of stock. */
-export function guestMenu(data: Pick<BarData, 'alcohol' | 'cocktails'>, revision: string): GuestMenu {
+/**
+ * Public allowlist: names, selling prices, portions and photos only. No costs, recipes, IDs of stock or
+ * stock quantities; with `balances` each price only says whether one portion can still be poured.
+ */
+export function guestMenu(
+  data: Pick<BarData, 'alcohol' | 'cocktails'>,
+  revision: string,
+  balances?: Map<string, number>,
+): GuestMenu {
   const alcohol = new Map(data.alcohol.map((a) => [a.id, a]));
+  const { portionMl } = barConfig.guest.pouredAlcohol;
+  // A recipe that deducts nothing is always available, exactly as the ledger accepts its sale.
+  const availability = (value: () => boolean) => (balances ? { available: value() } : {});
   const sections = new Map<GuestSectionId, GuestMenuItem[]>();
   const variants = new Map<string, GuestMenuItem>();
   const add = (item: GuestMenuItem) =>
@@ -66,6 +80,7 @@ export function guestMenu(data: Pick<BarData, 'alcohol' | 'cocktails'>, revision
       productKind: 'cocktail',
       ...(glass && stock?.glassSizeMl ? { servingMl: stock.glassSizeMl } : {}),
       ...(portion ? { portion } : {}),
+      ...availability(() => recipePortions(expandRecipe(c, data.cocktails), balances!) !== 0),
     };
     // Legacy glasses are not linked to stock while their bottle may be: match by the shared base name.
     const key = glass || bottle ? `${category}:${base.toLocaleLowerCase()}` : '';
@@ -88,7 +103,6 @@ export function guestMenu(data: Pick<BarData, 'alcohol' | 'cocktails'>, revision
     if (key) variants.set(key, item);
     add(item);
   }
-  const { portionMl } = barConfig.guest.pouredAlcohol;
   for (const a of data.alcohol)
     if (a.category === 'alcohol' && a.pricePerLiter > 0 && !a.guestHidden)
       add({
@@ -105,6 +119,7 @@ export function guestMenu(data: Pick<BarData, 'alcohol' | 'cocktails'>, revision
             servingMl: portionMl,
             price: round((a.pricePerLiter * portionMl) / 1000),
             portion: `${portionMl} мл`,
+            ...availability(() => (balances!.get(a.id) || 0) + 1e-7 >= portionMl),
           },
         ],
       });

@@ -4,8 +4,11 @@ import type { AlertEvent, PurchaseEvent } from './events';
 import { ensurePushIndexes, pushConfig, validateSubscription, type Device } from './subscriptions';
 import {
   alertMessage,
+  guestMessage,
+  guestTitle,
   purchaseMessage,
   purchaseTitle,
+  type GuestNotice,
 } from '../../../src/barbar/domain/notifications/message';
 
 type Queued = Omit<AlertEvent, 'alerts'>;
@@ -56,9 +59,8 @@ const guests: Channel = {
   ownersOnly: false,
   foreground: true,
   payload: (event, device) => ({
-    title:
-      device.language === 'en' ? 'Guest request' : device.language === 'hy' ? 'Հյուրի հայտ' : 'Заявка гостя',
-    body: (event as Queued & { tableName: string }).tableName,
+    title: guestTitle((event as Queued & GuestNotice).tableName, device.language),
+    body: guestMessage(event as Queued & GuestNotice, device.language),
     tag: `guest-${event._id}`,
     url: '/',
   }),

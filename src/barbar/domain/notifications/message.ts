@@ -49,3 +49,26 @@ export function purchaseMessage(notice: PurchaseNotice, language = 'ru') {
       : '';
   return `${notice.name} · ${amount(notice.quantity, language)} ${unitText(notice.unit, language)} · ${amount(notice.amount, language)} ֏ · ${time}${dated}`;
 }
+
+/** A guest request as notifications carry it: the table, what was asked for and its menu total. */
+export interface GuestNotice {
+  tableName: string;
+  lines?: { name: string; quantity: number; servingMl?: number }[];
+  /** Menu total in AMD at the time of the request. */
+  total?: number;
+  comment?: string;
+}
+const tableWord = (language: string) => (language === 'en' ? 'Table' : language === 'hy' ? 'Սեղան' : 'Стол');
+export const guestRequestLabel = (language = 'ru') =>
+  language === 'en' ? 'Guest request' : language === 'hy' ? 'Հյուրի հայտ' : 'Заявка гостя';
+/** «Стол 3 · Заявка гостя»: the table comes first, it is what staff look for. */
+export const guestTitle = (tableName: string, language = 'ru') =>
+  `${tableWord(language)} ${tableName} · ${guestRequestLabel(language)}`;
+export const guestLineText = (line: NonNullable<GuestNotice['lines']>[number], language = 'ru') =>
+  `${line.name} × ${line.quantity}${line.servingMl ? ` · ${line.servingMl} ${unitText('ml', language)}` : ''}`;
+/** Push body: every line and the total; an event written before lines were stored names its table. */
+export function guestMessage(notice: GuestNotice, language = 'ru') {
+  if (!notice.lines?.length) return `${tableWord(language)} ${notice.tableName}`;
+  const total = notice.total ? ` · ${amount(notice.total, language)} ֏` : '';
+  return notice.lines.map((line) => guestLineText(line, language)).join(', ') + total;
+}

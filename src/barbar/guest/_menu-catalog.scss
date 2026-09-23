@@ -71,6 +71,33 @@
     overflow-wrap: anywhere;
   }
 }
+// Availability: a quiet mark when a drink can be poured, a clear one when it cannot.
+.menu-stock {
+  align-self: flex-start;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  &.in {
+    background: var(--menu-ok-soft);
+    color: var(--menu-ok);
+  }
+  &.out {
+    background: var(--menu-accent-soft);
+    color: var(--menu-active-text);
+  }
+}
+// Sold out stays readable: the photo and prices step back, the name and the mark do not.
+.menu-card.sold-out {
+  .menu-card-photo {
+    opacity: 0.7;
+    filter: grayscale(0.35);
+  }
+  .menu-price {
+    opacity: 0.75;
+  }
+}
 .menu-card-prices {
   display: flex;
   flex-wrap: wrap;
@@ -81,6 +108,9 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  &.unavailable {
+    opacity: 0.75;
+  }
   small {
     color: var(--menu-muted);
     font-size: 11px;

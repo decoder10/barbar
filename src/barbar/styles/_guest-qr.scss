@@ -23,11 +23,21 @@
   }
 }
 
+/* Three icon actions in one row; names come from aria-label and title. */
 .guest-qr-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 10px;
   margin-top: 12px;
+
+  > .icon-only {
+    flex: 0 0 auto;
+    width: 52px;
+    min-height: 48px;
+    padding: 0;
+    justify-content: center;
+  }
 }
 
 @media print {
