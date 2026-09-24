@@ -1,6 +1,7 @@
 import { useInventoryCalculations } from '../inventory/use-inventory-calculations';
 import { Calculator, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Field } from '../../ui/fields';
 import { Modal, Submit } from '../../ui/modal';
 import { formatMoney as money } from '../../presentation/currency/format-money';
@@ -363,6 +364,15 @@ export function RecipeForm({ cocktail, close }: { cocktail?: Cocktail; close: ()
             />
           </Field>
         </div>
+        {cocktail && (
+          <Link
+            className="text-link price-history-link"
+            to={`/reports?price=cocktail:${cocktail.id}`}
+            onClick={close}
+          >
+            {t('История цен')}
+          </Link>
+        )}
         <button
           type="button"
           className="suggestion"

@@ -19,6 +19,13 @@ export interface Alcohol {
   color: string;
   /** Poured alcohol is listed in the public guest menu unless hidden. */
   guestHidden?: boolean;
+  /** Owner's bar-wide favourite: a shortcut in the sales catalog for every role. */
+  favorite?: true;
+  /** Purchasing (owner only): supplier, own lead time, safety days and safety stock in the item's unit. */
+  supplierId?: string;
+  leadDays?: number;
+  safetyDays?: number;
+  safetyStock?: number;
 }
 export type GoodsCategory = 'soft' | 'snack' | 'hot';
 /** One tincture in a set and the number of shots it contributes. */
@@ -51,12 +58,43 @@ export interface Cocktail {
   /** Guest-facing portion, e.g. «50 мл» or «6 шотов». */
   portion?: string;
   guestHidden?: boolean;
+  /** Owner's bar-wide favourite: a shortcut in the sales catalog for every role. */
+  favorite?: true;
   id: string;
   name: string;
   ingredients: Ingredient[];
   price: number;
   image: number;
 }
+/** A supplier and its default delivery time; an item may override it. */
+export interface Supplier {
+  id: string;
+  name: string;
+  leadDays?: number;
+  note?: string;
+}
+/** One saved selling-price change; prices are never changed automatically. */
+export interface PriceChange {
+  id: string;
+  /** Business day of the change. */
+  date: string;
+  createdAt: string;
+  kind: Sale['kind'];
+  productId: string;
+  name: string;
+  /** `price` for a menu item, `pricePerLiter` for poured alcohol (per 1,000 ml). */
+  field: 'price' | 'pricePerLiter';
+  from: number;
+  to: number;
+  actor?: OrderActor;
+}
+/** The part of a consumed quantity that came from one preparation batch. */
+export interface BatchShare {
+  id: string;
+  ml: number;
+  cost: number;
+}
+export type SaleIngredient = Ingredient & { cost: number; batches?: BatchShare[] };
 export interface Purchase {
   id: string;
   alcoholId: string;
@@ -82,7 +120,7 @@ export interface Sale {
   quantity: number;
   revenue: number;
   cost: number;
-  ingredients: (Ingredient & { cost: number })[];
+  ingredients: SaleIngredient[];
   voided: boolean;
 }
 /** A guest table; `code` is the unguessable part of its QR link. */
@@ -160,11 +198,31 @@ export interface BarData {
   tables?: BarTable[];
   orders?: Order[];
   shifts?: Shift[];
+  suppliers?: Supplier[];
+  priceChanges?: PriceChange[];
+  /**
+   * Working copies only, never stored: the preparations (and their batch write-offs) of the outputs a
+   * command consumes. `stockMovements` must not carry them, because balances already include them.
+   */
+  batchSources?: StockMovement[];
   archived?: { before: string; ingredients: (Ingredient & { cost: number })[]; count: number };
 }
 export type Action =
   | { type: 'closeShift'; businessDay: string; expected: string; countedCash: number }
   | { type: 'acceptGuestRequest'; requestId: string; lineIds: string[] }
+  | {
+      type: 'addLines';
+      /** An open order, or a table whose open order is used (opened when it has none). */
+      orderId?: string;
+      tableId?: string;
+      lines: { kind: Sale['kind']; productId: string; quantity: number; servingMl?: number }[];
+      /** The total the client showed; changed prices are refused instead of charged blindly. */
+      expectedTotal: number;
+    }
+  | { type: 'correctBatchYield'; batchId: string; expected: number; actual: number; reason: string }
+  | { type: 'setFavorite'; kind: Sale['kind']; productId: string; favorite: boolean }
+  | { type: 'saveSupplier'; value: Supplier }
+  | { type: 'removeSupplier'; supplierId: string }
   | { type: 'rejectGuestRequest'; requestId: string }
   | OperationsAction
   | { type: 'alcohol'; value: Alcohol }
@@ -220,6 +278,8 @@ export type Role = 'admin' | 'barbar';
 export interface StaffProduct {
   /** Selling price in AMD per menu portion, or per ml for poured alcohol. */
   price?: number;
+  /** The owner's bar-wide favourite. */
+  favorite?: true;
   stockAlcoholId?: string;
   glassSizeMl?: number;
   bottleSizeMl?: number;
@@ -280,7 +340,12 @@ export interface StockMovement {
   reason: string;
   lines: { alcoholId: string; ml: number; cost: number }[];
   outputId?: string;
+  /** Actual yield of a preparation. */
   outputQuantity?: number;
+  /** Planned yield; the loss is the plan minus the actual yield. */
+  plannedQuantity?: number;
+  /** A write-off aimed at one preparation batch. */
+  batchId?: string;
   expiresOn?: string;
   counted?: { alcoholId: string; expected: number; actual: number }[];
 }
@@ -298,12 +363,22 @@ export type OperationsAction =
       reason: string;
       lines: { alcoholId: string; expected: number; actual: number; costPerBasis?: number }[];
     }
-  | { type: 'writeoff'; reason: string; alcoholId: string; quantity: number; expected: number }
+  | {
+      type: 'writeoff';
+      reason: string;
+      alcoholId: string;
+      quantity: number;
+      expected: number;
+      /** Writes off a given batch of a preparation and takes that batch's unit cost. */
+      batchId?: string;
+    }
   | {
       type: 'prepare';
       reason: string;
       outputId: string;
+      /** Actual yield. */
       quantity: number;
+      plannedQuantity?: number;
       ingredients: Ingredient[];
       expiresOn?: string;
     }

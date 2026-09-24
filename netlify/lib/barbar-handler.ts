@@ -6,7 +6,8 @@ import { respondError } from './http';
 import { handleCards } from './routes/cards';
 import { catalogRoute, handleCatalog } from './routes/catalog';
 import { handleCommand } from './routes/commands';
-import { handleOrders, handleShifts, handleGuestRequests } from './routes/orders';
+import { handleFavorites } from './routes/favorites';
+import { handleOrders, handleRecentOrders, handleShifts, handleGuestRequests } from './routes/orders';
 import { handleWorkingRead } from './routes/working';
 
 /**
@@ -31,6 +32,9 @@ export const handleBarApi = async (
     if (pathname === '/api/barbar/catalog/cards') return await handleCards(request, repository, role);
     if (pathname === '/api/barbar/shifts') return await handleShifts(request, repository, role);
     if (pathname === '/api/barbar/guest-requests') return await handleGuestRequests(request, repository);
+    if (pathname === '/api/barbar/favorites') return await handleFavorites(request, users, user);
+    if (pathname === '/api/barbar/orders/recent')
+      return await handleRecentOrders(request, repository, role, user);
     if (pathname === '/api/barbar/orders') return await handleOrders(request, repository, role);
     const catalog = catalogRoute(pathname);
     if (catalog)

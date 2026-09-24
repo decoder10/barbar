@@ -15,7 +15,7 @@
     "check-format": "prettier --check src netlify server tests *.ts *.json *.md *.html",
     "db:start": "docker compose up -d --wait",
     "db:stop": "docker compose stop",
-    "test:db": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" vitest run --testTimeout=30000 netlify/lib/barbar-mongo.test.ts netlify/lib/barbar-users.test.ts netlify/lib/database/indexes.test.ts netlify/lib/notifications/notifications.test.ts netlify/lib/barbar-sync.test.ts netlify/lib/history-corrections.test.ts netlify/lib/orders-workflows.test.ts",
+    "test:db": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" vitest run --testTimeout=30000 netlify/lib/barbar-mongo.test.ts netlify/lib/barbar-users.test.ts netlify/lib/database/indexes.test.ts netlify/lib/notifications/notifications.test.ts netlify/lib/barbar-sync.test.ts netlify/lib/history-corrections.test.ts netlify/lib/orders-workflows.test.ts netlify/lib/priority2-workflows.test.ts",
     "photos:manifest": "node scripts/photo-manifest.mjs",
     "lint": "eslint . --max-warnings 0",
     "check": "npm run lint && npm run typecheck && npm test",

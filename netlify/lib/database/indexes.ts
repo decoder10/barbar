@@ -12,6 +12,8 @@ export const ledgerCollections = [
   'tables',
   'orders',
   'shifts',
+  'suppliers',
+  'priceChanges',
 ] as const;
 
 const ledgerIndexes: Record<string, IndexDescription[]> = {
@@ -22,12 +24,20 @@ const ledgerIndexes: Record<string, IndexDescription[]> = {
     { key: { date: 1 }, name: 'cancelled_sales_date', partialFilterExpression: { voided: true } },
     // Receipt lines: the open orders screen and payments read one order's sales at a time.
     { key: { orderId: 1 }, name: 'order_lines', partialFilterExpression: { orderId: { $exists: true } } },
+    // Portions costed by a batch: a yield correction refuses a batch that sales drew from.
+    { key: { 'ingredients.batches.id': 1 }, name: 'sale_batches', sparse: true },
   ],
   orders: [
     { key: { businessDay: 1 } },
     { key: { status: 1, businessDay: -1, openedAt: -1 } },
     { key: { tableId: 1, status: 1 } },
+    // Repeat an order: the latest paid receipts of a worker or of a table.
+    { key: { 'openedBy.id': 1, status: 1, openedAt: -1 }, name: 'orders_by_opener' },
+    { key: { tableId: 1, status: 1, openedAt: -1 }, name: 'orders_by_table_recent' },
   ],
+  // History of a price and the newest changes first.
+  priceChanges: [{ key: { productId: 1, createdAt: -1 } }, { key: { createdAt: -1 } }],
+  suppliers: [{ key: { name: 1 } }],
   shifts: [{ key: { businessDay: 1 }, unique: true }],
   tables: [{ key: { code: 1 }, unique: true }],
   purchases: [{ key: { date: -1, id: -1 } }],
@@ -41,6 +51,8 @@ const ledgerIndexes: Record<string, IndexDescription[]> = {
       name: 'preparation_outputs',
       partialFilterExpression: { kind: 'prepare' },
     },
+    // Write-offs aimed at one preparation batch.
+    { key: { batchId: 1 }, name: 'batch_writeoffs', partialFilterExpression: { batchId: { $exists: true } } },
   ],
 };
 
@@ -108,6 +120,6 @@ async function buildAuditIndexes(db: Db) {
 }
 
 export const ensureLedgerIndexes = (db: Db) =>
-  oncePerDatabase(db, 'ledger-indexes-v4', () => buildLedgerIndexes(db));
+  oncePerDatabase(db, 'ledger-indexes-v5', () => buildLedgerIndexes(db));
 export const ensureAuditIndexes = (db: Db) =>
   oncePerDatabase(db, 'audit-indexes-v2', () => buildAuditIndexes(db));

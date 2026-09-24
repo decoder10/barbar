@@ -194,7 +194,7 @@ describe.skipIf(!uri)('query-driven indexes on an isolated local database', () =
     await ensureLedgerIndexes(db);
     await ensureAuditIndexes(db);
     const names = (await db.collection('appMigrations').find().toArray()).map((m) => String(m._id));
-    expect(names).toEqual(expect.arrayContaining(['ledger-indexes-v4', 'audit-indexes-v2']));
+    expect(names).toEqual(expect.arrayContaining(['ledger-indexes-v5', 'audit-indexes-v2']));
     const shifts = db.collection('shifts');
     await shifts.insertOne({ businessDay: '2026-09-22', id: 'first' });
     await expect(shifts.insertOne({ businessDay: '2026-09-22', id: 'second' })).rejects.toMatchObject({

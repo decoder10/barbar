@@ -110,6 +110,8 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
       tables: [],
       orders: [],
       shifts: [],
+      suppliers: [],
+      priceChanges: [],
     };
     // One-time catalog upgrades (goods, merged duplicates) change the catalog only; the ledger is imported as is.
     expect({ ...migrated.data, alcohol: [], cocktails: [] }).toEqual({

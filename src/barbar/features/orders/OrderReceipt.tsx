@@ -1,4 +1,4 @@
-import { CreditCard, Minus, Plus, ReceiptText, XCircle } from 'lucide-react';
+import { CreditCard, Minus, Plus, ReceiptText, Repeat2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useBar } from '../../app/providers/BarProvider';
 import { groupReceipt, receiptCount, type ReceiptGroup } from '../../domain/orders';
@@ -26,6 +26,7 @@ export function OrderReceipt({
   onRemove,
   onPay,
   onCancel,
+  onRepeat,
 }: {
   /** Absent for a draft: the receipt is created with its first line. */
   order?: Order;
@@ -38,6 +39,8 @@ export function OrderReceipt({
   onRemove: (group: ReceiptGroup<ReceiptLine>) => void;
   onPay: () => void;
   onCancel: () => void;
+  /** Opens the repeat-a-previous-set sheet. */
+  onRepeat: () => void;
 }) {
   const { busy } = useBar();
   const compact = useCompact();
@@ -94,6 +97,18 @@ export function OrderReceipt({
         </span>
         <small>{t(opened)}</small>
       </div>
+      <button
+        type="button"
+        className="button secondary full repeat-order"
+        disabled={busy}
+        onClick={() => {
+          setOpen(false);
+          onRepeat();
+        }}
+      >
+        <Repeat2 size={16} />
+        {t('Повторить заказ')}
+      </button>
       <button
         type="button"
         className="button primary full pay-button"

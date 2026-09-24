@@ -5,6 +5,10 @@ interface Calculations {
   priceBasis: (data: BarData, id: string) => number;
   round: (n: number) => number;
   day: () => string;
+  /** Cost of using a prepared output that has batches; null when it has none (weighted average). */
+  batchCost: (id: string, ml: number) => number | null;
+  /** What is left of one batch and its unit cost. */
+  batchRemaining: (id: string, batchId: string) => { remaining: number; unitCost: number } | undefined;
 }
 const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 1e9;
 const text = (s: unknown) => typeof s === 'string' && s.trim().length > 0 && s.length <= 300;
@@ -84,7 +88,36 @@ export function applyOperations(
     if (calc.stock(data, command.alcoholId) !== command.expected)
       fail('Остаток изменился. Обновите склад и повторите списание.');
     if (command.quantity > command.expected + 1e-7) fail('Для списания недостаточно остатка.');
-    movement.lines = [line(command.alcoholId, -command.quantity)];
+    if (command.batchId !== undefined) {
+      const batch = calc.batchRemaining(command.alcoholId, command.batchId);
+      if (!batch) fail('Партия не найдена или уже использована.');
+      if (command.quantity > batch!.remaining + 1e-7) fail('В партии меньше указанного количества.');
+      // The balance and its batches can disagree (use before batches and count shortages go at the
+      // average), so the cost never exceeds the balance's and emptying the item takes all of it.
+      const balanceCost = Math.max(
+        0,
+        (calc.averageCost(data, command.alcoholId) * command.expected) /
+          calc.priceBasis(data, command.alcoholId),
+      );
+      const emptied = command.quantity >= command.expected - 1e-7;
+      movement.batchId = command.batchId;
+      movement.lines = [
+        {
+          alcoholId: command.alcoholId,
+          ml: -command.quantity,
+          cost: -calc.round(
+            emptied ? balanceCost : Math.min(balanceCost, command.quantity * batch!.unitCost),
+          ),
+        },
+      ];
+    } else {
+      const cost = calc.batchCost(command.alcoholId, command.quantity);
+      movement.lines = [
+        cost === null
+          ? line(command.alcoholId, -command.quantity)
+          : { alcoholId: command.alcoholId, ml: -command.quantity, cost: -cost },
+      ];
+    }
   } else if (command.type === 'count') {
     if (
       !Array.isArray(command.lines) ||
@@ -125,12 +158,20 @@ export function applyOperations(
       quantity(data, i.alcoholId, i.ml);
       if (i.alcoholId === command.outputId) fail('Готовая заготовка должна быть отдельной позицией склада.');
       if (calc.stock(data, i.alcoholId) + 1e-7 < i.ml) fail('Недостаточно ингредиентов для партии.');
-      movement.lines.push(line(i.alcoholId, -i.ml));
+      const cost = calc.batchCost(i.alcoholId, i.ml);
+      movement.lines.push(
+        cost === null ? line(i.alcoholId, -i.ml) : { alcoholId: i.alcoholId, ml: -i.ml, cost: -cost },
+      );
     }
     const cost = calc.round(-movement.lines.reduce((sum, i) => sum + i.cost, 0));
     movement.lines.push({ alcoholId: command.outputId, ml: command.quantity, cost });
     movement.outputId = command.outputId;
     movement.outputQuantity = command.quantity;
+    if (command.plannedQuantity !== undefined) {
+      if (!finite(command.plannedQuantity) || command.plannedQuantity <= 0)
+        fail('Проверьте плановый выход партии.');
+      movement.plannedQuantity = command.plannedQuantity;
+    }
     if (command.expiresOn) {
       if (!date(command.expiresOn) || command.expiresOn < calc.day()) fail('Проверьте срок годности партии.');
       movement.expiresOn = command.expiresOn;
@@ -170,7 +211,23 @@ export function validateOperations(data: BarData) {
       const product = data.alcohol.find((a) => a.id === l.alcoholId)!;
       if (product.category === 'beer' && product.unit === 'bottle' && !Number.isInteger(l.ml)) return false;
     }
-    if (m.kind === 'writeoff') return m.lines.length === 1 && m.lines[0].ml < 0 && !m.counted && !m.outputId;
+    if (m.batchId !== undefined && m.kind !== 'writeoff') return false;
+    if (
+      m.plannedQuantity !== undefined &&
+      (m.kind !== 'prepare' || !finite(m.plannedQuantity) || m.plannedQuantity <= 0)
+    )
+      return false;
+    if (m.kind === 'writeoff')
+      return (
+        m.lines.length === 1 &&
+        m.lines[0].ml < 0 &&
+        !m.counted &&
+        !m.outputId &&
+        (m.batchId === undefined ||
+          !!data.stockMovements?.some(
+            (b) => b.id === m.batchId && b.kind === 'prepare' && b.outputId === m.lines[0].alcoholId,
+          ))
+      );
     if (m.kind === 'prepare')
       return (
         m.lines.length >= 2 &&

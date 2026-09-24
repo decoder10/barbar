@@ -69,6 +69,23 @@ try {
     difference: -10,
   });
   await source.collection('shifts').createIndex({ businessDay: 1 }, { unique: true });
+  await source
+    .collection('suppliers')
+    .insertOne({ _id: 'supplier-1', id: 'supplier-1', name: 'Опт', leadDays: 3, _order: 0 });
+  await source.collection('priceChanges').insertOne({
+    _id: 'price-1',
+    id: 'price-1',
+    date: '2026-09-22',
+    createdAt: '2026-09-22T08:00:00.000Z',
+    kind: 'cocktail',
+    productId: 'mule',
+    name: 'Мул',
+    field: 'price',
+    from: 2000,
+    to: 2300,
+    _order: 1,
+  });
+  await source.collection('priceChanges').createIndex({ productId: 1, createdAt: -1 });
   await source.createCollection('empty');
   await source.collection('sales').insertMany(
     Array.from({ length: 501 }, (_, i) => ({
@@ -79,17 +96,17 @@ try {
     })),
   );
   const result = await backupDatabase(source, key, path);
-  assert.equal(result.documents, 505);
+  assert.equal(result.documents, 507);
   const verified = await readBackup(path, key, async (record) => {
     if (record.kind === 'document') assert.ok(!excluded.includes(record.collection));
   });
-  assert.equal(verified.documents, 505);
+  assert.equal(verified.documents, 507);
   for (const name of excluded) {
     assert.ok(!Object.hasOwn(verified.header.indexes, name));
     assert.ok(!Object.hasOwn(verified.counts, name));
   }
   assert.equal((await restoreDatabase(client, target.databaseName, path, key)).verified, true);
-  for (const name of ['users', 'sales', 'empty', 'tables', 'orders', 'shifts']) {
+  for (const name of ['users', 'sales', 'empty', 'tables', 'orders', 'shifts', 'suppliers', 'priceChanges']) {
     const original = await source.collection(name).find().sort({ _id: 1 }).toArray();
     const restored = await target.collection(name).find().sort({ _id: 1 }).toArray();
     assert.equal(
@@ -118,8 +135,9 @@ try {
   console.log(
     JSON.stringify({
       backupRestore: 'passed',
-      documents: 505,
+      documents: 507,
       tablesOrdersShifts: 'preserved',
+      suppliersPriceHistory: 'preserved',
       transientCollections: 'excluded',
       bsonTypes: 'preserved',
       indexes: 'restored',

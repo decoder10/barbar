@@ -10,12 +10,24 @@ import { forecastFromUsage } from '../../../src/barbar/domain/reports/purchasing
 import { availabilityDays, type DailyChange } from '../../../src/barbar/domain/reports/availability';
 import { stockTotals } from '../../../src/barbar/domain/model';
 import { businessToday } from '../../../src/barbar/domain/business-day';
+import { handleCompare } from './compare';
+import { handlePrices } from './prices';
+import { respondError } from '../http';
+import type { Supplier } from '../../../src/barbar/domain/types';
 export async function handleReport(request: Request, db: Db, users: IdentityStore) {
   const user = await authenticated(request, users);
   if (!user) return json({ error: 'Войдите в Barbar Cafe.' }, 401);
   if (user.role !== 'owner') return json({ error: 'Отчёты доступны только владельцу.' }, 403);
   if (request.method !== 'GET') return json({ error: 'Метод не поддерживается.' }, 405);
   const params = new URL(request.url).searchParams;
+  const pathname = new URL(request.url).pathname;
+  if (pathname === '/api/barbar/report/compare' || pathname === '/api/barbar/prices') {
+    try {
+      return await (pathname === '/api/barbar/prices' ? handlePrices(params, db) : handleCompare(params, db));
+    } catch (error) {
+      return respondError(error, 'Отчёт временно недоступен.');
+    }
+  }
   let period: ReturnType<typeof dateFilter>;
   try {
     period = dateFilter(params);
@@ -132,6 +144,11 @@ export async function handleReport(request: Request, db: Db, users: IdentityStor
             .collection('stockMovements')
             .distinct('outputId', { kind: 'prepare' }, options);
           const current = await workingData(db, session, []);
+          const suppliers = (await db
+            .collection('suppliers')
+            .find({}, { session, projection: { _id: 0, _order: 0 } })
+            .sort({ name: 1 })
+            .toArray()) as unknown as Supplier[];
           // Feed compact usage totals into the shared forecast, then restore current stock as its opening basis.
           const from = period.date.$gte,
             to = period.date.$lte > businessToday() ? businessToday() : period.date.$lte;
@@ -208,6 +225,7 @@ export async function handleReport(request: Request, db: Db, users: IdentityStor
             consumed,
             new Set(outputs),
             availability,
+            suppliers,
           );
           const performance = aggregatedPerformance(current, groups as unknown as SalesGroup[]);
           return {
@@ -226,6 +244,7 @@ export async function handleReport(request: Request, db: Db, users: IdentityStor
             expenses: expenses[0]?.value || 0,
             losses: (losses[0]?.value || 0) + (resets[0]?.value || 0),
             forecast,
+            suppliers,
           };
         },
         { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' } },

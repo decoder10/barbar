@@ -19,6 +19,10 @@ export interface OperationPrefill {
   productId: string;
   amount: string;
   reason: string;
+  /** A write-off aimed at one preparation batch: it takes that batch's unit cost, capped at the balance's. */
+  batchId?: string;
+  /** What is left of that batch: the write-off cannot exceed it. */
+  batchRemaining?: number;
 }
 export function OperationForm({
   kind,
@@ -37,6 +41,7 @@ export function OperationForm({
   const [reason, setReason] = useState(prefill?.reason || '');
   const [date, setDate] = useState(businessToday);
   const [expires, setExpires] = useState('');
+  const [planned, setPlanned] = useState('');
   const [category, setCategory] = useState<keyof typeof expenseCategories>('other');
   const [ingredients, setIngredients] = useState([{ alcoholId: '', ml: '' }]);
   const product = data.alcohol.find((a) => a.id === productId);
@@ -55,7 +60,7 @@ export function OperationForm({
       title={t(
         {
           count: 'Инвентаризация',
-          writeoff: 'Списать со склада',
+          writeoff: prefill?.batchId ? 'Списать партию' : 'Списать со склада',
           prepare: 'Выпуск заготовки',
           expense: 'Расход бара',
         }[kind],
@@ -91,12 +96,14 @@ export function OperationForm({
                       alcoholId: productId,
                       quantity: Number(amount),
                       expected,
+                      ...(prefill?.batchId ? { batchId: prefill.batchId } : {}),
                     }
                   : {
                       type: 'prepare' as const,
                       reason,
                       outputId: productId,
                       quantity: Number(amount),
+                      ...(planned ? { plannedQuantity: Number(planned) } : {}),
                       ingredients: ingredients.map((i) => ({ alcoholId: i.alcoholId, ml: Number(i.ml) })),
                       ...(expires ? { expiresOn: expires } : {}),
                     };
@@ -112,7 +119,12 @@ export function OperationForm({
                 : `Учётный остаток: ${expected} ${unitLabel(product?.unit)}`
             }
           >
-            <select value={productId} onChange={(e) => pick(e.target.value)} required>
+            <select
+              value={productId}
+              onChange={(e) => pick(e.target.value)}
+              required
+              disabled={!!prefill?.batchId}
+            >
               {options}
             </select>
           </Field>
@@ -121,15 +133,21 @@ export function OperationForm({
           label={
             kind === 'expense'
               ? 'Сумма, ֏'
-              : `${kind === 'count' ? 'Фактический остаток' : kind === 'prepare' ? 'Выход партии' : 'Количество'}, ${unitLabel(product?.unit)}`
+              : `${kind === 'count' ? 'Фактический остаток' : kind === 'prepare' ? 'Фактический выход' : 'Количество'}, ${unitLabel(product?.unit)}`
           }
-          hint={kind === 'prepare' ? 'Сколько готовой заготовки получилось' : undefined}
+          hint={
+            kind === 'prepare'
+              ? 'Сколько готовой заготовки получилось на самом деле; по нему считается стоимость единицы'
+              : prefill?.batchId
+                ? `Списание партии по её стоимости. В партии осталось ${prefill.batchRemaining ?? '—'} ${unitLabel(product?.unit)}`
+                : undefined
+          }
         >
           <input
             type="number"
             step="any"
             min={kind === 'count' ? 0 : 0.01}
-            max="1000000000"
+            max={prefill?.batchRemaining ?? '1000000000'}
             required
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -217,6 +235,21 @@ export function OperationForm({
               {t(' Добавить ингредиент')}
             </button>
           </section>
+        )}
+        {kind === 'prepare' && (
+          <Field
+            label={`Плановый выход, ${unitLabel(product?.unit)}`}
+            hint="Необязательно: разница с фактом покажет потери партии"
+          >
+            <input
+              type="number"
+              step="any"
+              min="0.01"
+              max="1000000000"
+              value={planned}
+              onChange={(e) => setPlanned(e.target.value)}
+            />
+          </Field>
         )}
         {kind === 'prepare' && (
           <div className="form-grid">

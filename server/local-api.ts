@@ -122,6 +122,8 @@ export function localApi(): Plugin {
             '/api/barbar/catalog/cocktails',
             '/api/barbar/catalog/cards',
             '/api/barbar/orders',
+            '/api/barbar/orders/recent',
+            '/api/barbar/favorites',
             '/api/barbar/auth',
             '/api/barbar/users',
             '/api/barbar/rates',
@@ -129,6 +131,8 @@ export function localApi(): Plugin {
             '/api/barbar/history',
             '/api/barbar/batches',
             '/api/barbar/report',
+            '/api/barbar/report/compare',
+            '/api/barbar/prices',
             '/api/barbar/push',
             '/api/barbar/notifications',
           ].includes((request.url || '').split('?')[0])
@@ -171,7 +175,8 @@ export function localApi(): Plugin {
                   ? await handleNotificationsFeed(input, db, users)
                   : request.url?.startsWith('/api/barbar/push')
                     ? await handlePush(input, db, users)
-                    : request.url?.startsWith('/api/barbar/report')
+                    : request.url?.startsWith('/api/barbar/report') ||
+                        request.url?.startsWith('/api/barbar/prices')
                       ? await handleReport(input, db, users)
                       : request.url?.startsWith('/api/barbar/history')
                         ? await handleHistory(input, db, users)

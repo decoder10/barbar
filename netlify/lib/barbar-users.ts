@@ -4,6 +4,7 @@ import type { Db } from 'mongodb';
 import { actorProfile, appendAudit } from './audit/store';
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
 import { defaultPreferences, type Preferences } from '../../src/barbar/domain/identity/preferences';
+import { cleanFavorites } from '../../src/barbar/domain/favorites';
 import type { UserInput, UserProfile } from '../../src/barbar/domain/identity/user';
 
 const derive = (
@@ -33,6 +34,8 @@ export interface IdentityStore {
   create(input: unknown, actor?: UserProfile): Promise<UserProfile>;
   update?: (id: string, input: unknown, actor: UserProfile) => Promise<UserProfile>;
   setPreferences?: (id: string, input: unknown) => Promise<UserProfile>;
+  /** Replaces the user's own favourites; nobody else's profile can be reached through it. */
+  setFavorites?: (id: string, input: unknown) => Promise<UserProfile>;
 }
 type UserRecord = UserProfile & { _id: string; passwordHash: string; authVersion?: number };
 type SessionRecord = { _id: string; userId: string; expiresAt: Date; authVersion?: number };
@@ -81,6 +84,7 @@ export function validateUser(input: unknown): UserInput {
 export function publicUser(user: UserRecord): UserProfile {
   return {
     preferences: { ...defaultPreferences, ...user.preferences },
+    ...(user.favorites?.length ? { favorites: user.favorites } : {}),
     id: user.id,
     username: user.username,
     fullName: user.fullName,
@@ -247,6 +251,19 @@ export function mongoUsers(db: Db, options: { bootstrap?: boolean } = {}): Ident
             },
           },
         },
+        { returnDocument: 'after' },
+      );
+      if (!user) throw new UserError('Пользователь не найден.', 404);
+      return publicUser(user);
+    },
+    async setFavorites(id, input) {
+      const favorites = cleanFavorites(input);
+      if (!favorites) throw new UserError('Некорректный список избранного.');
+      await ensureReady();
+      // Only this field is written: preferences and access stay untouched.
+      const user = await users.findOneAndUpdate(
+        { _id: id, active: true },
+        { $set: { favorites } },
         { returnDocument: 'after' },
       );
       if (!user) throw new UserError('Пользователь не найден.', 404);

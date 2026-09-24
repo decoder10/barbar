@@ -15,6 +15,9 @@ interface ApiResponses {
   '/api/barbar/catalog/cocktails': CatalogPartResponse;
   '/api/barbar/push': { publicKey: string | null; ok?: boolean };
   '/api/barbar/batches': { batches: import('../domain/batches').BatchStock[] };
+  [path: `/api/barbar/orders/recent?${string}`]: {
+    orders: import('../domain/orders/repeat').RecentOrder[];
+  };
   '/api/barbar/orders': {
     role: Role;
     revision: string | null;
@@ -27,7 +30,16 @@ interface ApiResponses {
     catalogRevision: string;
     revision: string | null;
   };
-  [path: `/api/barbar/report${string}`]: import('../domain/reports/server-types').ServerReport;
+  [path: `/api/barbar/report/compare?${string}`]: {
+    current: { from: string; to: string };
+    base: { from: string; to: string };
+    comparison: import('../domain/reports/compare').Comparison;
+  };
+  [path: `/api/barbar/prices${string}`]: {
+    changes: import('../domain/reports/price-history-types').PriceChangeRow[];
+    trackingSince: string | null;
+  };
+  [path: `/api/barbar/report?${string}`]: import('../domain/reports/server-types').ServerReport;
   '/api/barbar?view=full': { data: BarData; revision: string };
   [path: `/api/barbar/history${string}`]: import('../domain/reports/server-types').HistoryPage;
   [path: `/api/barbar/audit${string}`]: {
@@ -35,6 +47,7 @@ interface ApiResponses {
     nextCursor: string | null;
   };
   '/api/barbar/auth': { authenticated: boolean; user: UserProfile | null; role: Role | null };
+  '/api/barbar/favorites': { user: UserProfile };
   '/api/barbar/users': { users: UserProfile[]; user: UserProfile };
   '/api/barbar': Partial<StockResponse> & {
     role: Role;

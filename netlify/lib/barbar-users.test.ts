@@ -3,6 +3,8 @@ import { handleAudit } from './audit/handler';
 import { MongoClient } from 'mongodb';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sessionCookie } from './barbar-auth';
+import { handleBarApi } from './barbar-handler';
+import type { Repository } from './barbar-repository';
 import { handleAuth, handleUsers } from './barbar-user-handler';
 import { hashPassword, mongoUsers, validateUser, verifyPassword } from './barbar-users';
 
@@ -134,6 +136,59 @@ describe.skipIf(!uri)('database users and sessions', () => {
       (await handleAuth(patch({ language: 'ru', currency: 'AMD', theme: 'invalid' }), users)).status,
     ).toBe(400);
     expect((await handleAuth(patch({ language: 'ru', currency: 'AMD' }, ''), users)).status).toBe(401);
+  });
+  it('keeps personal favourites in the profile without touching preferences or other users', async () => {
+    await users.create({
+      username: 'fav-worker',
+      fullName: 'Ани',
+      role: 'worker',
+      password: 'fav-password-123',
+    });
+    const session = (await users.login('fav-worker', 'fav-password-123'))!;
+    const patch = (value: unknown, token = session.token) =>
+      new Request(origin + '/api/barbar/auth', {
+        method: 'PATCH',
+        headers: { origin, cookie: sessionCookie(new Request(origin), token) },
+        body: JSON.stringify(value),
+      });
+    const save = (value: unknown, token = session.token) =>
+      handleBarApi(
+        new Request(origin + '/api/barbar/favorites', {
+          method: 'POST',
+          headers: { origin, cookie: sessionCookie(new Request(origin), token) },
+          body: JSON.stringify(value),
+        }),
+        {} as Repository,
+        users,
+      );
+    await handleAuth(patch({ language: 'hy', currency: 'AMD' }), users);
+    const saved = await save({
+      favorites: ['cocktail:mule', 'alcohol:vodka', 'cocktail:mule'],
+      id: 'test-owner',
+    });
+    expect(saved.status).toBe(200);
+    expect((await saved.json()).user).toMatchObject({
+      id: expect.not.stringMatching(/^test-owner$/),
+      favorites: ['cocktail:mule', 'alcohol:vodka'],
+      preferences: { language: 'hy' },
+    });
+    // Saved for the account: another device resolves the same list.
+    expect((await mongoUsers(db).resolve(session.token))?.favorites).toEqual([
+      'cocktail:mule',
+      'alcohol:vodka',
+    ]);
+    expect((await db.collection('users').findOne({ username: 'test-owner' }))?.favorites).toBeUndefined();
+    expect((await save({ favorites: ['nope'] })).status).toBe(400);
+    expect((await save({ favorites: 'cocktail:x' })).status).toBe(400);
+    expect((await save({ favorites: [] }, '')).status).toBe(401);
+    // Preferences are saved separately and keep the favourites.
+    expect((await handleAuth(patch({ language: 'ru', currency: 'AMD' }), users)).status).toBe(200);
+    expect((await mongoUsers(db).resolve(session.token))?.favorites).toEqual([
+      'cocktail:mule',
+      'alcohol:vodka',
+    ]);
+    // Signing in is not the route for favourites: a profile PATCH with them is treated as (invalid) preferences.
+    expect((await handleAuth(patch({ favorites: ['cocktail:x'] }), users)).status).toBe(400);
   });
   it('edits profiles, blocks access, resets passwords and invalidates concurrent stale sessions', async () => {
     const owner = (await users.login('test-owner', 'owner-password-123'))!;

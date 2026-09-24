@@ -20,15 +20,21 @@ export async function handleBatches(request: Request, db: Db, users: IdentitySto
             .collection<Balance>('stockBalances')
             .find({ ml: { $gt: 0 } }, { session, maxTimeMS: 10000 })
             .toArray();
-          const movements = balances.length
+          const options = { session, maxTimeMS: 10000, projection: { _id: 0, _order: 0 } };
+          const preparations = balances.length
             ? ((await db
                 .collection('stockMovements')
-                .find(
-                  { kind: 'prepare', outputId: { $in: balances.map((b) => b._id) } },
-                  { session, maxTimeMS: 10000, projection: { _id: 0, _order: 0 } },
-                )
+                .find({ kind: 'prepare', outputId: { $in: balances.map((b) => b._id) } }, options)
                 .toArray()) as unknown as StockMovement[])
             : [];
+          // Write-offs aimed at a batch shrink its capacity.
+          const targeted = preparations.length
+            ? ((await db
+                .collection('stockMovements')
+                .find({ batchId: { $in: preparations.map((m) => m.id) } }, options)
+                .toArray()) as unknown as StockMovement[])
+            : [];
+          const movements = [...preparations, ...targeted];
           return { batches: batchStock(movements, new Map(balances.map((b) => [b._id, b.ml]))) };
         },
         { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' } },

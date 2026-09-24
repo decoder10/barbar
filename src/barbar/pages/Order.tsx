@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useBar } from '../app/providers/BarProvider';
 import { OrderReceipt, type ReceiptLine } from '../features/orders/OrderReceipt';
 import { PaymentSheet } from '../features/orders/PaymentSheet';
+import { RepeatOrderSheet } from '../features/orders/RepeatOrderSheet';
 import { useOrders } from '../features/orders/use-orders';
 import { SaleForm } from '../features/sales/SaleForm';
 import { SalesCatalog } from '../features/sales/SalesCatalog';
@@ -40,6 +41,7 @@ export default function OrderPage() {
     draft ? handedOver(search.get('add')) : null,
   );
   const [paying, setPaying] = useState(false);
+  const [repeating, setRepeating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [done, setDone] = useState<{ total: number; change: number; tableName: string } | null>(null);
   const order = draft ? undefined : orders.find((o) => o.id === orderId);
@@ -49,6 +51,7 @@ export default function OrderPage() {
   const lines = orderLines(sales as ReceiptLine[], orderId);
   const total = orderTotal(lines);
   const date = businessToday();
+  const existingAtTable = draftTableId ? openOrderAt(orders, draftTableId) : undefined;
   const cocktailById = useMemo(() => byId(data.cocktails), [data.cocktails]);
   const alcoholById = useMemo(() => byId(data.alcohol), [data.alcohol]);
   /** The draft becomes a real order with its first line; a table that already has one opens that one. */
@@ -154,6 +157,7 @@ export default function OrderPage() {
             void run({ type: 'removeLine', saleId: group.latest.id }, 'Позиция убрана из заказа.')
           }
           onPay={() => setPaying(true)}
+          onRepeat={() => setRepeating(true)}
           onCancel={() => {
             if (draft) navigate('/');
             else if (!lines.length)
@@ -173,6 +177,17 @@ export default function OrderPage() {
       )}
       {selected && role === 'barbar' && (
         <StaffSaleForm selection={selected} date={date} close={() => setSelected(null)} onSubmit={addLine} />
+      )}
+      {repeating && (
+        <RepeatOrderSheet
+          // A draft repeats onto its table's open receipt, or opens one; an open receipt is added to directly.
+          {...(order ? { orderId: order.id } : { tableId: existingAtTable?.tableId || draftTableId })}
+          close={() => setRepeating(false)}
+          onDone={(result) => {
+            setRepeating(false);
+            if (draft) navigate(`/orders/${existingAtTable?.id || result.id}`, { replace: true });
+          }}
+        />
       )}
       {paying && order && (
         <PaymentSheet

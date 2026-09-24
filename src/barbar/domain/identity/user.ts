@@ -2,6 +2,8 @@ import type { Preferences } from './preferences';
 export type UserRole = 'owner' | 'worker';
 export interface UserProfile {
   preferences?: Preferences;
+  /** Personal favourites as `kind:productId`, kept in the profile so every device of the user sees them. */
+  favorites?: string[];
   id: string;
   username: string;
   fullName: string;

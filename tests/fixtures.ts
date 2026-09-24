@@ -80,3 +80,38 @@ export async function mockOrders(
     });
   });
 }
+
+/** Serves the paid receipts to repeat, the way `/api/barbar/orders/recent` does: the asker's own or a table's. */
+export async function mockRecentOrders(
+  page: import('@playwright/test').Page,
+  ledger: () => BarData,
+  role: () => 'admin' | 'barbar' = () => 'admin',
+) {
+  const { staffSale } = await import('../netlify/lib/barbar-access');
+  await page.route('**/api/barbar/orders/recent*', (route) => {
+    const data = ledger();
+    const params = new URL(route.request().url()).searchParams;
+    const orders = (data.orders || [])
+      .filter(
+        (o) =>
+          o.status === 'paid' &&
+          (params.get('scope') === 'mine' ? o.openedBy?.id === role() : o.tableId === params.get('tableId')),
+      )
+      .sort((a, b) => b.openedAt.localeCompare(a.openedAt));
+    return route.fulfill({
+      json: {
+        orders: orders.map((o) => ({
+          id: o.id,
+          ...(o.tableId ? { tableId: o.tableId } : {}),
+          businessDay: o.businessDay,
+          openedAt: o.openedAt,
+          closedAt: o.closedAt,
+          total: o.total,
+          lines: data.sales
+            .filter((s) => s.orderId === o.id && !s.voided)
+            .map((s) => (role() === 'admin' ? s : staffSale(s))),
+        })),
+      },
+    });
+  });
+}

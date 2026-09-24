@@ -23,6 +23,8 @@ type Notice = { text: string; error: boolean } | null;
 interface Store {
   user: UserProfile | null;
   updatePreferences: (preferences: Preferences) => Promise<void>;
+  /** Replaces the user's own favourites (`kind:productId`); saved in the profile for every device. */
+  updateFavorites: (favorites: string[]) => Promise<boolean>;
   data: BarData;
   staffData: StaffData | null;
   role: Role | null;
@@ -265,12 +267,29 @@ export function BarProvider({ children }: { children: ReactNode }) {
     },
     [perform],
   );
+  const updateFavorites = useCallback(
+    async (favorites: string[]) => {
+      try {
+        const result = await api('/api/barbar/favorites', {
+          method: 'POST',
+          body: JSON.stringify({ favorites }),
+        });
+        setUser(result.user);
+        return true;
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Не удалось сохранить избранное.', true);
+        return false;
+      }
+    },
+    [notify],
+  );
   // Every screen and every session filter reads this context: a new object each render
   // re-rendered the whole workspace on each poll, so the value is built only when it changes.
   const store = useMemo<Store>(
     () => ({
       user,
       updatePreferences,
+      updateFavorites,
       data,
       staffData,
       role,
@@ -291,6 +310,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
     [
       user,
       updatePreferences,
+      updateFavorites,
       data,
       staffData,
       role,

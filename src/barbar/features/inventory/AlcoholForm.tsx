@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Field } from '../../ui/fields';
 import { Modal, Submit } from '../../ui/modal';
 import { priceUnit, uid, unitLabel } from '../../domain/model';
@@ -26,6 +27,15 @@ export function AlcoholForm({
   close: () => void;
 }) {
   const { data, run } = useBar();
+  // Poured alcohol has its own price history; other items are sold through their linked menu item.
+  const priceHistoryTarget = alcohol
+    ? alcohol.category === 'alcohol'
+      ? `alcohol:${alcohol.id}`
+      : (() => {
+          const linked = data.cocktails.find((c) => c.stockAlcoholId === alcohol.id && c.serving !== 'glass');
+          return linked ? `cocktail:${linked.id}` : undefined;
+        })()
+    : undefined;
   const [value, setValue] = useState<Alcohol>(
     alcohol || {
       id: uid(),
@@ -270,6 +280,15 @@ export function AlcoholForm({
             />
           </Field>
         </div>
+        {alcohol && priceHistoryTarget && (
+          <Link
+            className="text-link price-history-link"
+            to={`/reports?price=${priceHistoryTarget}`}
+            onClick={close}
+          >
+            {t('История цен')}
+          </Link>
+        )}
         {bottled && (
           <>
             <Field

@@ -3,6 +3,7 @@ import alcoholDefaults from '../data/alcohol.json' with { type: 'json' };
 import cocktailDefaults from '../data/cocktails.json' with { type: 'json' };
 import salesDefaults from '../data/sales/initial.json' with { type: 'json' };
 import { maxMenuImage } from './catalog/legacy-images';
+import { batchConsumption, batchRemaining, type BatchConsumption } from './batches';
 import { applyOperations, validateOperations } from './operations';
 import { businessToday } from './business-day';
 import { isGlassServing } from './serving';
@@ -22,8 +23,11 @@ import {
   MenuCategory,
   Order,
   PortionExpense,
+  PriceChange,
   Purchase,
   Sale,
+  StockMovement,
+  Supplier,
 } from './types';
 
 export { round };
@@ -189,6 +193,23 @@ export const averageCost = (data: BarData, id: string) => {
       priceBasis(data, id),
   );
 };
+/** Preparations (and their batch write-offs) known to a ledger: all movements, or the working copy's sources. */
+const batchMovements = (data: BarData): StockMovement[] =>
+  data.opening
+    ? data.batchSources || []
+    : (data.stockMovements || []).filter((m) => m.kind === 'prepare' || m.batchId);
+/**
+ * Cost of using `ml` of an item when it is a prepared output with recorded batches (the batch used
+ * carries its own unit cost), or null for every other item, which keeps the weighted average.
+ */
+export function batchCost(data: BarData, id: string, ml: number): BatchConsumption | null {
+  const sources = batchMovements(data);
+  if (!sources.some((m) => m.kind === 'prepare' && m.outputId === id)) return null;
+  const remaining = stock(data, id);
+  if (remaining <= 0) return null;
+  const balanceCost = (averageCost(data, id) * remaining) / priceBasis(data, id);
+  return batchConsumption(sources, id, { ml: remaining, cost: balanceCost }, ml);
+}
 export const recipeCost = (data: BarData, recipe: Ingredient[], extraCosts: PortionExpense[] = []) =>
   round(
     recipe.reduce((n, i) => n + (averageCost(data, i.alcoholId) * i.ml) / priceBasis(data, i.alcoholId), 0) +
@@ -234,6 +255,7 @@ export const goodsSaleUnit = (item?: Pick<Alcohol, 'category' | 'unit'>): 'bottl
       : item.unit === 'pcs'
         ? 'pcs'
         : undefined;
+const daysValid = (n: unknown) => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 365;
 function alcoholValid(a: Alcohol) {
   return (
     a &&
@@ -263,6 +285,15 @@ function alcoholValid(a: Alcohol) {
         a.glassSizeMl <= a.bottleSizeMl)) &&
     (a.glassPrice === undefined || number(a.glassPrice)) &&
     (a.guestHidden === undefined || typeof a.guestHidden === 'boolean') &&
+    (a.favorite === undefined || a.favorite === true) &&
+    (a.supplierId === undefined || identifier(a.supplierId)) &&
+    (a.leadDays === undefined || daysValid(a.leadDays)) &&
+    (a.safetyDays === undefined || daysValid(a.safetyDays)) &&
+    (a.safetyStock === undefined ||
+      (typeof a.safetyStock === 'number' &&
+        Number.isFinite(a.safetyStock) &&
+        a.safetyStock >= 0 &&
+        a.safetyStock <= 1e9)) &&
     number(a.costPerLiter) &&
     number(a.pricePerLiter) &&
     /^#[a-fA-F0-9]{6}$/.test(a.color)
@@ -323,6 +354,7 @@ function cocktailValid(c: Cocktail, data: BarData) {
     (c.portionCost === undefined || number(c.portionCost)) &&
     (!c.noIngredients || (!c.ingredients?.length && !c.extraCosts?.length && !c.stockAlcoholId)) &&
     (c.guestHidden === undefined || typeof c.guestHidden === 'boolean') &&
+    (c.favorite === undefined || c.favorite === true) &&
     expensesValid(c.extraCosts, data) &&
     !(c.extraCosts || []).some((e) => c.ingredients?.some((i) => i.alcoholId === e.alcoholId)) &&
     Array.isArray(c.ingredients) &&
@@ -505,6 +537,22 @@ export function validateData(value: unknown): BarData {
         return fail('Некорректные смены в файле.');
     }
   }
+  if (
+    d.suppliers !== undefined &&
+    (!Array.isArray(d.suppliers) ||
+      new Set(d.suppliers.map((x) => x?.id)).size !== d.suppliers.length ||
+      !d.suppliers.every(supplierValid))
+  )
+    return fail('Некорректные поставщики в файле.');
+  if (d.alcohol.some((a) => a.supplierId !== undefined && !d.suppliers?.some((x) => x.id === a.supplierId)))
+    return fail('Позиция ссылается на неизвестного поставщика.');
+  if (
+    d.priceChanges !== undefined &&
+    (!Array.isArray(d.priceChanges) ||
+      new Set(d.priceChanges.map((c) => c?.id)).size !== d.priceChanges.length ||
+      !d.priceChanges.every(priceChangeValid))
+  )
+    return fail('Некорректная история цен в файле.');
   const orderIds = new Set((d.orders || []).map((o) => o.id));
   if (d.sales.some((s) => s.orderId !== undefined && !orderIds.has(s.orderId))) {
     return fail('Продажа ссылается на неизвестный заказ.');
@@ -545,6 +593,26 @@ export function purchaseCorrectionError(
   return null;
 }
 
+const supplierValid = (x: Supplier) =>
+  !!x &&
+  identifier(x.id) &&
+  nameValid(x.name) &&
+  x.name.length <= 60 &&
+  (x.leadDays === undefined || daysValid(x.leadDays)) &&
+  (x.note === undefined || (typeof x.note === 'string' && x.note.length <= 200));
+const priceChangeValid = (c: PriceChange) =>
+  !!c &&
+  identifier(c.id) &&
+  dateValid(c.date) &&
+  isoValid(c.createdAt) &&
+  ['cocktail', 'alcohol'].includes(c.kind) &&
+  identifier(c.productId) &&
+  nameValid(c.name) &&
+  (c.kind === 'alcohol' ? c.field === 'pricePerLiter' : c.field === 'price') &&
+  number(c.from) &&
+  number(c.to) &&
+  c.from !== c.to &&
+  actorValid(c.actor);
 const tableCodeValid = (s: unknown): s is string => typeof s === 'string' && /^[a-zA-Z0-9]{6,32}$/.test(s);
 const tableValid = (t: BarTable) =>
   !!t &&
@@ -625,12 +693,152 @@ export function applyCommand(data: BarData, command: Command, context: CommandCo
       next.shifts = [...(next.shifts || []), closeShift(next, command, context)];
       break;
     }
+    case 'addLines': {
+      const lines = command.lines;
+      if (
+        !Array.isArray(lines) ||
+        !lines.length ||
+        lines.length > barConfig.guest.orders.maxLines ||
+        !number(command.expectedTotal, true) ||
+        (command.orderId !== undefined && command.tableId !== undefined)
+      )
+        return fail('Проверьте набор: от 1 до 20 позиций.');
+      let order = command.orderId !== undefined ? openOrder(command.orderId) : undefined;
+      if (!order && command.tableId !== undefined && identifier(command.tableId))
+        order = openOrderAt(next.orders, command.tableId);
+      let acc: BarData = data;
+      if (!order) {
+        // The receipt takes the command's id: a retry finds it and changes nothing.
+        acc = applyCommand(
+          acc,
+          {
+            id: command.id,
+            type: 'openOrder',
+            ...(command.tableId !== undefined ? { tableId: command.tableId } : {}),
+          },
+          context,
+        );
+        order = acc.orders!.find((o) => o.id === command.id)!;
+      }
+      const ids = lines.map((_, index) => `${command.id}_${index}`);
+      lines.forEach((line, index) => {
+        // Fields are picked one by one: the command is available to workers.
+        acc = applyCommand(
+          acc,
+          {
+            id: ids[index],
+            type: 'sale',
+            value: {
+              kind: line?.kind,
+              productId: line?.productId,
+              quantity: line?.quantity,
+              ...(line?.servingMl !== undefined ? { servingMl: line.servingMl } : {}),
+              orderId: order!.id,
+              date: businessToday(),
+              businessDay: true,
+            },
+          },
+          context,
+        );
+      });
+      const added = acc.sales.filter((sale) => ids.includes(sale.id));
+      if (added.length !== lines.length || Math.abs(orderTotal(added) - command.expectedTotal) > 0.005)
+        return fail('Цены изменились. Обновите набор и проверьте итог.');
+      return {
+        ...acc,
+        operations: [...acc.operations.filter((id) => id !== command.id), command.id].slice(-1000),
+      };
+    }
+    case 'correctBatchYield': {
+      const movement = next.stockMovements?.find((m) => m.id === command.batchId && m.kind === 'prepare');
+      const outputId = movement?.outputId;
+      if (!movement || !outputId) return fail('Партия не найдена. Обновите список.');
+      if (
+        typeof command.reason !== 'string' ||
+        !command.reason.trim() ||
+        command.reason.length > 300 ||
+        !ingredientAmountValid(next, outputId, command.actual) ||
+        movement.outputQuantity !== command.expected
+      )
+        return fail('Проверьте фактический выход и причину. Партия могла измениться.');
+      const share = batchRemaining(batchMovements(next), outputId, stock(next, outputId), movement.id);
+      // FEFO keeps the balance in the latest-expiring batches, so a batch a sale drew from can look full.
+      const sold = activeSales(next).some((s) =>
+        s.ingredients.some((i) => i.batches?.some((b) => b.id === movement.id)),
+      );
+      if (
+        !share ||
+        sold ||
+        share.capacity !== movement.outputQuantity ||
+        share.remaining !== movement.outputQuantity
+      )
+        return fail('Партия уже использована. Исправить выход можно только у нетронутой партии.');
+      movement.outputQuantity = command.actual;
+      const line = movement.lines.find((l) => l.alcoholId === outputId)!;
+      line.ml = command.actual;
+      assertLedger(next);
+      break;
+    }
+    case 'setFavorite': {
+      const product = (command.kind === 'cocktail' ? next.cocktails : next.alcohol).find(
+        (p) => p.id === command.productId,
+      );
+      if (
+        !product ||
+        !['cocktail', 'alcohol'].includes(command.kind) ||
+        typeof command.favorite !== 'boolean' ||
+        (command.kind === 'alcohol' && (product as Alcohol).category !== 'alcohol')
+      )
+        return fail('Позиция для избранного не найдена. Обновите страницу.');
+      if (command.favorite) product.favorite = true;
+      else delete product.favorite;
+      break;
+    }
+    case 'saveSupplier': {
+      const v = command.value;
+      if (!supplierValid(v)) return fail('Укажите название поставщика и срок поставки в днях.');
+      const suppliers = next.suppliers || [];
+      const name = v.name.trim();
+      if (
+        suppliers.some((x) => x.id !== v.id && x.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase())
+      )
+        return fail('Поставщик с таким названием уже есть.');
+      const value: Supplier = {
+        id: v.id,
+        name,
+        ...(v.leadDays !== undefined ? { leadDays: v.leadDays } : {}),
+        ...(v.note?.trim() ? { note: v.note.trim() } : {}),
+      };
+      next.suppliers = suppliers.some((x) => x.id === v.id)
+        ? suppliers.map((x) => (x.id === v.id ? value : x))
+        : [...suppliers, value];
+      break;
+    }
+    case 'removeSupplier': {
+      if (!next.suppliers?.some((x) => x.id === command.supplierId)) return fail('Поставщик не найден.');
+      next.suppliers = next.suppliers.filter((x) => x.id !== command.supplierId);
+      next.alcohol = next.alcohol.map((a) => {
+        if (a.supplierId !== command.supplierId) return a;
+        const { supplierId, ...rest } = a;
+        void supplierId;
+        return rest;
+      });
+      break;
+    }
     case 'count':
     case 'writeoff':
     case 'prepare':
     case 'expense':
     case 'voidExpense': {
-      applyOperations(next, command, { stock, averageCost, priceBasis, round, day: businessToday });
+      applyOperations(next, command, {
+        stock,
+        averageCost,
+        priceBasis,
+        round,
+        day: businessToday,
+        batchCost: (id, ml) => batchCost(next, id, ml)?.cost ?? null,
+        batchRemaining: (id, batchId) => batchRemaining(batchMovements(next), id, stock(next, id), batchId),
+      });
       assertLedger(next);
       break;
     }
@@ -647,6 +855,8 @@ export function applyCommand(data: BarData, command: Command, context: CommandCo
       ) {
         return fail('Напиток с таким названием уже есть.');
       }
+      if (a.supplierId !== undefined && !next.suppliers?.some((x) => x.id === a.supplierId))
+        return fail('Выберите существующего поставщика.');
       const index = next.alcohol.findIndex((item) => item.id === a.id);
       if (
         index >= 0 &&
@@ -1041,11 +1251,18 @@ export function applyCommand(data: BarData, command: Command, context: CommandCo
           : v.kind === 'cocktail'
             ? expandRecipe(product as Cocktail, next.cocktails)
             : [{ alcoholId: product.id, ml: 1 }];
-      const ingredients = recipe.map((i) => ({
-        alcoholId: i.alcoholId,
-        ml: quantityRound(next, i.alcoholId, i.ml * v.quantity),
-        cost: round((averageCost(next, i.alcoholId) * i.ml * v.quantity) / priceBasis(next, i.alcoholId)),
-      }));
+      const ingredients = recipe.map((i) => {
+        const ml = quantityRound(next, i.alcoholId, i.ml * v.quantity);
+        const batch = batchCost(next, i.alcoholId, ml);
+        return {
+          alcoholId: i.alcoholId,
+          ml,
+          cost: batch
+            ? batch.cost
+            : round((averageCost(next, i.alcoholId) * i.ml * v.quantity) / priceBasis(next, i.alcoholId)),
+          ...(batch?.batches.length ? { batches: batch.batches } : {}),
+        };
+      });
       if (!ingredients.every((i) => ingredientAmountValid(next, i.alcoholId, i.ml) && number(i.cost))) {
         return fail('Слишком большое количество.');
       }
@@ -1283,6 +1500,77 @@ export function applyCommand(data: BarData, command: Command, context: CommandCo
       return fail('Неизвестная операция.');
     }
   }
+  if (command.type === 'alcohol' || command.type === 'cocktail') {
+    const changes = priceChanges(data, next, command.id, context);
+    if (changes.length) next.priceChanges = [...(next.priceChanges || []), ...changes];
+  }
   next.operations = [...next.operations.slice(-999), command.id];
   return next;
+}
+
+/** Saved selling-price changes between two ledgers; only existing items count, prices never change on their own. */
+function priceChanges(before: BarData, after: BarData, id: string, context: CommandContext): PriceChange[] {
+  const result: PriceChange[] = [];
+  const stamp = { date: businessToday(), createdAt: new Date().toISOString() };
+  const add = (
+    kind: PriceChange['kind'],
+    product: { id: string; name: string },
+    field: PriceChange['field'],
+    from: number,
+    to: number,
+  ) =>
+    result.push({
+      id: `${id.slice(0, 70)}_p${result.length + 1}`,
+      ...stamp,
+      kind,
+      productId: product.id,
+      name: product.name,
+      field,
+      from,
+      to,
+      ...(context.actor ? { actor: actorOf(context) } : {}),
+    });
+  const cocktails = new Map(before.cocktails.map((c) => [c.id, c]));
+  for (const c of after.cocktails) {
+    const old = cocktails.get(c.id);
+    if (old && old.price !== c.price) add('cocktail', c, 'price', old.price, c.price);
+  }
+  const alcohol = new Map(before.alcohol.map((a) => [a.id, a]));
+  for (const a of after.alcohol) {
+    const old = alcohol.get(a.id);
+    if (old && a.category === 'alcohol' && old.pricePerLiter !== a.pricePerLiter)
+      add('alcohol', a, 'pricePerLiter', old.pricePerLiter, a.pricePerLiter);
+  }
+  return result;
+}
+
+/** Stock items a command consumes or produces: the server loads batch history for these only. */
+export function commandStockIds(
+  data: Pick<BarData, 'alcohol' | 'cocktails'>,
+  command: Command,
+  guestLines: { kind: Sale['kind']; productId: string }[] = [],
+) {
+  const ids = new Set<string>();
+  const product = (kind: unknown, productId: unknown) => {
+    if (typeof productId !== 'string') return;
+    if (kind === 'alcohol') ids.add(productId);
+    else if (kind === 'cocktail') {
+      const cocktail = data.cocktails.find((c) => c.id === productId);
+      if (!cocktail) return;
+      for (const i of expandRecipe(cocktail, data.cocktails)) ids.add(i.alcoholId);
+      if (cocktail.stockAlcoholId) ids.add(cocktail.stockAlcoholId);
+    }
+  };
+  if (command.type === 'sale') product(command.value?.kind, command.value?.productId);
+  else if (command.type === 'addLines')
+    for (const line of Array.isArray(command.lines) ? command.lines : [])
+      product(line?.kind, line?.productId);
+  else if (command.type === 'acceptGuestRequest')
+    for (const line of guestLines) product(line.kind, line.productId);
+  else if (command.type === 'writeoff') ids.add(command.alcoholId);
+  else if (command.type === 'prepare') {
+    ids.add(command.outputId);
+    for (const i of Array.isArray(command.ingredients) ? command.ingredients : []) ids.add(i?.alcoholId);
+  }
+  return [...ids].filter((id) => typeof id === 'string');
 }

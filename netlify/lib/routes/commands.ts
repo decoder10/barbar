@@ -14,6 +14,7 @@ const workerCommands = [
   'acceptGuestRequest',
   'rejectGuestRequest',
   'sale',
+  'addLines',
   'createCocktail',
   'updateRecipe',
   'openOrder',

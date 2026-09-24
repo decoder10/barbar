@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyCommand, today } from '../../src/barbar/domain/model';
 import type { Command, Role } from '../../src/barbar/domain/types';
 import { fixtureData } from '../../tests/fixtures';
-import { auth, handleBarApi } from '../../tests/identity-fixture';
+import { auth, handleBarApi, identity } from '../../tests/identity-fixture';
+import { handleBatches } from './queries/batches';
+import { handleReport } from './queries/report';
 import { sessionCookie } from './barbar-auth';
 import type { Repository } from './barbar-repository';
 
@@ -48,6 +50,15 @@ function noPrivateFinancialData(value: unknown) {
       'extraCosts',
       'stockResets',
       'operations',
+      'supplierId',
+      'leadDays',
+      'safetyDays',
+      'safetyStock',
+      'priceChanges',
+      'suppliers',
+      'batchSources',
+      'batches',
+      'plannedQuantity',
     ]).not.toContain(key);
     noPrivateFinancialData(item);
   }
@@ -118,6 +129,12 @@ describe('role isolation', () => {
     'resetStock',
     'restore',
     'purge',
+    'setFavorite',
+    'saveSupplier',
+    'removeSupplier',
+    'correctBatchYield',
+    'prepare',
+    'writeoff',
     'unknown',
   ])('forbids staff command %s before reading the ledger', async (type) => {
     const repo = repository();
@@ -367,4 +384,97 @@ it('serves worker guest requests and shift previews without ledger costs; range 
   expect(close.status).toBe(200);
   noPrivateFinancialData(await close.json());
   expect(data.sales.length).toBeGreaterThan(0);
+});
+
+describe('repeating an order and the owner-only reports', () => {
+  it('lets staff repeat a set in one command and read only their own receipts, without costs', async () => {
+    const repo = repository();
+    const data = (await repo.read()).data;
+    data.alcohol[0] = { ...data.alcohol[0], supplierId: 'opt', leadDays: 3, safetyDays: 2, safetyStock: 100 };
+    data.suppliers = [{ id: 'opt', name: 'Опт', leadDays: 3 }];
+    data.priceChanges = [];
+    const command = {
+      id: 'repeat',
+      type: 'addLines',
+      lines: [{ kind: 'alcohol', productId: 'vodka', quantity: 100 }],
+      expectedTotal: 0,
+    };
+    // A wrong expected total is refused as a whole.
+    expect((await handleBarApi(request('barbar', command), repo)).status).toBe(400);
+    const price = data.alcohol.find((a) => a.id === 'vodka')!.pricePerLiter / 10;
+    const ok = await handleBarApi(request('barbar', { ...command, expectedTotal: price }), repo);
+    expect(ok.status).toBe(200);
+    const body = await ok.json();
+    noPrivateFinancialData(body);
+    const saved = (await repo.read()).data;
+    const order = saved.orders!.find((o) => o.id === 'repeat')!;
+    expect(order).toMatchObject({ status: 'open', openedBy: { id: 'barbar' } });
+    // Retrying the same command id changes nothing.
+    expect((await handleBarApi(request('barbar', { ...command, expectedTotal: price }), repo)).status).toBe(
+      200,
+    );
+    expect((await repo.read()).data.sales.filter((s) => s.orderId === 'repeat')).toHaveLength(1);
+    const pay = await handleBarApi(
+      request('barbar', {
+        id: 'pay',
+        type: 'payOrder',
+        orderId: 'repeat',
+        expectedTotal: price,
+        payments: [{ method: 'cash', amount: price }],
+      }),
+      repo,
+    );
+    expect(pay.status).toBe(200);
+    const get = (role: Role, path: string) =>
+      handleBarApi(
+        new Request(origin + path, {
+          headers: { cookie: sessionCookie(new Request(origin), role).split(';')[0] },
+        }),
+        repo,
+      );
+    const recent = await get('barbar', '/api/barbar/orders/recent?scope=mine');
+    expect(recent.status).toBe(200);
+    const list = await recent.json();
+    expect(list.orders.map((o: { id: string }) => o.id)).toEqual(['repeat']);
+    expect(list.orders[0].lines[0]).toMatchObject({ productId: 'vodka', revenue: price });
+    noPrivateFinancialData(list);
+    expect(JSON.stringify(list)).not.toContain('payments');
+    // Someone else's receipts are not reachable: the scope follows the session, not a parameter.
+    expect((await (await get('admin', '/api/barbar/orders/recent?scope=mine')).json()).orders).toEqual([]);
+    expect((await get('barbar', '/api/barbar/orders/recent?scope=table')).status).toBe(400);
+    expect((await get('barbar', '/api/barbar/orders/recent?scope=mine&limit=500')).status).toBe(400);
+    // No purchasing parameters, suppliers or price history in any worker read.
+    noPrivateFinancialData(await (await get('barbar', '/api/barbar')).json());
+    noPrivateFinancialData(await (await get('barbar', '/api/barbar/catalog')).json());
+  });
+  it('answers the comparison and price history routes to the owner only', async () => {
+    const users = { ...identity };
+    const db = {} as never;
+    const call = (path: string, token?: string) =>
+      handleReport(
+        new Request(origin + path, {
+          headers: token ? { cookie: sessionCookie(new Request(origin), token as Role).split(';')[0] } : {},
+        }),
+        db,
+        users,
+      );
+    for (const path of [
+      '/api/barbar/report/compare?from=2026-09-01&to=2026-09-07&baseFrom=2026-08-01&baseTo=2026-08-07',
+      '/api/barbar/prices',
+    ]) {
+      expect((await call(path)).status).toBe(401);
+      expect((await call(path, 'barbar')).status).toBe(403);
+    }
+    // Batches answer before any database access: staff get 403, anonymous callers 401.
+    const batches = (token?: string) =>
+      handleBatches(
+        new Request(origin + '/api/barbar/batches', {
+          headers: token ? { cookie: sessionCookie(new Request(origin), token as Role).split(';')[0] } : {},
+        }),
+        db,
+        users,
+      );
+    expect((await batches()).status).toBe(401);
+    expect((await batches('barbar')).status).toBe(403);
+  });
 });

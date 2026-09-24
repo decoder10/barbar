@@ -34,20 +34,6 @@ export interface ServerReport {
   expenses: number;
   losses: number;
   cancellations: number;
-  forecast: {
-    id: string;
-    name: string;
-    unit?: import('../types').Alcohol['unit'];
-    consumed: number;
-    daily: number;
-    available: number;
-    daysLeft: number | null;
-    suggested: number;
-    preparation: boolean;
-    days: number;
-    workedDays: number | null;
-    availableDays: number | null;
-    stockoutDays: number;
-    insufficientHistory: boolean;
-  }[];
+  forecast: import('./purchasing').ForecastRow[];
+  suppliers: import('../types').Supplier[];
 }

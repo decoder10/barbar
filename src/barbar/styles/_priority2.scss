@@ -1,0 +1,306 @@
+@use 'mixins' as *;
+
+/* Favourites: the marks sit next to a card, never inside its button. */
+.card-wrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.card-favorites {
+  position: absolute;
+  top: 34px;
+  left: 9px;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+}
+
+.card-favorite {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fffdf0e6;
+  color: #706053;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+
+.card-favorite:hover:not(:disabled),
+.card-favorite.active {
+  color: var(--pink);
+  background: var(--pink-light);
+}
+
+.card-favorite.static {
+  cursor: default;
+}
+
+/* Repeat an order */
+.repeat-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  overflow-x: auto;
+}
+
+.repeat-tabs button {
+  flex: 1 0 auto;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.repeat-tabs button.active {
+  background: var(--surface);
+  color: var(--pink);
+  box-shadow: 0 1px 4px #0000000d;
+}
+
+.repeat-history {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  max-height: 240px;
+  overflow-y: auto;
+
+  button {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 10px;
+    padding: 10px 12px;
+    text-align: left;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    font-size: 14px;
+
+    small {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  button.active {
+    border-color: var(--pink);
+    background: var(--pink-light);
+  }
+}
+
+.repeat-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+
+  > div {
+    flex: 1;
+    min-width: 0;
+  }
+
+  strong {
+    display: block;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  > b {
+    white-space: nowrap;
+  }
+
+  &.removed,
+  &.unavailable {
+    opacity: 0.7;
+
+    strong {
+      text-decoration: line-through;
+    }
+
+    small {
+      color: var(--danger);
+    }
+  }
+
+  &.reduced small {
+    color: var(--warning);
+  }
+
+  .line-stepper .icon-button {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.repeat-lines .receipt-total {
+  margin: 12px 0;
+}
+
+.receipt-line ~ .repeat-order,
+.repeat-order {
+  margin-bottom: 8px;
+}
+
+/* Purchasing */
+.purchasing-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.purchasing-table small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.purchasing-group th {
+  text-align: left;
+  background: var(--surface-muted);
+  font-weight: 700;
+}
+
+.purchasing-explanation td {
+  padding-top: 0;
+
+  summary {
+    cursor: pointer;
+    color: var(--pink);
+    font-size: 12px;
+    padding: 4px 0;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: 6px 16px;
+    margin: 8px 0 0;
+
+    dt {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    dd {
+      margin: 0;
+      font-size: 14px;
+    }
+  }
+}
+
+.purchasing-formula {
+  margin: 6px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.purchase-settings {
+  display: grid;
+  gap: 10px;
+  font-size: 14px;
+
+  h3 {
+    margin: 10px 0 0;
+    font-size: 14px;
+  }
+
+  .compact-field {
+    margin: 0;
+    gap: 4px;
+
+    > span {
+      font-size: 12px;
+    }
+  }
+}
+
+.purchase-settings-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+
+  > strong,
+  &.supplier-row > .compact-field:first-child,
+  .row-actions {
+    grid-column: 1 / -1;
+  }
+
+  strong {
+    overflow-wrap: anywhere;
+  }
+
+  .row-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+/* Period comparison and price history */
+.comparison-panel .table-scroll,
+.price-history .table-scroll {
+  margin-top: 12px;
+}
+
+.comparison-table {
+  caption {
+    text-align: left;
+    font-weight: 700;
+    padding: 6px 0;
+  }
+
+  .comparison-sum th {
+    border-top: 1px solid var(--line);
+  }
+}
+
+.price-change {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+
+  summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 14px;
+    cursor: pointer;
+    font-size: 14px;
+
+    small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+  }
+}
+
+.price-history-link {
+  display: inline-block;
+  margin: 6px 0 10px;
+}

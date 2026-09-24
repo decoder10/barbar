@@ -152,6 +152,13 @@ export interface Repository {
   salesPopularity?: SalesPopularity;
   readWorking?: () => Promise<Snapshot>;
   readOrders?: () => Promise<OrdersSnapshot>;
+  /** Latest paid receipts of the asking user or of one table, with their active lines. */
+  readRecentOrders?: (query: {
+    scope: 'mine' | 'table';
+    userId: string;
+    tableId?: string;
+    limit: number;
+  }) => Promise<{ orders: Order[]; sales: Sale[] }>;
   execute?: (command: Command, actor: UserProfile, context?: CommandContext) => Promise<Snapshot | null>;
   readRevision?: () => Promise<string | null>;
   read: () => Promise<Snapshot>;

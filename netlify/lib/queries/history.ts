@@ -15,31 +15,29 @@ export function dateFilter(params: URLSearchParams) {
   if (!dateValid(from) || !dateValid(to) || from > to) throw new Error('Проверьте период.');
   return { date: { $gte: from, $lte: to } };
 }
-export const salesGrouping = (financial: boolean): Document[] => [
-  { $match: { voided: false } },
-  ...(financial
-    ? [
+/** Marks each sale whose cost is fully known: every ingredient and extra cost has a price. */
+export const costKnownStage: Document = {
+  $set: {
+    _costKnown: {
+      $and: [
+        { $gt: ['$cost', 0] },
         {
-          $set: {
-            _costKnown: {
-              $and: [
-                { $gt: ['$cost', 0] },
-                {
-                  $allElementsTrue: {
-                    $map: { input: { $ifNull: ['$extraCosts', []] }, as: 'e', in: { $gt: ['$$e.cost', 0] } },
-                  },
-                },
-                {
-                  $allElementsTrue: {
-                    $map: { input: '$ingredients', as: 'i', in: { $gt: ['$$i.cost', 0] } },
-                  },
-                },
-              ],
-            },
+          $allElementsTrue: {
+            $map: { input: { $ifNull: ['$extraCosts', []] }, as: 'e', in: { $gt: ['$$e.cost', 0] } },
           },
         },
-      ]
-    : []),
+        {
+          $allElementsTrue: {
+            $map: { input: '$ingredients', as: 'i', in: { $gt: ['$$i.cost', 0] } },
+          },
+        },
+      ],
+    },
+  },
+};
+export const salesGrouping = (financial: boolean): Document[] => [
+  { $match: { voided: false } },
+  ...(financial ? [costKnownStage] : []),
   {
     $group: {
       _id: { productId: '$productId', kind: '$kind', unit: '$unit', servingMl: '$servingMl' },

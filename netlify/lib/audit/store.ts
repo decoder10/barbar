@@ -19,7 +19,7 @@ export function commandAudit(
   next: import('../../../src/barbar/domain/types').BarData,
   actor: UserProfile,
   /** The state before the command, for summaries of what was removed. */
-  before: Pick<import('../../../src/barbar/domain/types').BarData, 'tables'>,
+  before: Pick<import('../../../src/barbar/domain/types').BarData, 'tables' | 'suppliers'>,
 ): AuditEvent {
   let targetId = command.id,
     summary: string = command.type;
@@ -40,6 +40,26 @@ export function commandAudit(
       break;
     case 'sale':
       summary = `Продажа: ${next.sales.find((s) => s.id === command.id)?.name || ''}${command.value?.orderId ? ` · ${tableLabel(command.value.orderId)}` : ''}`;
+      break;
+    case 'addLines':
+      targetId = command.orderId || command.id;
+      summary = `Повтор заказа: ${command.lines?.length || 0} поз. · ${command.expectedTotal} AMD · ${tableLabel(targetId)}`;
+      break;
+    case 'correctBatchYield':
+      targetId = command.batchId;
+      summary = `Партия ${command.batchId}: выход ${command.expected} → ${command.actual}. ${command.reason}`;
+      break;
+    case 'setFavorite':
+      targetId = command.productId;
+      summary = `${command.favorite ? 'Избранное' : 'Не избранное'}: ${(command.kind === 'alcohol' ? next.alcohol : next.cocktails).find((p) => p.id === command.productId)?.name || command.productId}`;
+      break;
+    case 'saveSupplier':
+      targetId = command.value.id;
+      summary = `Поставщик «${command.value.name}»${command.value.leadDays === undefined ? '' : `, срок ${command.value.leadDays} дн.`}`;
+      break;
+    case 'removeSupplier':
+      targetId = command.supplierId;
+      summary = `Поставщик удалён: ${before.suppliers?.find((x) => x.id === command.supplierId)?.name || command.supplierId}`;
       break;
     case 'saveTable':
       targetId = command.value.id;
@@ -95,10 +115,10 @@ export function commandAudit(
       summary = `${command.reason}: ${command.lines.map((l) => `${name(l.alcoholId)} ${l.expected} → ${l.actual}`).join(', ')}`;
       break;
     case 'writeoff':
-      summary = `${name(command.alcoholId)}: −${command.quantity}. ${command.reason}`;
+      summary = `${name(command.alcoholId)}: −${command.quantity}${command.batchId ? ` (партия ${command.batchId})` : ''}. ${command.reason}`;
       break;
     case 'prepare':
-      summary = `${name(command.outputId)}: +${command.quantity}. ${command.reason}`;
+      summary = `${name(command.outputId)}: +${command.quantity}${command.plannedQuantity ? ` (план ${command.plannedQuantity})` : ''}. ${command.reason}`;
       break;
     case 'expense':
       summary = `${command.value.description}: ${command.value.amount} AMD`;

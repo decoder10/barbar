@@ -9,8 +9,9 @@ import {
   type OperationKind,
   type OperationPrefill,
 } from '../features/operations/OperationForm';
+import { BatchYieldForm } from '../features/operations/BatchYieldForm';
 import { useBatches } from '../features/operations/use-batches';
-import { batchStatus } from '../domain/batches';
+import { batchStatus, type PreparationBatch } from '../domain/batches';
 import { businessToday } from '../domain/business-day';
 import { formatMoney } from '../presentation/currency/format-money';
 import { byId } from '../domain/lookup';
@@ -34,6 +35,7 @@ export default function Operations() {
   const barExpenses = expenses.enabled ? expenses.rows : data.expenses || [];
   const [form, setForm] = useState<OperationKind | null>(null);
   const [prefill, setPrefill] = useState<OperationPrefill | undefined>();
+  const [correcting, setCorrecting] = useState<PreparationBatch | null>(null);
   const batches = useBatches();
   const today = businessToday();
   const alcoholById = byId(data.alcohol);
@@ -86,7 +88,15 @@ export default function Operations() {
                     )}
                   </td>
                   <td>{t(labels[m.kind])}</td>
-                  <td>{m.reason}</td>
+                  <td>
+                    {m.reason}
+                    {m.kind === 'prepare' && m.plannedQuantity !== undefined && (
+                      <small>
+                        {t('Выход: план / факт')}: {quantity(m.plannedQuantity)} /{' '}
+                        {quantity(m.outputQuantity || 0)}
+                      </small>
+                    )}
+                  </td>
                   <td>
                     {m.lines.map((l, index) => {
                       const a = alcoholById.get(l.alcoholId);
@@ -118,7 +128,7 @@ export default function Operations() {
         <h2>{t('Партии заготовок')}</h2>
         <p className="muted">
           {t(
-            'Остаток по партиям рассчитан по FEFO: первой расходуется партия с ближайшим сроком годности. Себестоимость в учёте остаётся средневзвешенной.',
+            'Остаток по партиям рассчитан по FEFO: первой расходуется партия с ближайшим сроком годности, и порция получает стоимость этой партии. Прежние продажи и позиции без партий остаются по средней стоимости; недостача при инвентаризации тоже считается по средней.',
           )}
         </p>
         {batches.error && <p role="alert">{t(batches.error)}</p>}
@@ -135,6 +145,9 @@ export default function Operations() {
                   <th>{t('Партия')}</th>
                   <th>{t('Выпуск')}</th>
                   <th>{t('Годен до')}</th>
+                  <th>{t('Выход: план / факт')}</th>
+                  <th>{t('Потери')}</th>
+                  <th>{t('Стоимость партии / единицы')}</th>
                   <th>{t('Остаток')}</th>
                   <th>{t('Статус')}</th>
                   <th>{t('Действия')}</th>
@@ -154,26 +167,54 @@ export default function Operations() {
                           <td>{b.date}</td>
                           <td>{b.expiresOn || '—'}</td>
                           <td>
+                            {b.planned === undefined ? t('план не указан') : quantity(b.planned)} /{' '}
+                            {quantity(b.produced)} {t(unit)}
+                          </td>
+                          <td>
+                            {b.loss === undefined
+                              ? '—'
+                              : `${quantity(b.loss)} ${t(unit)} · ${quantity((b.loss / (b.planned || 1)) * 100)}%`}
+                          </td>
+                          <td>
+                            {formatMoney(b.cost)}
+                            <small>
+                              {formatMoney(b.unitCost)} / {t(unit)}
+                            </small>
+                          </td>
+                          <td>
                             {quantity(b.remaining)} / {quantity(b.produced)} {t(unit)}
+                            <small>{formatMoney(b.remainingCost)}</small>
                           </td>
                           <td>
                             <span className={`batch-status ${status}`}>{t(statusLabel[status])}</span>
                           </td>
                           <td>
-                            {(status === 'expired' || status === 'soon') && (
+                            <button
+                              className="button secondary"
+                              disabled={busy}
+                              onClick={() => {
+                                setPrefill({
+                                  productId: item.outputId,
+                                  amount: String(b.remaining),
+                                  reason:
+                                    status === 'expired' || status === 'soon'
+                                      ? `Срок партии «${b.reason}» до ${b.expiresOn}`
+                                      : `Партия «${b.reason}»`,
+                                  batchId: b.id,
+                                  batchRemaining: b.remaining,
+                                });
+                                setForm('writeoff');
+                              }}
+                            >
+                              {t('Списать партию')}
+                            </button>
+                            {b.remaining === b.produced && (
                               <button
                                 className="button secondary"
                                 disabled={busy}
-                                onClick={() => {
-                                  setPrefill({
-                                    productId: item.outputId,
-                                    amount: String(b.remaining),
-                                    reason: `Срок партии «${b.reason}» до ${b.expiresOn}`,
-                                  });
-                                  setForm('writeoff');
-                                }}
+                                onClick={() => setCorrecting(b)}
                               >
-                                {t('Списать')}
+                                {t('Исправить выход')}
                               </button>
                             )}
                           </td>
@@ -185,6 +226,9 @@ export default function Operations() {
                           <tr key={`${item.outputId}-unassigned`}>
                             <td>{product?.name || item.outputId}</td>
                             <td>{t('Без партии (закупка или излишек)')}</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
                             <td>—</td>
                             <td>—</td>
                             <td>
@@ -250,6 +294,13 @@ export default function Operations() {
           </table>
         </div>
       </section>
+      {correcting && (
+        <BatchYieldForm
+          batch={correcting}
+          unit={alcoholById.get(correcting.outputId)?.unit}
+          close={() => setCorrecting(null)}
+        />
+      )}
       {form && <OperationForm kind={form} prefill={prefill} close={() => setForm(null)} />}
     </>
   );

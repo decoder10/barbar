@@ -11,6 +11,7 @@ import { MongoClient, type ClientSession, type Db, type Document } from 'mongodb
 import { migrateBottleCatalog } from '../../src/barbar/domain/catalog/bottles';
 import {
   applyCommand,
+  commandStockIds,
   initialData,
   priceBasis,
   purchaseCorrectionError,
@@ -18,10 +19,11 @@ import {
   validateData,
 } from '../../src/barbar/domain/model';
 import { assertHistoricalStock, purchaseCostTotals } from './history-corrections';
-import type { BarData, BarTable, Order, Sale } from '../../src/barbar/domain/types';
+import type { BarData, BarTable, Order, Sale, StockMovement, Supplier } from '../../src/barbar/domain/types';
 import { businessToday } from '../../src/barbar/domain/business-day';
 import { compactData, saveBalances, workingData } from './barbar-working';
 import { commandAudit, appendAudit } from './audit/store';
+import { loadBatchSources } from './batch-sources';
 import type { Repository, Snapshot } from './barbar-repository';
 
 import {
@@ -360,6 +362,33 @@ export function mongoRepository(
         }, transactionOptions),
       );
     },
+    async readRecentOrders({ scope, userId, tableId, limit }) {
+      await ensureReady();
+      return client.withSession((session) =>
+        session.withTransaction(async () => {
+          const projection = { _id: 0, _order: 0 };
+          const orders = (await db
+            .collection('orders')
+            .find(
+              scope === 'mine' ? { status: 'paid', 'openedBy.id': userId } : { status: 'paid', tableId },
+              { session, projection, maxTimeMS: 10000 },
+            )
+            .sort({ openedAt: -1 })
+            .limit(limit)
+            .toArray()) as unknown as Order[];
+          const sales = orders.length
+            ? ((await db
+                .collection('sales')
+                .find(
+                  { orderId: { $in: orders.map((o) => o.id) }, voided: false },
+                  { session, projection, maxTimeMS: 10000 },
+                )
+                .toArray()) as unknown as Sale[])
+            : [];
+          return { orders, sales };
+        }, transactionOptions),
+      );
+    },
     async readWorking() {
       await ensureReady();
       return client.withSession((session) =>
@@ -588,6 +617,54 @@ export function mongoRepository(
           }
           if (command.type === 'sale' && command.value?.orderId !== undefined)
             await loadOrder(command.value.orderId);
+          if (command.type === 'addLines') {
+            if (command.orderId !== undefined) await loadOrder(command.orderId);
+            else if (command.tableId !== undefined) {
+              await loadTable(command.tableId);
+              await loadOpenOrdersOf(command.tableId);
+            }
+          }
+          if (['alcohol', 'saveSupplier', 'removeSupplier'].includes(command.type)) {
+            // Every supplier: names must stay unique and a removed supplier is unlinked from its items.
+            current.suppliers = (await db
+              .collection('suppliers')
+              .find({}, { session, projection })
+              .toArray()) as unknown as Supplier[];
+            fullyLoaded.add('suppliers');
+          }
+          let batchOutputs: string[] = [];
+          if (command.type === 'correctBatchYield' && typeof command.batchId === 'string') {
+            // The batch is credited back like a voided sale; the correction then re-applies its new yield.
+            const movement = (await db
+              .collection('stockMovements')
+              .findOne(
+                { _id: command.batchId as never, kind: 'prepare' },
+                { session, projection },
+              )) as StockMovement | null;
+            if (movement?.outputId) {
+              for (const line of movement.lines) {
+                let balance = current.opening!.ingredients.find((b) => b.alcoholId === line.alcoholId);
+                if (!balance)
+                  current.opening!.ingredients.push(
+                    (balance = { alcoholId: line.alcoholId, ml: 0, cost: 0 }),
+                  );
+                balance.ml -= line.ml;
+                balance.cost -= line.cost;
+              }
+              current.stockMovements = [movement];
+              batchOutputs = [movement.outputId];
+              // One active sale that drew from the batch is enough to refuse the correction.
+              loadSales(
+                (await db
+                  .collection('sales')
+                  .find(
+                    { 'ingredients.batches.id': movement.id, voided: false },
+                    { session, projection, limit: 1 },
+                  )
+                  .toArray()) as unknown as Sale[],
+              );
+            }
+          }
           if (command.type === 'openOrder' && command.tableId !== undefined) {
             await loadTable(command.tableId);
             await loadOpenOrdersOf(command.tableId);
@@ -652,6 +729,11 @@ export function mongoRepository(
             await loadTable(request.tableId);
             await loadOpenOrdersOf(request.tableId);
           }
+          // Costing a portion needs the batches of the prepared outputs it consumes, and only those.
+          const batchIds = [
+            ...new Set([...batchOutputs, ...commandStockIds(current, command, handledGuest?.lines)]),
+          ];
+          if (batchIds.length) current.batchSources = await loadBatchSources(db, session, batchIds);
           let next: BarData;
           try {
             if (command.type === 'acceptGuestRequest' && handledGuest) {
@@ -727,15 +809,19 @@ export function mongoRepository(
             );
           }
           for (const name of collections) {
-            const previous = new Map(rows(current, name).map((r) => [r.id, JSON.stringify(r)]));
+            const previous = new Map(rows(current, name).map((r) => [r.id, r]));
             for (const [index, row] of rows(next, name).entries()) {
-              if (previous.get(row.id) === JSON.stringify(row)) continue;
+              const before = previous.get(row.id);
+              if (before && JSON.stringify(before) === JSON.stringify(row)) continue;
               const catalog = name === 'alcohol' || name === 'cocktails';
+              // A field the command removed (a favourite switched off, a supplier unlinked) must leave the document.
+              const removed = before ? Object.keys(before).filter((key) => !(key in row)) : [];
               await db.collection<Row>(name).updateOne(
                 { _id: row.id },
                 {
                   $set: { ...row, ...(catalog ? { _order: index } : {}) },
                   $setOnInsert: { ...(catalog ? {} : { _order: Date.now() }) },
+                  ...(removed.length ? { $unset: Object.fromEntries(removed.map((key) => [key, ''])) } : {}),
                 },
                 { upsert: true, session },
               );
@@ -752,7 +838,7 @@ export function mongoRepository(
           }
           await saveBalances(db, session, next, previousBalances);
           await appendAudit(db, session, commandAudit(command, next, actor, current));
-          if (command.type === 'sale' || command.type === 'acceptGuestRequest')
+          if (['sale', 'acceptGuestRequest', 'addLines'].includes(command.type))
             await recordStockAlerts(db, session, command.id, current, next);
           if (command.type === 'purchase')
             await recordPurchaseEvent(db, session, command.id, next, command.value.id);

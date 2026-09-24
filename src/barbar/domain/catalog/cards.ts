@@ -41,9 +41,9 @@ export const recipePortions = (recipe: Ingredient[], stock: Map<string, number>)
   recipe.length
     ? Math.max(0, Math.floor(Math.min(...recipe.map((i) => ((stock.get(i.alcoholId) || 0) + 1e-7) / i.ml))))
     : null;
-const portions = (c: Cocktail, stock: Map<string, number>, cocktails: Cocktail[]) =>
+export const cocktailPortions = (c: Cocktail, stock: Map<string, number>, cocktails: Cocktail[]) =>
   recipePortions(expandRecipe(c, cocktails), stock) ?? (c.extraCosts?.length || c.noIngredients ? null : 0);
-const ready = (c: Cocktail) =>
+export const cocktailReady = (c: Cocktail) =>
   c.price > 0 &&
   (!isGlassServing(c) || !!c.stockAlcoholId) &&
   (c.ingredients.length > 0 || !!c.extraCosts?.length || !!c.noIngredients || !!c.components?.length);
@@ -70,8 +70,8 @@ export function cardPage(
               id: c.id,
               name: c.name,
               price: c.price,
-              stock: portions(c, stock, data.cocktails),
-              ready: ready(c),
+              stock: cocktailPortions(c, stock, data.cocktails),
+              ready: cocktailReady(c),
               recipeMissing: recipeMissing({ ...c, managed: c.extraCosts?.length }),
               popularity: popularity.get(`cocktail:${c.id}`),
             }))

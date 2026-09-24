@@ -5,7 +5,7 @@ import { useSessionFilter } from '../presentation/use-session-filter';
 import { menuQuantitySummary } from '../domain/quantity-summary';
 import { ArrowDownToLine, ArrowUpRight, Banknote, CalendarDays, GlassWater, ReceiptText } from 'lucide-react';
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { download, ExportButton } from '../ui/export';
 import { Empty, Metric, PageHeading } from '../ui/layout';
 import { displayCurrency, formatMoney as money } from '../presentation/currency/format-money';
@@ -15,6 +15,8 @@ import { reportAnalytics } from '../domain/reports/analytics';
 import { toCsv } from '../domain/reports/csv';
 import { reportTotals } from '../domain/reports/totals';
 import { inReportPeriod, revenueSeries, type ReportPeriod } from '../domain/reports/period';
+import { PeriodComparison } from '../features/reports/PeriodComparison';
+import { PriceHistory } from '../features/reports/PriceHistory';
 import { Purchasing } from '../features/reports/Purchasing';
 import { ReportPerformance } from '../features/reports/ReportPerformance';
 import { locale, t } from '../presentation/i18n/runtime';
@@ -23,6 +25,12 @@ import { useBusinessDate } from '../features/sales/use-business-date';
 
 export default function Reports() {
   const { data } = useBar();
+  const [search] = useSearchParams();
+  const [priceKind, ...priceRest] = (search.get('price') || '').split(':');
+  const priceProduct =
+    (priceKind === 'cocktail' || priceKind === 'alcohol') && priceRest.length
+      ? { kind: priceKind as 'cocktail' | 'alcohol', id: priceRest.join(':') }
+      : undefined;
   const [mode, setMode] = useSessionFilter<string>('mode', 'month');
   const [day, setDay] = useBusinessDate();
   const [month, setMonth] = useSessionFilter<string>('month', businessToday().slice(0, 7));
@@ -217,6 +225,11 @@ export default function Reports() {
             />
           </section>
           <ReportPerformance period={period} serverRows={remote.report?.performance} />
+          <PeriodComparison from={chartFrom} to={chartTo} />
+          <PriceHistory
+            key={priceProduct ? `${priceProduct.kind}:${priceProduct.id}` : 'all'}
+            product={priceProduct}
+          />
           <Purchasing from={chartFrom} to={chartTo} />
           <section className="panel analytics-panel">
             <div className="section-title">

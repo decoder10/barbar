@@ -14,6 +14,6 @@ export default async (request: Request, context: { deploy: DeployInfo }) => {
   }
 };
 export const config = {
-  path: '/api/barbar/report',
+  path: ['/api/barbar/report', '/api/barbar/report/compare', '/api/barbar/prices'],
   rateLimit: { windowLimit: 180, windowSize: 60, aggregateBy: ['ip', 'domain'] },
 };
