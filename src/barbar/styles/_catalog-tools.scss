@@ -21,44 +21,48 @@
   padding: 10px 15px;
 }
 
-/* Selling screens (day log and order): search and sort share one row, categories scroll beneath. */
-.sales-catalog-tools {
+/* Catalog toolbars (sales, warehouse, phone recipes): sort and search share one row at the right edge,
+   category tabs take the full row beneath. */
+.catalog-tools {
+  display: flex;
   flex-direction: column;
+  flex-wrap: nowrap;
   align-items: stretch;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-.sales-catalog-tools .menu-categories {
+.catalog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.catalog-actions .search {
+  flex: 0 1 260px;
+  max-width: 100%;
+  min-height: 42px;
+}
+
+.catalog-actions .segmented {
+  align-self: center;
+}
+
+.catalog-tools .menu-categories {
   width: 100%;
+  margin: 0;
+  padding-bottom: 4px;
+}
+
+.catalog-tools .inventory-categories {
+  align-self: flex-start;
   margin: 0;
 }
 
-.sales-catalog-tools .search {
-  max-width: none !important;
-  width: 100%;
-}
-
-@media (min-width: 761px) {
-  .sales-catalog-tools {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px 12px;
-    margin-bottom: 14px;
-  }
-
-  .sales-catalog-tools > .search {
-    order: 0;
-    min-height: 42px;
-  }
-
-  .sales-catalog-tools > .catalog-sort {
-    order: 1;
-  }
-
-  .sales-catalog-tools > .menu-categories {
-    order: 2;
-    grid-column: 1 / -1;
-    padding-bottom: 4px;
-  }
+.catalog-tools .inventory-category-hint {
+  margin: 0;
 }
 
 .stock-unavailable-label {

@@ -104,26 +104,28 @@ export default function StaffInventory() {
           </div>
         )}
         <div className="catalog-tools">
+          <div className="catalog-actions">
+            {compact ? (
+              <FilterSheet active={sort !== 'missing' || view === 'grid' || missingOnly}>
+                {sortControl}
+                <InventoryViewSwitch view={view} onChange={setView} />
+                {availabilityFilter}
+              </FilterSheet>
+            ) : (
+              sortControl
+            )}
+            <label className="search">
+              <Search size={17} />
+              <input
+                aria-label={t('Поиск на складе')}
+                placeholder={t('Найти на полке…')}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+            {!compact && <InventoryViewSwitch view={view} onChange={setView} />}
+          </div>
           <InventoryCategories value={category} onChange={setCategory} items={items} />
-          {compact ? (
-            <FilterSheet active={sort !== 'missing' || view === 'grid' || missingOnly}>
-              {sortControl}
-              <InventoryViewSwitch view={view} onChange={setView} />
-              {availabilityFilter}
-            </FilterSheet>
-          ) : (
-            sortControl
-          )}
-          <label className="search">
-            <Search size={17} />
-            <input
-              aria-label={t('Поиск на складе')}
-              placeholder={t('Найти на полке…')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </label>
-          {!compact && <InventoryViewSwitch view={view} onChange={setView} />}
         </div>
         {!compact && availabilityFilter}
         <div className={`table-scroll inventory-layout ${view === 'grid' ? 'inventory-grid-view' : ''}`}>

@@ -263,25 +263,27 @@ export default function Inventory() {
           </div>
         )}
         <div className="catalog-tools">
+          <div className="catalog-actions">
+            {compact ? (
+              <FilterSheet active={sort !== 'original' || view === 'grid'}>
+                {sortControl}
+                <InventoryViewSwitch view={view} onChange={setView} />
+              </FilterSheet>
+            ) : (
+              sortControl
+            )}
+            <label className="search">
+              <Search size={17} />
+              <input
+                aria-label={t('Поиск на складе')}
+                placeholder={t('Найти на полке…')}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+            {!compact && <InventoryViewSwitch view={view} onChange={setView} />}
+          </div>
           <InventoryCategories value={category} onChange={setCategory} items={data.alcohol} />
-          {compact ? (
-            <FilterSheet active={sort !== 'original' || view === 'grid'}>
-              {sortControl}
-              <InventoryViewSwitch view={view} onChange={setView} />
-            </FilterSheet>
-          ) : (
-            sortControl
-          )}
-          <label className="search">
-            <Search size={17} />
-            <input
-              aria-label={t('Поиск на складе')}
-              placeholder={t('Найти на полке…')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </label>
-          {!compact && <InventoryViewSwitch view={view} onChange={setView} />}
         </div>
         {!compact && (
           <p className="inventory-recipe-help">

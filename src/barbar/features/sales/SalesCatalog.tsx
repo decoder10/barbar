@@ -304,6 +304,22 @@ export function SalesCatalog({
         </div>
       )}
       <div className="catalog-tools sales-catalog-tools">
+        <div className="catalog-actions">
+          {compact ? (
+            <FilterSheet active={sort !== salesSortDefault}>{sortControl}</FilterSheet>
+          ) : (
+            sortControl
+          )}
+          <label className="search">
+            <Search size={17} />
+            <input
+              aria-label={t('Поиск напитка')}
+              placeholder={t('Найти напиток…')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
+        </div>
         <CategoryTabs
           className="menu-categories"
           value={category}
@@ -315,16 +331,6 @@ export function SalesCatalog({
             ['alcohol', 'В розлив'] as const,
           ]}
         />
-        {compact ? <FilterSheet active={sort !== salesSortDefault}>{sortControl}</FilterSheet> : sortControl}
-        <label className="search">
-          <Search size={17} />
-          <input
-            aria-label={t('Поиск напитка')}
-            placeholder={t('Найти напиток…')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </label>
       </div>
       <div className="drink-grid">{cards}</div>
       {pages.error && <p role="alert">{t(pages.error)}</p>}

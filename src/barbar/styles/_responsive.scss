@@ -164,13 +164,6 @@
     position: static;
     margin-top: 5px;
   }
-  .catalog-tools {
-    flex-direction: row;
-  }
-  .catalog-tools .search {
-    flex: 1;
-    max-width: 210px;
-  }
   .receipt-lines .empty {
     padding: 28px;
   }
@@ -358,12 +351,6 @@
   }
   .drink-grid {
     gap: 14px;
-  }
-  .catalog-tools {
-    gap: 8px;
-  }
-  .catalog-tools .search {
-    max-width: 200px;
   }
   .segmented button {
     font-size: 9px;
@@ -651,14 +638,6 @@
     font-size: 5px;
     letter-spacing: 0.8px;
     padding: 5px 6px;
-  }
-  .catalog-tools {
-    flex-wrap: wrap;
-  }
-  .catalog-tools .search {
-    flex-basis: 100%;
-    max-width: none;
-    padding: 10px 12px;
   }
   .search input {
     font-size: 10px;

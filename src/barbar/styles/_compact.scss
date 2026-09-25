@@ -615,17 +615,26 @@
     text-align: center;
   }
 
-  /* Catalog filters: category, then search with a sort/filter button. */
+  /* Catalog filters: search with a sort/filter button on top, the category dropdown beneath. */
   .catalog-tools {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     align-items: center;
     gap: 8px;
     margin-bottom: 12px;
   }
 
-  .catalog-tools > .search {
-    order: 1;
+  .catalog-actions {
+    grid-column: 1 / -1;
+    order: 0;
+    flex-wrap: nowrap;
+    justify-content: stretch;
+    gap: 8px;
+  }
+
+  .catalog-actions .search {
+    flex: 1;
+    min-width: 0;
     min-height: 48px;
     max-width: none;
     padding: 0 12px;
@@ -635,12 +644,16 @@
     font-size: 16px;
   }
 
-  .catalog-tools > .filter-sheet-toggle {
-    order: 2;
+  .catalog-actions .filter-sheet-toggle {
+    order: 1;
   }
 
-  .catalog-tools > .inventory-category-hint {
-    order: 3;
+  .catalog-tools .category-select {
+    order: 1;
+  }
+
+  .catalog-tools .inventory-category-hint {
+    order: 2;
     grid-column: 1 / -1;
     margin: 0;
   }

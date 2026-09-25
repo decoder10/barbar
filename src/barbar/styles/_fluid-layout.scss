@@ -113,9 +113,6 @@
   .page-heading {
     align-items: flex-start;
   }
-  .catalog-tools .search {
-    flex: 1 1 100%;
-  }
 }
 
 @include below(360px) {

@@ -90,9 +90,11 @@ export default function StaffRecipes() {
       </PageHeading>
       {compact ? (
         <div className="catalog-tools">
+          <div className="catalog-actions">
+            <FilterSheet active={sort !== 'original'}>{sortControl}</FilterSheet>
+            {searchField}
+          </div>
           {categoryTabs}
-          <FilterSheet active={sort !== 'original'}>{sortControl}</FilterSheet>
-          {searchField}
         </div>
       ) : (
         <>
