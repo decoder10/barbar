@@ -7,6 +7,7 @@ import {
   photos,
   shotPhoto,
   tinctureIngredient,
+  uploadedPhoto,
   type PhotoChoice,
 } from './media/photo-catalog';
 
@@ -14,18 +15,21 @@ export function RealPhoto({
   choice,
   name,
   className,
+  upload,
 }: {
   choice: PhotoChoice;
   name: string;
   className: string;
+  /** The owner's own photo of this item: shown as is, never labelled as an example. */
+  upload?: string;
 }) {
-  const photo = photos[choice.key];
+  const own = upload ? uploadedPhoto(upload) : undefined;
+  const photo = own || photos[choice.key];
+  const example = !own && choice.example;
   return (
     <div
-      className={`${className} real-photo ${choice.bottle ? 'packshot' : ''}`}
-      title={t(
-        photo ? `${name} · ${photo.author}${choice.example ? ' · Пример подачи / упаковки' : ''}` : name,
-      )}
+      className={`${className} real-photo ${own ? 'own-photo' : choice.bottle ? 'packshot' : ''}`}
+      title={t(photo ? `${name} · ${photo.author}${example ? ' · Пример подачи / упаковки' : ''}` : name)}
     >
       {t(
         photo ? (
@@ -56,7 +60,7 @@ export function RealPhoto({
         ),
       )}
       {t(
-        choice.example && photo && (
+        example && photo && (
           <span className="photo-example">{t(choice.bottle ? 'Пример упаковки' : 'Пример подачи')}</span>
         ),
       )}
@@ -69,12 +73,17 @@ export function CocktailArt({
   name,
   category,
   serving,
+  photo,
 }: {
   image: number;
   name: string;
   category?: string;
   serving?: string;
+  /** The owner's own photo replaces every illustrative composition. */
+  photo?: string;
 }) {
+  if (photo && uploadedPhoto(photo))
+    return <RealPhoto choice={{ key: '' }} upload={photo} name={name} className="cocktail-art" />;
   if (category === 'set') {
     const count = Math.min(32, Math.max(1, Number(name.match(/\d+/)?.[0]) || 6));
     return (
@@ -101,11 +110,12 @@ export function CocktailArt({
 export function BottleArt({
   drink,
 }: {
-  drink: Pick<Alcohol, 'name' | 'color'> & Partial<Pick<Alcohol, 'category' | 'menuCategory'>>;
+  drink: Pick<Alcohol, 'name' | 'color'> & Partial<Pick<Alcohol, 'category' | 'menuCategory' | 'photo'>>;
 }) {
   return (
     <RealPhoto
       choice={bottlePhoto(drink.name, drink.category, drink.menuCategory)}
+      upload={drink.photo}
       name={drink.name}
       className="bottle-art"
     />

@@ -695,6 +695,17 @@
   gap: 10px;
   margin-block: 12px;
 }
+/* «Закрыть смену»: confirm and refresh share one width with a clear gap between them. */
+.shift-close-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+.modal .shift-close-actions > .button {
+  width: 100%;
+  min-height: 46px;
+  font-size: 14px;
+}
 .guest-request-lines {
   border: 0;
   margin: 0;
@@ -716,7 +727,4 @@
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-}
-.shift-history {
-  overflow-x: auto;
 }

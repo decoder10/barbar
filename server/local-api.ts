@@ -5,7 +5,11 @@ import { handleNotificationsFeed } from '../netlify/lib/notifications/feed';
 import { safelyDeliverNotifications } from '../netlify/lib/notifications/deliver';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import type { ServerResponse } from 'node:http';
 import { resolve } from 'node:path';
+import { handlePhotoFile } from '../netlify/lib/photos/serve';
+import { folderPhotoFiles } from '../netlify/lib/photos/store';
+import { handlePhotoUpload, maxUploadBytes } from '../netlify/lib/photos/upload';
 import { loadEnv, type Plugin } from 'vite';
 import { handleReport } from '../netlify/lib/queries/report';
 import { handleHistory } from '../netlify/lib/queries/history';
@@ -97,10 +101,50 @@ export function localApi(): Plugin {
       server.httpServer?.once('close', () => {
         void client.close();
       });
+      // Owner photos stay next to the local data, outside Git.
+      const photos = folderPhotoFiles(resolve(folder, 'photos'));
+      const reply = async (response: ServerResponse, result: Response) => {
+        response.writeHead(result.status, Object.fromEntries(result.headers));
+        response.end(Buffer.from(await result.arrayBuffer()));
+      };
       server.middlewares.use(async (request, response, next) => {
-        // Same rewrite as netlify.toml: the guest menu is a separate page.
-        if (/^\/menu\/?(\?|$)/.test(request.url || ''))
-          request.url = request.url!.replace(/^\/menu\/?/, '/menu.html');
+        const path = (request.url || '').split('?')[0];
+        const plain = () => {
+          const headers = new Headers();
+          Object.entries(request.headers).forEach(([key, value]) => {
+            if (value) headers.set(key, Array.isArray(value) ? value.join(',') : value);
+          });
+          return new Request(`http://${request.headers.host}${request.url}`, {
+            method: request.method,
+            headers,
+          });
+        };
+        // Same as `netlify/functions/barbar-menu-page.ts`: the guest menu is rendered with its prices.
+        // The module is loaded through Vite, so edits to the menu components apply on reload.
+        if (/^\/menu\/?$/.test(path)) {
+          try {
+            const { handleGuestMenuPage, siteHeaders } = (await server.ssrLoadModule(
+              '/netlify/lib/guest-menu-page.tsx',
+            )) as typeof import('../netlify/lib/guest-menu-page');
+            const template = async () =>
+              server.transformIndexHtml(
+                '/menu.html',
+                await readFile(resolve(server.config.root, 'menu.html'), 'utf8'),
+              );
+            const result = await handleGuestMenuPage(plain(), repository, template, 'local');
+            // Like every other local page, no site headers: the CSP would block Vite's inline refresh script.
+            for (const name of Object.keys(siteHeaders)) result.headers.delete(name);
+            await reply(response, result);
+          } catch (error) {
+            server.ssrFixStacktrace(error as Error);
+            next(error);
+          }
+          return;
+        }
+        if (path.startsWith('/api/photos/')) {
+          await reply(response, await handlePhotoFile(plain(), photos));
+          return;
+        }
         if ((request.url || '').split('?')[0] === '/api/barbar/environment') {
           const result = json({
             database: profile.production ? 'production' : 'local',
@@ -135,6 +179,7 @@ export function localApi(): Plugin {
             '/api/barbar/prices',
             '/api/barbar/push',
             '/api/barbar/notifications',
+            '/api/barbar/photos',
           ].includes((request.url || '').split('?')[0])
         ) {
           next();
@@ -143,7 +188,9 @@ export function localApi(): Plugin {
         try {
           const chunks: Buffer[] = [];
           let length = 0;
-          const limit = request.url?.split('?')[0] === '/api/barbar' ? 3_000_000 : 12000;
+          // Photos: the handler answers an oversized upload itself, with a readable error.
+          const limit =
+            path === '/api/barbar' ? 3_000_000 : path === '/api/barbar/photos' ? maxUploadBytes * 2 : 12000;
           for await (const chunk of request) {
             length += chunk.length;
             if (length > limit) {
@@ -169,26 +216,28 @@ export function localApi(): Plugin {
             ? await handleGuestOrder(input, guestOrderStore(db, { migrations: !profile.production }))
             : request.url?.startsWith('/api/menu')
               ? await handleGuestMenu(input, repository)
-              : request.url?.startsWith('/api/barbar/batches')
-                ? await handleBatches(input, db, users)
-                : request.url?.startsWith('/api/barbar/notifications')
-                  ? await handleNotificationsFeed(input, db, users)
-                  : request.url?.startsWith('/api/barbar/push')
-                    ? await handlePush(input, db, users)
-                    : request.url?.startsWith('/api/barbar/report') ||
-                        request.url?.startsWith('/api/barbar/prices')
-                      ? await handleReport(input, db, users)
-                      : request.url?.startsWith('/api/barbar/history')
-                        ? await handleHistory(input, db, users)
-                        : request.url?.startsWith('/api/barbar/audit')
-                          ? await handleAudit(input, db, users)
-                          : request.url?.startsWith('/api/barbar/rates')
-                            ? await handleRates(input)
-                            : request.url?.startsWith('/api/barbar/auth')
-                              ? await handleAuth(input, users)
-                              : request.url?.startsWith('/api/barbar/users')
-                                ? await handleUsers(input, users)
-                                : await handleBarApi(input, repository, users);
+              : path === '/api/barbar/photos'
+                ? await handlePhotoUpload(input, users, photos)
+                : request.url?.startsWith('/api/barbar/batches')
+                  ? await handleBatches(input, db, users)
+                  : request.url?.startsWith('/api/barbar/notifications')
+                    ? await handleNotificationsFeed(input, db, users)
+                    : request.url?.startsWith('/api/barbar/push')
+                      ? await handlePush(input, db, users)
+                      : request.url?.startsWith('/api/barbar/report') ||
+                          request.url?.startsWith('/api/barbar/prices')
+                        ? await handleReport(input, db, users)
+                        : request.url?.startsWith('/api/barbar/history')
+                          ? await handleHistory(input, db, users)
+                          : request.url?.startsWith('/api/barbar/audit')
+                            ? await handleAudit(input, db, users)
+                            : request.url?.startsWith('/api/barbar/rates')
+                              ? await handleRates(input)
+                              : request.url?.startsWith('/api/barbar/auth')
+                                ? await handleAuth(input, users)
+                                : request.url?.startsWith('/api/barbar/users')
+                                  ? await handleUsers(input, users)
+                                  : await handleBarApi(input, repository, users);
           if (
             input.method === 'POST' &&
             ['/api/barbar', '/api/guest-order'].includes(new URL(input.url).pathname) &&

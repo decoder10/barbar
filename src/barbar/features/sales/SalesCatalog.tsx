@@ -167,7 +167,13 @@ export function SalesCatalog({
       return (
         <AlcoholCard
           key={`alcohol:${p.id}`}
-          drink={{ name: p.name, category: 'alcohol', color: '', pricePerLiter: (p.price || 0) * 1000 }}
+          drink={{
+            name: p.name,
+            category: 'alcohol',
+            color: '',
+            pricePerLiter: (p.price || 0) * 1000,
+            photo: p.photo,
+          }}
           ml={p.available || 0}
           action={open}
           selling
@@ -190,6 +196,7 @@ export function SalesCatalog({
           category: p.category === 'alcohol' ? undefined : p.category,
           serving: p.serving,
           price: p.price || 0,
+          photo: p.photo,
         }}
         detail={compositionText(
           [

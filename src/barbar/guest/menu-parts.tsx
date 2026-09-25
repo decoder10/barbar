@@ -52,7 +52,9 @@ export function MenuPhoto({ item }: { item: GuestMenuItem }) {
   return (
     <div className="menu-card-photo">
       {item.category === 'alcohol' ? (
-        <BottleArt drink={{ name: item.photoName, color: '#8c775b', category: 'alcohol' }} />
+        <BottleArt
+          drink={{ name: item.photoName, color: '#8c775b', category: 'alcohol', photo: item.photo }}
+        />
       ) : (
         <CocktailArt
           image={menuImage({
@@ -63,6 +65,7 @@ export function MenuPhoto({ item }: { item: GuestMenuItem }) {
           name={item.photoName}
           category={item.category}
           serving={item.serving}
+          photo={item.photo}
         />
       )}
     </div>

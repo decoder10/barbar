@@ -17,6 +17,7 @@
   --success: #39725a;
   --warning-surface: #fbf1e8;
   --warning: #95603d;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23727782' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background: var(--canvas);
   color: var(--text);
 }
@@ -36,4 +37,5 @@
   --success: #9bd7b4;
   --warning-surface: #382e25;
   --warning: #e6bd94;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23abb8ca' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }

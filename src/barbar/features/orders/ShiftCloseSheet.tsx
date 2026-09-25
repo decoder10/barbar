@@ -35,6 +35,7 @@ export function ShiftCloseSheet({ close, initialDay }: { close: () => void; init
     };
   }, [day, version]);
   const valid = cash.trim() !== '' && Number.isFinite(Number(cash)) && Number(cash) >= 0;
+  const closable = !!result && !result.closed && !result.preview.openCount;
   return (
     <Sheet
       title="Закрыть смену"
@@ -127,16 +128,20 @@ export function ShiftCloseSheet({ close, initialDay }: { close: () => void; init
                       {t('Расхождение')}: {round(Number(cash) - (result.preview.payments.cash || 0))} AMD
                     </p>
                   )}
-                  <button type="submit" className="button primary full" disabled={!valid}>
-                    {t('Подтвердить закрытие смены')}
-                  </button>
                 </>
               )}
             </>
           )}
-          <button type="button" className="button secondary" onClick={() => setVersion((v) => v + 1)}>
-            {t('Обновить')}
-          </button>
+          <div className="shift-close-actions">
+            {closable && (
+              <button type="submit" className="button primary" disabled={!valid}>
+                {t('Подтвердить закрытие смены')}
+              </button>
+            )}
+            <button type="button" className="button secondary" onClick={() => setVersion((v) => v + 1)}>
+              {t('Обновить')}
+            </button>
+          </div>
         </fieldset>
       </form>
     </Sheet>

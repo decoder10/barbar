@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, it, test } from 'vitest';
 import sources from '../../../../../../public/barbar/photos/sources.json';
-import { bottlePhoto, menuPhoto, photos } from '../photo-catalog';
+import { bottlePhoto, menuPhoto, photos, uploadedPhoto } from '../photo-catalog';
 
 test('beer flavours never resolve to fruit ingredients and unknown brands get named bottle templates', () => {
   expect(bottlePhoto('Новая марка', 'beer')).toMatchObject({ template: 'beer' });
@@ -27,6 +27,18 @@ test('every catalog image is a bundled file with attribution', () => {
 
     expect(photo.author.length).toBeGreaterThan(0);
   }
+});
+
+test('an owner photo is served in its stored widths and credited to the venue', () => {
+  expect(uploadedPhoto('u-0123456789ab-320x400')).toEqual({
+    file: '/api/photos/u-0123456789ab-320x400-320.webp',
+    author: 'Фото заведения',
+    width: 320,
+    height: 400,
+    webp: '/api/photos/u-0123456789ab-320x400-160.webp 160w, /api/photos/u-0123456789ab-320x400-320.webp 320w',
+    avif: '',
+  });
+  expect(uploadedPhoto('generated-wine')).toBeUndefined();
 });
 
 test('responsive photo variants are bundled and content-addressed', async () => {

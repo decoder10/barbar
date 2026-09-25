@@ -28,6 +28,8 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   await expect(page.getByRole('heading', { name: 'Склад напитков' })).toBeVisible();
   await page.getByRole('button', { name: 'Новое пиво', exact: true }).click();
   await page.getByLabel('Марка и название').fill('Test lager 330');
+  const next = page.getByRole('dialog').getByRole('button', { name: 'Далее', exact: true });
+  await next.click();
   for (const size of ['300', '330', '700', '750'])
     await expect(page.getByRole('button', { name: `${size} мл`, exact: true })).toHaveCount(1);
   await page.getByRole('button', { name: '330 мл', exact: true }).click();
@@ -46,6 +48,7 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   await expect(beerRow).toContainText('12 бут.');
   await page.getByRole('button', { name: 'Новое вино', exact: true }).click();
   await page.getByLabel('Марка и название').fill('Test wine');
+  await next.click();
   await page.getByLabel('Объём бутылки, мл').fill('750');
   await page.getByLabel('Объём бокала, мл').fill('125');
   await page.getByLabel('Продажа за бокал, ֏').fill('1500');
@@ -112,6 +115,11 @@ test('stock brands, bottle sizes, purchases, staff sales and wine servings', asy
   // Phones fold the new-item buttons into the «Добавить» sheet.
   await page.getByRole('button', { name: 'Добавить', exact: true }).click();
   await page.getByRole('button', { name: 'Новый коньяк', exact: true }).click();
+  // A step header opens the volumes without filling the name first.
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^Цены и объём/ })
+    .click();
   await page.getByLabel('Объём бутылки, мл').fill('700');
   await page.getByLabel('Объём порции, мл').fill('50');
   await expect(page.getByRole('dialog')).toContainText('50 мл из бутылки 700 мл');

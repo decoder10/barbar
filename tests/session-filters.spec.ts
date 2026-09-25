@@ -24,11 +24,18 @@ test('owner filters survive refresh and navigation, while another tab starts fre
   await expect(page.getByPlaceholder('Найти напиток…')).toHaveValue('379');
   await expect(page.getByLabel('Сортировка', { exact: true })).toHaveValue('name-desc');
   await page.goto('/reports');
-  await page.getByLabel('Месяц отчёта').fill('2026-08');
+  const monthPicker = page.getByRole('button', { name: /Месяц отчёта/ });
+  await monthPicker.click();
+  const months = page.getByRole('dialog', { name: 'Месяц отчёта' });
+  while ((await months.locator('.date-picker-head strong').textContent()) !== '2026')
+    await months.getByRole('button', { name: 'Предыдущий год' }).click();
+  await months.getByRole('button', { name: /^Август 2026/ }).click();
+  await expect(months).toBeHidden();
+  await expect(monthPicker).toBeFocused();
   await page.getByLabel('Показатель рейтинга').selectOption('quantity');
   await page.getByLabel('Целевая маржа', { exact: true }).selectOption('60');
   await page.reload();
-  await expect(page.getByLabel('Месяц отчёта')).toHaveValue('2026-08');
+  await expect(monthPicker).toHaveAttribute('data-value', '2026-08');
   await expect(page.getByLabel('Показатель рейтинга')).toHaveValue('quantity');
   await expect(page.getByLabel('Целевая маржа', { exact: true })).toHaveValue('60');
   await page.goto('/sales');

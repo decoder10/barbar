@@ -4,11 +4,11 @@ import { Field } from '../../ui/fields';
 import { Modal, Submit } from '../../ui/modal';
 import { formatMoney as money } from '../../presentation/currency/format-money';
 import { businessDayHint } from '../../domain/business-day';
+import { packPriceUnit, priceAmount, toShownPrice, toStoredPrice } from '../../domain/catalog/pack-price';
 import {
   ingredientUnit,
   ingredientVolume,
   priceBasis,
-  priceUnit,
   round,
   today,
   uid,
@@ -27,11 +27,14 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
   const selected = data.alcohol.find((a) => a.id === alcoholId) || data.alcohol[0];
   const [id] = useState(uid);
   const [drinkId, setDrinkId] = useState(selected?.id || '');
-  const [ml, setMl] = useState(unitBasis(selected?.unit) === 1 ? '1' : '1000');
-  const [cost, setCost] = useState(String(selected?.costPerLiter || ''));
+  // One package by default; its price is entered as the owner buys it (700 ֏ for 500 ml).
+  const [ml, setMl] = useState(String(priceAmount(selected)));
+  const [cost, setCost] = useState(String((selected && toShownPrice(selected.costPerLiter, selected)) || ''));
   const [date, setDate] = useBusinessDate();
   const drink = data.alcohol.find((a) => a.id === drinkId);
   const bottled = unitBasis(drink?.unit) === 1;
+  const pack = priceAmount(drink);
+  const storedCost = toStoredPrice(Number(cost), drink);
   return (
     <Modal
       title={t('Добавить закупку')}
@@ -45,7 +48,7 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
             await run(
               {
                 type: 'purchase',
-                value: { id, alcoholId: drinkId, ml: Number(ml), costPerLiter: Number(cost), date },
+                value: { id, alcoholId: drinkId, ml: Number(ml), costPerLiter: storedCost, date },
               },
               'Закупка добавлена. Склад пополнен.',
             )
@@ -59,9 +62,10 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
             required
             value={drinkId}
             onChange={(e) => {
+              const next = data.alcohol.find((a) => a.id === e.target.value);
               setDrinkId(e.target.value);
-              setMl(unitBasis(data.alcohol.find((a) => a.id === e.target.value)?.unit) === 1 ? '1' : '1000');
-              setCost(String(data.alcohol.find((a) => a.id === e.target.value)?.costPerLiter || ''));
+              setMl(String(priceAmount(next)));
+              setCost(String((next && toShownPrice(next.costPerLiter, next)) || ''));
             }}
           >
             {t(
@@ -85,7 +89,7 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
               onChange={(e) => setMl(e.target.value)}
             />
           </Field>
-          <Field label={`Цена за ${priceUnit(drink?.unit)}, ֏`}>
+          <Field label={`Цена за ${packPriceUnit(drink)}, ֏`}>
             <input
               required
               type="number"
@@ -100,11 +104,13 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
         </div>
         <div className="quick-values">
           {t(
-            (drink?.unit === 'pcs'
-              ? quickAmounts.pcs
-              : bottled
-                ? quickAmounts.bottle
-                : quickAmounts.volume
+            (pack !== unitBasis(drink?.unit)
+              ? quickAmounts.packs.map((n) => n * pack)
+              : drink?.unit === 'pcs'
+                ? quickAmounts.pcs
+                : bottled
+                  ? quickAmounts.bottle
+                  : quickAmounts.volume
             ).map((n) => (
               <button
                 type="button"
@@ -123,7 +129,7 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
         <div className="form-total">
           <span>
             {t('Стоимость закупки')}
-            <strong>{t(money(round((Number(ml) * Number(cost)) / priceBasis(data, drinkId))))}</strong>
+            <strong>{t(money(round((Number(ml) * storedCost) / priceBasis(data, drinkId))))}</strong>
           </span>
           <small>
             {t('На складе станет: ')}

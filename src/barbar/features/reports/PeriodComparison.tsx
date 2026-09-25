@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { BarChart3, Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useBar } from '../../app/providers/BarProvider';
 import { businessToday } from '../../domain/business-day';
 import { categoryLabel } from '../../domain/model';
 import {
   basePeriod,
+  changePct,
   compare,
   periodFromSales,
   type BaseKind,
@@ -15,12 +17,52 @@ import { snapshotRead } from '../../services/api-client';
 import { formatMoney } from '../../presentation/currency/format-money';
 import { locale, t } from '../../presentation/i18n/runtime';
 import { useSessionFilter } from '../../presentation/use-session-filter';
+import { DatePicker } from '../../ui/date-picker';
 import { Field } from '../../ui/fields';
 import { LoadingStatus } from '../../ui/loading';
 
 const signed = (n: number) => `${n > 0 ? '+' : ''}${formatMoney(n)}`;
-const percent = (n: number | null) => (n === null ? '—' : `${n > 0 ? '+' : ''}${n}%`);
+/** «+12.5%»; growth from a zero base is «новое», and nothing is shown when both values are zero. */
+const percent = (pct: number | null, now: number) =>
+  pct !== null ? `${pct > 0 ? '+' : ''}${pct}%` : now > 0 ? t('новое') : '';
 const quantity = (n: number) => new Intl.NumberFormat(locale(), { maximumFractionDigits: 1 }).format(n);
+const signedQuantity = (n: number) => `${n > 0 ? '+' : ''}${quantity(n)}`;
+const day = (date: string) =>
+  new Date(`${date}T12:00:00Z`).toLocaleDateString(locale(), {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+const range = (period: { from: string; to: string }) =>
+  period.from === period.to ? day(period.from) : `${day(period.from)} — ${day(period.to)}`;
+/** Growth is green and a fall red; neutral measures (cost, working days) keep the arrow but not the colour. */
+const tone = (n: number, neutral = false) =>
+  `${n > 0 ? 'is-up' : n < 0 ? 'is-down' : 'is-flat'}${neutral ? ' is-neutral' : ''}`;
+/** The width of a bar against the largest value of its group. */
+const share = (value: number, largest: number) =>
+  ({ '--share': largest ? Math.abs(value) / largest : 0 }) as CSSProperties;
+
+/** The change badge: amount and percent, or «без изменений» instead of a bare «0». */
+function Change({
+  value,
+  text,
+  pct = '',
+  neutral,
+}: {
+  value: number;
+  text: string;
+  pct?: string;
+  neutral?: boolean;
+}) {
+  const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus;
+  return (
+    <span className={`comparison-change ${tone(value, neutral)}`}>
+      <Icon size={16} aria-hidden="true" />
+      {value ? [text, pct].filter(Boolean).join(' · ') : t('без изменений')}
+    </span>
+  );
+}
 /** Monday 2026-09-14 is a fixed reference: the weekday number 1–7 names the day in the interface language. */
 const weekday = (n: string) => {
   const name = new Date(`2026-09-${13 + Number(n)}T12:00:00Z`).toLocaleDateString(locale(), {
@@ -71,62 +113,127 @@ function useComparison(current: { from: string; to: string }, base: { from: stri
   };
 }
 
-function TotalsTable({ current, base }: { current: Totals; base: Totals }) {
-  const rows: [string, string, string, string][] = [
-    [
-      'Выручка',
-      formatMoney(current.revenue),
-      formatMoney(base.revenue),
-      signed(current.revenue - base.revenue),
-    ],
-    ['Себестоимость', formatMoney(current.cost), formatMoney(base.cost), signed(current.cost - base.cost)],
-    [
-      'Валовая прибыль',
-      formatMoney(current.profit),
-      formatMoney(base.profit),
-      signed(current.profit - base.profit),
-    ],
-    ['Порции', quantity(current.units), quantity(base.units), quantity(current.units - base.units)],
-    [
-      'Рабочих дней',
-      String(current.workedDays),
-      String(base.workedDays),
-      String(current.workedDays - base.workedDays),
-    ],
-    [
-      'Выручка за рабочий день',
-      formatMoney(current.revenuePerDay),
-      formatMoney(base.revenuePerDay),
-      signed(current.revenuePerDay - base.revenuePerDay),
-    ],
-  ];
+interface TotalRow {
+  label: string;
+  now: number;
+  before: number;
+  format: (n: number) => string;
+  change: (n: number) => string;
+  neutral?: boolean;
+}
+
+const totalRows = (current: Totals, base: Totals): TotalRow[] => [
+  { label: 'Выручка', now: current.revenue, before: base.revenue, format: formatMoney, change: signed },
+  {
+    label: 'Себестоимость',
+    now: current.cost,
+    before: base.cost,
+    format: formatMoney,
+    change: signed,
+    neutral: true,
+  },
+  { label: 'Валовая прибыль', now: current.profit, before: base.profit, format: formatMoney, change: signed },
+  { label: 'Порции', now: current.units, before: base.units, format: quantity, change: signedQuantity },
+  {
+    label: 'Рабочих дней',
+    now: current.workedDays,
+    before: base.workedDays,
+    format: String,
+    change: signedQuantity,
+    neutral: true,
+  },
+  {
+    label: 'Выручка за рабочий день',
+    now: current.revenuePerDay,
+    before: base.revenuePerDay,
+    format: formatMoney,
+    change: signed,
+  },
+];
+
+/** Rounded to the cent so that float noise is neither coloured nor shown as «+0». */
+const difference = (row: TotalRow) => Math.round((row.now - row.before) * 100) / 100;
+
+const headline = ['Выручка', 'Валовая прибыль', 'Выручка за рабочий день'];
+
+/**
+ * The three figures an owner looks at first as large cards: now, what it was, and by how much it moved;
+ * the other measures follow as small tiles of the same shape.
+ */
+function TotalCards({ rows }: { rows: TotalRow[] }) {
+  const card = (row: TotalRow) => {
+    const delta = difference(row);
+    return (
+      <li key={row.label}>
+        <span className="comparison-card-label">{t(row.label)}</span>
+        <strong>{row.format(row.now)}</strong>
+        <span className="comparison-card-base">
+          {t('было')} {row.format(row.before)}
+        </span>
+        <Change
+          value={delta}
+          text={row.change(delta)}
+          pct={percent(changePct(row.now, row.before), row.now)}
+          neutral={row.neutral}
+        />
+      </li>
+    );
+  };
   return (
-    <div className="table-scroll">
-      <table className="data-table comparison-table" aria-label={t('Итоги двух периодов')}>
-        <thead>
-          <tr>
-            <th>{t('Показатель')}</th>
-            <th>{t('Текущий период')}</th>
-            <th>{t('База')}</th>
-            <th>{t('Изменение')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(([label, now, before, delta]) => (
-            <tr key={label}>
-              <td>{t(label)}</td>
-              <td>{now}</td>
-              <td>{before}</td>
-              <td>{delta}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <ul className="comparison-cards">{rows.filter((row) => headline.includes(row.label)).map(card)}</ul>
+      <ul className="comparison-metrics" aria-label={t('Другие показатели')}>
+        {rows.filter((row) => !headline.includes(row.label)).map(card)}
+      </ul>
+    </>
   );
 }
 
-function DimensionTable({
+const parts = [
+  ['Количество', 'больше или меньше порций по прежней средней цене', 'volume'],
+  ['Ассортимент', 'сдвиг между дешёвыми и дорогими позициями', 'mix'],
+  ['Цена', 'изменение цен у позиций, проданных в обоих периодах', 'price'],
+  ['Новые и ушедшие позиции', 'позиции, которые продавались только в одном из периодов', 'range'],
+] as const;
+
+/** Volume, mix, price and range add up to the revenue change; the bar shows each part against the largest one. */
+function Decomposition({ d, totals }: { d: Comparison['decomposition']; totals: [Totals, Totals] }) {
+  const largest = Math.max(...parts.map(([, , key]) => Math.abs(d[key])));
+  const [current, base] = totals;
+  const title = 'Из чего сложилось изменение выручки';
+  return (
+    <section className="comparison-section" aria-label={t(title)}>
+      <h3>{t(title)}</h3>
+      <ul className="comparison-parts">
+        {parts.map(([label, hint, key]) => (
+          <li key={key}>
+            <span className="comparison-row-name">
+              <strong>{t(label)}</strong>
+              <small>{t(hint)}</small>
+            </span>
+            <Change value={d[key]} text={signed(d[key])} />
+            <span
+              className={`comparison-bar ${tone(d[key])}`}
+              style={share(d[key], largest)}
+              aria-hidden="true"
+            />
+          </li>
+        ))}
+      </ul>
+      <p className="comparison-sum">
+        <strong>{t('Изменение выручки')}</strong>
+        <Change
+          value={d.delta}
+          text={signed(d.delta)}
+          pct={percent(changePct(current.revenue, base.revenue), current.revenue)}
+        />
+      </p>
+    </section>
+  );
+}
+
+/** Revenue of each weekday, hour or category: now in bold, the base below, the change on the right. */
+function DimensionList({
   title,
   rows,
   label,
@@ -138,40 +245,43 @@ function DimensionTable({
   /** Rows whose revenue is also shown per worked day of that weekday. */
   perDay?: boolean;
 }) {
+  if (!rows.length) return null;
+  const largest = Math.max(...rows.map((row) => Math.max(row.current.revenue, row.base.revenue)));
+  const perWorkedDay = (totals: Totals) => (totals.workedDays ? formatMoney(totals.revenuePerDay) : '—');
   return (
-    <div className="table-scroll">
-      <table className="data-table comparison-table" aria-label={t(title)}>
-        <caption>{t(title)}</caption>
-        <thead>
-          <tr>
-            <th>{t('Группа')}</th>
-            <th>{t('Выручка сейчас')}</th>
-            <th>{t('Выручка в базе')}</th>
-            <th>{t('Изменение')}</th>
-            <th>{t('%')}</th>
-            {perDay && <th>{t('За рабочий день: сейчас / база')}</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.key}>
-              <td>{label(row)}</td>
-              <td>{formatMoney(row.current.revenue)}</td>
-              <td>{formatMoney(row.base.revenue)}</td>
-              <td>{signed(row.revenueDelta)}</td>
-              <td>{percent(row.revenuePct)}</td>
+    <section className="comparison-section comparison-dimension" aria-label={t(title)}>
+      <h3>{t(title)}</h3>
+      <ul>
+        {rows.map((row) => (
+          <li key={row.key}>
+            <span className="comparison-row-name">
+              <strong>{label(row)}</strong>
+              <small>
+                {t('было')} {formatMoney(row.base.revenue)}
+              </small>
               {perDay && (
-                <td>
-                  {row.current.workedDays ? formatMoney(row.current.revenuePerDay) : '—'} /{' '}
-                  {row.base.workedDays ? formatMoney(row.base.revenuePerDay) : '—'}
-                </td>
+                <small>
+                  {t('за рабочий день')}: {perWorkedDay(row.current)} · {t('было')} {perWorkedDay(row.base)}
+                </small>
               )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {!rows.length && <p className="muted">{t('Продаж в этих периодах нет.')}</p>}
-    </div>
+            </span>
+            <span className="comparison-row-value">
+              <strong>{formatMoney(row.current.revenue)}</strong>
+              <Change
+                value={row.revenueDelta}
+                text={signed(row.revenueDelta)}
+                pct={percent(row.revenuePct, row.current.revenue)}
+              />
+            </span>
+            <span
+              className="comparison-bar is-share"
+              style={share(row.current.revenue, largest)}
+              aria-hidden="true"
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -191,10 +301,15 @@ export function PeriodComparison({ from, to }: { from: string; to: string }) {
   );
   const { value, error, loading } = useComparison(current, base);
   const d = value?.decomposition;
+  const totals = value ? totalRows(value.current, value.base) : [];
+  const empty =
+    !!value && !value.current.revenue && !value.current.units && !value.base.revenue && !value.base.units;
   return (
     <section className="panel comparison-panel">
-      <h2>{t('Сравнение периодов')}</h2>
-      <p className="muted">
+      <div className="section-title">
+        <h2>{t('Сравнение периодов')}</h2>
+      </div>
+      <p className="muted comparison-hint">
         {t(
           'Сравнение показывает, что изменилось, но не доказывает причину: на продажи влияют погода, события, наличие и цены вместе.',
         )}
@@ -211,84 +326,77 @@ export function PeriodComparison({ from, to }: { from: string; to: string }) {
         {kind === 'custom' && (
           <>
             <Field label="База: с">
-              <input
-                type="date"
+              <DatePicker
+                label="База: с"
                 max={businessToday()}
                 value={customFrom}
-                onChange={(e) => e.target.value && setCustomFrom(e.target.value)}
+                onChange={(value) => value && setCustomFrom(value)}
               />
             </Field>
             <Field label="База: по">
-              <input
-                type="date"
+              <DatePicker
+                label="База: по"
                 min={customFrom}
                 max={businessToday()}
                 value={customTo}
-                onChange={(e) => e.target.value && setCustomTo(e.target.value)}
+                onChange={(value) => value && setCustomTo(value)}
               />
             </Field>
           </>
         )}
       </div>
-      <p className="muted">
-        {current.from} — {current.to} {t('против')} {base.from} — {base.to}
-      </p>
+      <div className="comparison-periods">
+        <div className="is-current">
+          <span>{t('Текущий период')}</span>
+          <strong>{range(current)}</strong>
+        </div>
+        <span className="comparison-versus">{t('против')}</span>
+        <div className="is-base">
+          <span>{t('База')}</span>
+          <strong>{range(base)}</strong>
+        </div>
+      </div>
       {error && <p role="alert">{t(error)}</p>}
       {loading && <LoadingStatus label="Считаем сравнение…" />}
-      {value && d && (
+      {empty && (
+        <div className="comparison-empty" role="status">
+          <BarChart3 size={28} aria-hidden="true" />
+          <strong>{t('В обоих периодах нет продаж')}</strong>
+          <span>{t('Выберите другой месяц или базу для сравнения.')}</span>
+        </div>
+      )}
+      {value && d && !empty && (
         <>
-          <TotalsTable current={value.current} base={value.base} />
+          <TotalCards rows={totals} />
           {(value.unknownCostOperations.current > 0 || value.unknownCostOperations.base > 0) && (
-            <p className="muted" role="note">
+            <p className="comparison-warning" role="note">
               {t('Часть продаж без известной себестоимости: валовая прибыль по ним завышена. Сейчас / база:')}{' '}
               {value.unknownCostOperations.current} / {value.unknownCostOperations.base}
             </p>
           )}
-          <div className="table-scroll">
-            <table
-              className="data-table comparison-table"
-              aria-label={t('Из чего сложилось изменение выручки')}
-            >
-              <caption>{t('Из чего сложилось изменение выручки')}</caption>
-              <tbody>
-                {(
-                  [
-                    ['Количество (столько же позиций по прежней средней цене)', d.volume],
-                    ['Ассортимент (сдвиг между дешёвыми и дорогими позициями)', d.mix],
-                    ['Цена (изменение цен у позиций в обоих периодах)', d.price],
-                    ['Новые и ушедшие позиции', d.range],
-                  ] as const
-                ).map(([label, amount]) => (
-                  <tr key={label}>
-                    <td>{t(label)}</td>
-                    <td>{signed(amount)}</td>
-                  </tr>
-                ))}
-                <tr className="comparison-sum">
-                  <th scope="row">{t('Изменение выручки')}</th>
-                  <th>{signed(d.delta)}</th>
-                </tr>
-              </tbody>
-            </table>
+          <div className="comparison-details">
+            <Decomposition d={d} totals={[value.current, value.base]} />
+            <DimensionList
+              title="По дням недели"
+              rows={value.weekdays}
+              label={(row) => weekday(row.key)}
+              perDay
+            />
+            <DimensionList
+              title="По часам (время Еревана)"
+              rows={value.hours}
+              label={(row) =>
+                row.key === 'unknown' ? t('Время неизвестно (внесено позже)') : `${row.key}:00`
+              }
+            />
+            <DimensionList
+              title="По категориям"
+              rows={value.categories}
+              label={(row) =>
+                row.key === 'alcohol' ? t('Алкоголь в розлив') : t(categoryLabel(row.key as never))
+              }
+            />
           </div>
-          <DimensionTable
-            title="По дням недели"
-            rows={value.weekdays}
-            label={(row) => weekday(row.key)}
-            perDay
-          />
-          <DimensionTable
-            title="По часам (время Еревана)"
-            rows={value.hours}
-            label={(row) => (row.key === 'unknown' ? t('Время неизвестно (внесено позже)') : `${row.key}:00`)}
-          />
-          <DimensionTable
-            title="По категориям"
-            rows={value.categories}
-            label={(row) =>
-              row.key === 'alcohol' ? t('Алкоголь в розлив') : t(categoryLabel(row.key as never))
-            }
-          />
         </>
       )}
     </section>

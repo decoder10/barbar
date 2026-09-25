@@ -436,7 +436,36 @@
   border-radius: 6px;
 }
 
-.photo-picker-preview .cocktail-art {
+// The owner's own photo: upload / return actions under the picker summary or the stock item name.
+.own-photo-field {
+  margin: 0 0 12px;
+}
+
+.own-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.own-photo-help {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.own-photo-error {
+  margin: 8px 0 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.own-photo-stock .own-photo-field,
+.photo-picker[open] > .own-photo-field {
+  margin: 0 12px 12px;
+}
+
+.photo-picker-preview .cocktail-art,
+.photo-picker-preview .bottle-art {
   width: 100%;
   height: 100%;
   max-height: none;
@@ -567,4 +596,114 @@
 
 .modal label.form-help {
   line-height: 1.5;
+}
+
+/* Step-by-step dialogs (`ui/form-steps.tsx`): numbered steps joined by a line; finished steps are ticked. */
+.form-steps-nav {
+  display: grid;
+  grid-template-columns: repeat(var(--steps), minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.form-steps-nav li {
+  position: relative;
+  min-width: 0;
+}
+
+.form-steps-nav li + li::before {
+  content: '';
+  position: absolute;
+  top: 17px;
+  left: calc(-50% + 10px);
+  right: calc(50% + 18px);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--line);
+  transition: background 0.18s;
+}
+
+.form-steps-nav li:is(.done, .active)::before {
+  background: var(--pink);
+}
+
+.form-steps-nav button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 2px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.form-step-dot {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    color 0.18s;
+}
+
+.form-step-title {
+  overflow-wrap: anywhere;
+}
+
+.form-steps-nav :is(.active, .done) button {
+  color: var(--text);
+}
+
+.form-steps-nav .active .form-step-dot {
+  border-color: #ad4d78;
+  background: #ad4d78;
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--pink-light);
+}
+
+.form-steps-nav .done .form-step-dot {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.form-steps-nav button:hover:not([aria-current]) .form-step-dot {
+  border-color: var(--pink);
+}
+
+.form-step:focus {
+  outline: none;
+}
+
+.form-step[hidden] {
+  display: none;
+}
+
+.form-steps-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.form-steps-footer > .button {
+  flex: 1;
+  min-height: 46px;
+}
+
+.form-steps-footer > .secondary {
+  flex: 0 0 auto;
+  min-width: 112px;
 }

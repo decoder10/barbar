@@ -9,6 +9,12 @@
   mix-blend-mode: multiply;
 }
 
+// The owner's own photos are whole scenes, not packshots on white: no inset and no blending.
+.real-photo.own-photo img {
+  padding: 0;
+  mix-blend-mode: normal;
+}
+
 .card-image {
   background: var(--surface);
 }

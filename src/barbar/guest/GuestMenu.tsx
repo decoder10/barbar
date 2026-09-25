@@ -15,15 +15,20 @@ import {
   type MenuCartControls,
 } from './menu-parts';
 import { t } from '../presentation/i18n/runtime';
+import type { GuestInitial } from './guest-initial';
 import { useGuestMenu } from './use-guest-menu';
 import { favoriteKey, useGuestPreferences } from './use-guest-preferences';
-import './guest-menu.scss';
 
 const { copy, languages } = barConfig.guest;
 const wideQuery = '(min-width: 1280px)';
-export default function GuestMenuPage() {
-  const { menu, error, reload } = useGuestMenu();
-  const preferences = useGuestPreferences();
+/**
+ * The public menu. The server renders it with `initial` (`netlify/lib/guest-menu-page.tsx`) and the browser
+ * hydrates the same state, so the first render reads nothing from `window` or storage. Styles are
+ * imported by the entry (`src/guest.tsx`).
+ */
+export default function GuestMenuPage({ initial }: { initial?: GuestInitial }) {
+  const { menu, error, reload } = useGuestMenu(initial?.menu);
+  const preferences = useGuestPreferences(initial);
   const guestOrder = useGuestOrder(menu);
   const { language, setLanguage, theme, setTheme, view, setView, favorites, toggleFavorite, clearFavorites } =
     preferences;
@@ -32,7 +37,8 @@ export default function GuestMenuPage() {
   const [target, setTarget] = useState<GuestSectionId | null>(null);
   const [tab, setTab] = useState<'menu' | 'favorites' | 'cart'>('menu');
   // The cart lives in the right column on wide screens and in its own tab below: render it once.
-  const [wide, setWide] = useState(() => window.matchMedia(wideQuery).matches);
+  // The server cannot know the width: a hydrated page starts narrow and moves the cart after mounting.
+  const [wide, setWide] = useState(() => !initial && window.matchMedia(wideQuery).matches);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const chips = useRef<HTMLDivElement>(null);
   const ready = !!menu && preferences.ready;
@@ -57,6 +63,7 @@ export default function GuestMenuPage() {
   const currentSection = active || sections[0]?.id || null;
   useEffect(() => {
     const query = window.matchMedia(wideQuery);
+    setWide(query.matches);
     const resize = () => {
       setWide(query.matches);
       if (query.matches) setTab('menu');

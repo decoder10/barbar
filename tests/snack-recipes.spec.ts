@@ -41,6 +41,8 @@ test('snack recipes use snack products, their units and a collapsed own-category
   await picker.getByRole('button', { name: 'Изображение: Сыр с мёдом', exact: true }).click();
   await expect(picker.locator('summary')).toContainText('Сыр с мёдом');
 
+  const next = dialog.getByRole('button', { name: 'Далее', exact: true });
+  await next.click();
   await dialog.getByRole('button', { name: 'Добавить ингредиент', exact: true }).click();
   const first = dialog.getByLabel('Ингредиент 1', { exact: true });
   await expect(first).toHaveValue('');
@@ -53,6 +55,7 @@ test('snack recipes use snack products, their units and a collapsed own-category
   const cheese = dialog.getByLabel('Граммы ингредиента 2');
   await expect(cheese).toHaveValue('');
   await cheese.fill('80');
+  await next.click();
   await dialog.getByRole('button', { name: 'Сохранить позицию' }).click();
   await expect(dialog).toBeHidden();
   const saved = data.cocktails.find((c) => c.name === 'BarBar sandwich')!;

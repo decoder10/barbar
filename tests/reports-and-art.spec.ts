@@ -17,7 +17,10 @@ test('monthly analytics, pricing scenarios and cohesive set photographs', async 
   );
   await page.goto('/reports');
   await expect(page.getByRole('heading', { name: 'Лидеры продаж' })).toBeVisible();
-  await expect(page.locator('input[type=month]')).toHaveValue(businessToday().slice(0, 7));
+  await expect(page.getByRole('button', { name: /Месяц отчёта/ })).toHaveAttribute(
+    'data-value',
+    businessToday().slice(0, 7),
+  );
   await expect(page.locator('.price-advice-panel')).toContainText(data.cocktails[0].name);
   await page.getByLabel('Целевая маржа', { exact: true }).selectOption('60');
   await page.getByLabel('Показатель рейтинга').selectOption('quantity');
@@ -133,16 +136,18 @@ test('owner compares periods, reads the price history and sets purchasing parame
   const comparison = page.locator('.comparison-panel');
   await expect(comparison.getByRole('heading', { name: 'Сравнение периодов' })).toBeVisible();
   await expect(comparison).toContainText('не доказывает причину');
-  const totals = comparison.getByRole('table', { name: 'Итоги двух периодов' });
-  await expect(totals.locator('tbody tr').first()).toContainText('6 600');
-  await expect(totals.locator('tbody tr').first()).toContainText('4 400');
+  const revenue = comparison.locator('.comparison-cards li').first();
+  await expect(revenue).toContainText('6 600');
+  await expect(revenue).toContainText('4 400');
   // 3 against 2 portions at an unchanged price: the whole +2 200 is volume.
-  const parts = comparison.getByRole('table', { name: 'Из чего сложилось изменение выручки' });
-  await expect(parts.getByRole('row').filter({ hasText: /^Количество/ })).toContainText('+2 200');
-  await expect(parts.getByRole('row').filter({ hasText: /^Изменение выручки/ })).toContainText('+2 200');
-  await expect(comparison.getByRole('table', { name: 'По дням недели' })).toBeVisible();
-  await expect(comparison.getByRole('table', { name: 'По часам (время Еревана)' })).toBeVisible();
-  await expect(comparison.getByRole('table', { name: 'По категориям' })).toContainText('Коктейли');
+  const parts = comparison.getByRole('region', { name: 'Из чего сложилось изменение выручки' });
+  await expect(parts.locator('.comparison-parts > li').filter({ hasText: /^Количество/ })).toContainText(
+    '+2 200',
+  );
+  await expect(parts.locator('.comparison-sum')).toContainText('+2 200');
+  await expect(comparison.getByRole('region', { name: 'По дням недели' })).toBeVisible();
+  await expect(comparison.getByRole('region', { name: 'По часам (время Еревана)' })).toBeVisible();
+  await expect(comparison.getByRole('region', { name: 'По категориям' })).toContainText('Коктейли');
   const history = page.locator('.price-history');
   await expect(history).toContainText('История ведётся с');
   await expect(history).toContainText('2 000 ֏ → 2 200 ֏');

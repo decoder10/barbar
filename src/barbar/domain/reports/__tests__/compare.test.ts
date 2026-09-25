@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   basePeriod,
+  changePct,
   compare,
   decompose,
   periodFromSales,
@@ -135,6 +136,16 @@ describe('period comparison', () => {
     expect(weekdayOf('2026-09-20')).toBe(7);
     expect(saleHour(sales[3])).toBe('unknown');
     expect(saleHour(sales[0])).toBe('19');
+  });
+});
+
+describe('change in percent', () => {
+  it('rounds to one decimal and has no percent against an empty base', () => {
+    expect(changePct(6600, 4400)).toBe(50);
+    expect(changePct(3000, 4000)).toBe(-25);
+    expect(changePct(1000, 3000)).toBe(-66.7);
+    expect(changePct(500, 500)).toBe(0);
+    expect(changePct(500, 0)).toBeNull();
   });
 });
 

@@ -68,6 +68,18 @@
   text-decoration: underline;
 }
 
+// One chevron for every workspace dropdown, inset from the right edge in both themes.
+// `:not([size])` keeps listboxes plain and lifts this above `.field select`-style padding and backgrounds.
+select:not([multiple]):not([size]) {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 36px;
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
 .spinner {
   width: 19px;
   height: 19px;

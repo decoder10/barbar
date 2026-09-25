@@ -5,6 +5,7 @@ import { fixtureData } from '../../tests/fixtures';
 import { auth, handleBarApi, identity } from '../../tests/identity-fixture';
 import { handleBatches } from './queries/batches';
 import { handleReport } from './queries/report';
+import { staffData } from './barbar-access';
 import { sessionCookie } from './barbar-auth';
 import type { Repository } from './barbar-repository';
 
@@ -477,4 +478,19 @@ describe('repeating an order and the owner-only reports', () => {
     expect((await batches()).status).toBe(401);
     expect((await batches('barbar')).status).toBe(403);
   });
+});
+
+it('gives staff the owner photo name with the item, and nothing private with it', () => {
+  const data = fixtureData();
+  const photo = 'u-0123456789ab-640x960';
+  const cocktail = data.cocktails.find((c) => c.price > 0)!;
+  const drink = data.alcohol.find((a) => a.category === 'alcohol')!;
+  cocktail.photo = photo;
+  drink.photo = photo;
+  const staff = staffData(data);
+  expect(staff.recipes.find((r) => r.id === cocktail.id)!.photo).toBe(photo);
+  expect(staff.products.find((p) => p.kind === 'cocktail' && p.id === cocktail.id)!.photo).toBe(photo);
+  expect(staff.products.find((p) => p.kind === 'alcohol' && p.id === drink.id)!.photo).toBe(photo);
+  expect(staff.ingredients.find((i) => i.id === drink.id)!.photo).toBe(photo);
+  noPrivateFinancialData(staff);
 });

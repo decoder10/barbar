@@ -264,7 +264,6 @@
 }
 
 /* Period comparison and price history */
-.comparison-panel .table-scroll,
 .price-history .table-scroll {
   margin-top: 12px;
 }
@@ -278,6 +277,370 @@
 
   .comparison-sum th {
     border-top: 1px solid var(--line);
+  }
+}
+
+/* «Сравнение периодов»: which periods, three headline cards, then tables with coloured changes. */
+.comparison-panel {
+  > .comparison-hint,
+  .comparison-hint {
+    margin: 0 0 16px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  }
+
+  .field {
+    font-size: 14px;
+
+    select,
+    input {
+      font-size: 14px;
+    }
+  }
+
+  .comparison-periods {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+    margin: 0 0 20px;
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1 1 200px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface-muted);
+    }
+
+    span {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    strong {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .is-current {
+      border-color: var(--pink);
+      box-shadow: inset 3px 0 0 var(--pink);
+    }
+  }
+
+  .comparison-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    gap: 12px;
+    margin: 0 0 20px;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      padding: 14px 16px;
+      background: var(--surface-muted);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .comparison-card-label,
+    .comparison-card-base {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    strong {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .comparison-change {
+      margin-top: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .is-up {
+      background: var(--success-surface);
+    }
+
+    .is-down {
+      background: var(--danger-surface);
+    }
+
+    .is-flat {
+      background: var(--surface);
+    }
+  }
+
+  .comparison-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+
+    svg {
+      flex: none;
+    }
+  }
+
+  .is-up {
+    color: var(--success);
+  }
+
+  .is-down {
+    color: var(--danger);
+  }
+
+  .is-flat,
+  .is-neutral {
+    color: var(--muted);
+  }
+
+  .comparison-warning {
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    border: 1px solid var(--warning);
+    border-radius: 10px;
+    background: var(--warning-surface);
+    color: var(--warning);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Cost, portions and working days: the same card shape, smaller, in one row. */
+  .comparison-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    gap: 10px;
+    margin: -8px 0 20px;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .comparison-card-label,
+    .comparison-card-base {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    strong {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .comparison-change {
+      margin-top: 4px;
+      font-size: 14px;
+    }
+  }
+
+  .comparison-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 32px 16px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    background: var(--surface-muted);
+    text-align: center;
+
+    svg {
+      color: var(--muted);
+    }
+
+    strong {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    span {
+      font-size: 14px;
+      color: var(--muted);
+    }
+  }
+
+  /* The breakdown and the weekday, hour and category sections: two cards per row on a computer. */
+  .comparison-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+    align-items: start;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .comparison-section {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-muted);
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 6px 12px;
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+
+      &:first-child {
+        border-top: 0;
+      }
+    }
+
+    .comparison-row-name {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+
+      strong {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      small {
+        font-size: 14px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+    }
+
+    .comparison-row-value {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      text-align: right;
+
+      strong {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+    }
+
+    .comparison-change {
+      font-size: 14px;
+    }
+  }
+
+  .comparison-bar {
+    grid-column: 1 / -1;
+    display: block;
+    width: calc(var(--share) * 100%);
+    height: 6px;
+    border-radius: 3px;
+    background: currentColor;
+    opacity: 0.55;
+
+    &.is-share {
+      height: 4px;
+      background: var(--pink);
+      opacity: 0.7;
+    }
+  }
+
+  .comparison-sum {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 12px;
+    margin: 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+
+    strong {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+  }
+}
+
+@media (max-width: 560px) {
+  .comparison-panel {
+    .comparison-periods {
+      flex-direction: column;
+      align-items: stretch;
+
+      > div {
+        flex-basis: auto;
+      }
+
+      .comparison-versus {
+        text-align: center;
+      }
+    }
+
+    /* On a phone the amount and its change go under the name, so names keep the full width. */
+    .comparison-section {
+      padding: 12px;
+
+      li {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .comparison-row-value {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px 12px;
+      }
+    }
   }
 }
 

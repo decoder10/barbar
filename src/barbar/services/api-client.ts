@@ -48,6 +48,7 @@ interface ApiResponses {
   };
   '/api/barbar/auth': { authenticated: boolean; user: UserProfile | null; role: Role | null };
   '/api/barbar/favorites': { user: UserProfile };
+  '/api/barbar/photos': { photo: string };
   '/api/barbar/users': { users: UserProfile[]; user: UserProfile };
   '/api/barbar': Partial<StockResponse> & {
     role: Role;

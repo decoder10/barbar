@@ -3,10 +3,11 @@ import { LoadingStatus } from '../ui/loading';
 import { useServerReport } from '../features/reports/use-server-report';
 import { useSessionFilter } from '../presentation/use-session-filter';
 import { menuQuantitySummary } from '../domain/quantity-summary';
-import { ArrowDownToLine, ArrowUpRight, Banknote, CalendarDays, GlassWater, ReceiptText } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpRight, Banknote, GlassWater, ReceiptText } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { download, ExportButton } from '../ui/export';
+import { DatePicker, MonthPicker } from '../ui/date-picker';
 import { Empty, Metric, PageHeading } from '../ui/layout';
 import { displayCurrency, formatMoney as money } from '../presentation/currency/format-money';
 import { businessDayHint, businessToday } from '../domain/business-day';
@@ -125,60 +126,48 @@ export default function Reports() {
             {t('Период')}
           </button>
         </div>
-        <label className="date-control">
-          <CalendarDays size={17} />
-          {t(
-            mode === 'range' ? (
-              <>
-                <input
-                  type="date"
-                  aria-label={t('Начало периода')}
-                  value={from}
-                  max={to}
-                  onChange={(e) => {
-                    if (e.target.value && e.target.value <= to) setFrom(e.target.value);
-                  }}
-                />
-                <span>—</span>
-                <input
-                  type="date"
-                  aria-label={t('Конец периода')}
-                  value={to}
-                  min={from}
-                  max={businessToday()}
-                  onChange={(e) => {
-                    if (e.target.value && e.target.value >= from && e.target.value <= businessToday())
-                      setTo(e.target.value);
-                  }}
-                />
-              </>
-            ) : mode === 'day' ? (
-              <input
-                type="date"
-                aria-label={t('День отчёта')}
+        <div className={`report-date ${mode === 'range' ? 'is-range' : ''}`}>
+          {mode === 'range' ? (
+            <>
+              <DatePicker
+                label="Начало периода"
+                value={from}
+                max={to}
+                onChange={(value) => {
+                  if (value && value <= to) setFrom(value);
+                }}
+              />
+              <span aria-hidden>—</span>
+              <DatePicker
+                label="Конец периода"
+                value={to}
+                min={from}
                 max={businessToday()}
-                value={day}
-                onChange={(e) => {
-                  if (e.target.value && e.target.value <= businessToday()) {
-                    setDay(e.target.value);
-                  }
+                onChange={(value) => {
+                  if (value && value >= from && value <= businessToday()) setTo(value);
                 }}
               />
-            ) : (
-              <input
-                type="month"
-                aria-label={t('Месяц отчёта')}
-                max={businessToday().slice(0, 7)}
-                value={month}
-                onChange={(e) => {
-                  if (/^\d{4}-\d{2}$/.test(e.target.value) && e.target.value <= businessToday().slice(0, 7)) {
-                    setMonth(e.target.value);
-                  }
-                }}
-              />
-            ),
+            </>
+          ) : mode === 'day' ? (
+            <DatePicker
+              label="День отчёта"
+              value={day}
+              max={businessToday()}
+              onChange={(value) => {
+                if (value && value <= businessToday()) setDay(value);
+              }}
+            />
+          ) : (
+            <MonthPicker
+              label="Месяц отчёта"
+              value={month}
+              max={businessToday().slice(0, 7)}
+              onChange={(value) => {
+                if (/^\d{4}-\d{2}$/.test(value) && value <= businessToday().slice(0, 7)) setMonth(value);
+              }}
+            />
           )}
-        </label>
+        </div>
         <span className="muted">
           {t(businessDayHint)} · {displayCurrency()}
         </span>

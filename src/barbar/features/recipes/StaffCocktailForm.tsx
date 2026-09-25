@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Field } from '../../ui/fields';
 import { Modal, Submit } from '../../ui/modal';
+import { FormSteps } from '../../ui/form-steps';
 import { recipeCategories, unitLabel } from '../../domain/model';
 import { barConfig } from '../../config';
 import { mlPerPiece } from '../../domain/recipe-ingredients';
@@ -37,7 +38,7 @@ export default function StaffCocktailForm({ close, recipe }: { close: () => void
       }
       close={close}
     >
-      <form
+      <FormSteps
         onSubmit={async (e) => {
           e.preventDefault();
           if (readonly) return;
@@ -57,113 +58,8 @@ export default function StaffCocktailForm({ close, recipe }: { close: () => void
           )
             close();
         }}
-      >
-        <Field label="Название позиции">
-          <input
-            required
-            maxLength={80}
-            disabled={!!recipe}
-            value={name}
-            placeholder={t('Например, Barbar Sunset')}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </Field>
-        <Field label="Категория меню">
-          <select
-            disabled={!!recipe}
-            value={menuCategory}
-            onChange={(e) => setCategory(e.target.value as MenuCategory)}
-          >
-            {(recipe ? recipeCategories : creatable).map((c) => (
-              <option key={c.id} value={c.id}>
-                {t(c.label)}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <PhotoPicker
-          value={{ name, category: menuCategory, image }}
-          onChange={setImage}
-          readOnly={!!recipe}
-        />
-        {isSet ? (
-          <>
-            <div className="ingredient-label">
-              <span>{t('Состав сета')}</span>
-              <small>{t('Настойки и количество шотов')}</small>
-            </div>
-            <p className="form-help">
-              {(recipe?.components || [])
-                .map(
-                  (p) =>
-                    `${staffData?.recipes.find((r) => r.id === p.cocktailId)?.name || p.cocktailId} × ${p.quantity}`,
-                )
-                .join(', ')}
-              {t(
-                recipe?.components?.length
-                  ? '. Состав сета меняет владелец.'
-                  : 'Состав сета настраивает владелец.',
-              )}
-            </p>
-          </>
-        ) : recipe?.noIngredients ? (
-          <p className="form-help">
-            {t('Позиция без ингредиентов: продаётся как есть, склад не списывается.')}
-          </p>
-        ) : (
-          <IngredientRows
-            ingredients={ingredients}
-            items={catalog}
-            category={menuCategory}
-            taken={new Set(ingredients.map((i) => i.alcoholId))}
-            disabled={readonly}
-            drinkDefault={50}
-            onChange={setIngredients}
-            note={(item, ingredient) => {
-              if (!ingredient.alcoholId || (item?.available || 0) + 1e-7 >= ingredient.ml) return null;
-              const perMl = mlPerPiece(item);
-              return (
-                <ShortageNote>
-                  {t(
-                    item?.available
-                      ? `Не хватает на порцию. В наличии: ${Math.round(item.available * (perMl || 1) * 100) / 100} ${perMl ? 'мл' : unitLabel(item.unit)}`
-                      : 'Нет в наличии',
-                  )}
-                </ShortageNote>
-              );
-            }}
-          />
-        )}
-        {!!recipe?.managedIngredientIds.length && (
-          <p className="form-help">
-            {t('Дополнительно настроены администратором:')}
-            {t(' ')}
-            {recipe.managedIngredientIds
-              .map((id) => staffData?.ingredients.find((a) => a.id === id)?.name)
-              .join(', ')}
-            .
-          </p>
-        )}
-        <Field label="Заметка о рецепте">
-          <input
-            readOnly={readonly}
-            maxLength={1000}
-            value={notes}
-            placeholder={t('Укажите выход порции, особенности приготовления…')}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </Field>
-        {readonly ? (
-          <p className="form-help">
-            {t('Позиция связана со складом. Для изменения состава обратитесь к администратору.')}
-          </p>
-        ) : (
-          <>
-            {!recipe && (
-              <p className="form-help">
-                {t('После настройки администратором коктейль станет доступен для продажи.')}
-              </p>
-            )}
+        submit={
+          readonly ? null : (
             <Submit
               disabled={
                 !name.trim() ||
@@ -175,9 +71,132 @@ export default function StaffCocktailForm({ close, recipe }: { close: () => void
             >
               {t('Сохранить позицию')}
             </Submit>
-          </>
-        )}
-      </form>
+          )
+        }
+        steps={[
+          {
+            title: 'Основное',
+            content: (
+              <>
+                <Field label="Название позиции">
+                  <input
+                    required
+                    maxLength={80}
+                    disabled={!!recipe}
+                    value={name}
+                    placeholder={t('Например, Barbar Sunset')}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </Field>
+                <Field label="Категория меню">
+                  <select
+                    disabled={!!recipe}
+                    value={menuCategory}
+                    onChange={(e) => setCategory(e.target.value as MenuCategory)}
+                  >
+                    {(recipe ? recipeCategories : creatable).map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {t(c.label)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <PhotoPicker
+                  value={{ name, category: menuCategory, image, photo: recipe?.photo }}
+                  onChange={setImage}
+                  readOnly={!!recipe}
+                />
+              </>
+            ),
+          },
+          {
+            title: 'Состав',
+            content: (
+              <>
+                {isSet ? (
+                  <>
+                    <div className="ingredient-label">
+                      <span>{t('Состав сета')}</span>
+                      <small>{t('Настойки и количество шотов')}</small>
+                    </div>
+                    <p className="form-help">
+                      {(recipe?.components || [])
+                        .map(
+                          (p) =>
+                            `${staffData?.recipes.find((r) => r.id === p.cocktailId)?.name || p.cocktailId} × ${p.quantity}`,
+                        )
+                        .join(', ')}
+                      {t(
+                        recipe?.components?.length
+                          ? '. Состав сета меняет владелец.'
+                          : 'Состав сета настраивает владелец.',
+                      )}
+                    </p>
+                  </>
+                ) : recipe?.noIngredients ? (
+                  <p className="form-help">
+                    {t('Позиция без ингредиентов: продаётся как есть, склад не списывается.')}
+                  </p>
+                ) : (
+                  <IngredientRows
+                    ingredients={ingredients}
+                    items={catalog}
+                    category={menuCategory}
+                    taken={new Set(ingredients.map((i) => i.alcoholId))}
+                    disabled={readonly}
+                    drinkDefault={50}
+                    onChange={setIngredients}
+                    note={(item, ingredient) => {
+                      if (!ingredient.alcoholId || (item?.available || 0) + 1e-7 >= ingredient.ml)
+                        return null;
+                      const perMl = mlPerPiece(item);
+                      return (
+                        <ShortageNote>
+                          {t(
+                            item?.available
+                              ? `Не хватает на порцию. В наличии: ${Math.round(item.available * (perMl || 1) * 100) / 100} ${perMl ? 'мл' : unitLabel(item.unit)}`
+                              : 'Нет в наличии',
+                          )}
+                        </ShortageNote>
+                      );
+                    }}
+                  />
+                )}
+                {!!recipe?.managedIngredientIds.length && (
+                  <p className="form-help">
+                    {t('Дополнительно настроены администратором:')}
+                    {t(' ')}
+                    {recipe.managedIngredientIds
+                      .map((id) => staffData?.ingredients.find((a) => a.id === id)?.name)
+                      .join(', ')}
+                    .
+                  </p>
+                )}
+                <Field label="Заметка о рецепте">
+                  <input
+                    readOnly={readonly}
+                    maxLength={1000}
+                    value={notes}
+                    placeholder={t('Укажите выход порции, особенности приготовления…')}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </Field>
+                {readonly ? (
+                  <p className="form-help">
+                    {t('Позиция связана со складом. Для изменения состава обратитесь к администратору.')}
+                  </p>
+                ) : (
+                  !recipe && (
+                    <p className="form-help">
+                      {t('После настройки администратором коктейль станет доступен для продажи.')}
+                    </p>
+                  )
+                )}
+              </>
+            ),
+          },
+        ]}
+      />
     </Modal>
   );
 }

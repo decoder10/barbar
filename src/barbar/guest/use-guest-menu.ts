@@ -11,9 +11,12 @@ function savedMenu(): GuestMenu | null {
   }
 }
 
-/** The public entry deliberately has no dependency on the authenticated workspace client. */
-export function useGuestMenu() {
-  const [menu, setMenu] = useState<GuestMenu | null>(savedMenu);
+/**
+ * The public entry deliberately has no dependency on the authenticated workspace client. It starts from the
+ * server-rendered menu (or this device's last menu) and always asks `/api/menu` for current prices.
+ */
+export function useGuestMenu(initial?: GuestMenu) {
+  const [menu, setMenu] = useState<GuestMenu | null>(() => initial || savedMenu());
   const [error, setError] = useState(false);
   const current = useRef<AbortController | null>(null);
   const load = useCallback(async () => {

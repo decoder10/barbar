@@ -32,7 +32,7 @@ export function ShiftReport({ from, to }: { from: string; to: string }) {
     };
   }, [data, from, to]);
   return (
-    <section className="panel">
+    <section className="panel shift-report">
       <div className="section-title">
         <h2>{t('Чеки и смены')}</h2>
         <button
@@ -75,44 +75,85 @@ export function ShiftReport({ from, to }: { from: string; to: string }) {
           {t('Скачать CSV смен')}
         </button>
       </div>
-      <p className="muted">
+      <p className="muted shift-report-hint">
         {t('Чеки учитываются по дню открытия. Продажи без заказа не входят в средний чек.')}
       </p>
       {error && <p role="alert">{t(error)}</p>}
+      {!result && !error && <p className="muted shift-report-hint">{t('Загружаем смены…')}</p>}
       {result && (
         <>
-          <p>
-            {t('Оплаченных чеков')}: {result.totals.count} · {t('Средний чек')}:{' '}
-            {money(result.totals.average)}
-          </p>
-          <div className="guest-request-actions">
-            {paymentMethods.map((m) => (
-              <span key={m.id}>
-                {m.label[currentLanguage()]}: {money(result.totals.payments[m.id] || 0)}
-              </span>
-            ))}
-          </div>
-          <div className="shift-history">
-            <table>
-              <thead>
-                <tr>
-                  {['День смены', 'Оплаченных чеков', 'Выручка', 'Расхождение'].map((label) => (
-                    <th key={label}>{t(label)}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {result.shifts.map((s) => (
-                  <tr key={s.id}>
-                    <td>{s.businessDay}</td>
-                    <td>{s.count}</td>
-                    <td>{money(s.revenue)}</td>
-                    <td>{money(s.difference)}</td>
+          <dl className="shift-report-totals">
+            <div>
+              <dt>{t('Оплаченных чеков')}</dt>
+              <dd>{result.totals.count}</dd>
+            </div>
+            <div>
+              <dt>{t('Средний чек')}</dt>
+              <dd>{money(result.totals.average)}</dd>
+              <dd className="shift-report-note">{t('Без продаж без заказа')}</dd>
+            </div>
+            <div>
+              <dt>{t('Выручка по чекам')}</dt>
+              <dd>{money(result.totals.revenue)}</dd>
+            </div>
+          </dl>
+          <h3 className="shift-report-subtitle">{t('Способы оплаты')}</h3>
+          <ul className="shift-report-payments">
+            {paymentMethods.map((m) => {
+              const amount = result.totals.payments[m.id] || 0;
+              return (
+                <li key={m.id} className={amount ? undefined : 'is-empty'}>
+                  <span>{m.label[currentLanguage()]}</span>
+                  <strong>{money(amount)}</strong>
+                </li>
+              );
+            })}
+          </ul>
+          <h3 className="shift-report-subtitle">{t('Смены за период')}</h3>
+          {result.shifts.length ? (
+            <div className="table-scroll">
+              <table className="data-table shift-report-table" aria-label={t('Смены за период')}>
+                <thead>
+                  <tr>
+                    <th>{t('День смены')}</th>
+                    {['Оплаченных чеков', 'Выручка', 'Пересчитано', 'Расхождение'].map((label) => (
+                      <th key={label} className="num">
+                        {t(label)}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {result.shifts.map((s) => {
+                    const d = s.difference;
+                    const [tone, note] =
+                      d > 0
+                        ? ['is-surplus', t('Излишек')]
+                        : d < 0
+                          ? ['is-shortage', t('Недостача')]
+                          : ['is-even', t('Сходится')];
+                    return (
+                      <tr key={s.id}>
+                        <td>{s.businessDay}</td>
+                        <td className="num">{s.count}</td>
+                        <td className="num">{money(s.revenue)}</td>
+                        <td className="num">{money(s.countedCash)}</td>
+                        <td className={`num shift-difference ${tone}`}>
+                          <strong>
+                            {d > 0 ? '+' : ''}
+                            {money(d)}
+                          </strong>
+                          <small>{note}</small>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="muted shift-report-hint">{t('Смен за период нет')}</p>
+          )}
         </>
       )}
     </section>

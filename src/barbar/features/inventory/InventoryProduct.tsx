@@ -10,7 +10,7 @@ export function InventoryProduct({
   drink,
 }: {
   drink: Pick<Alcohol, 'name' | 'category' | 'color' | 'bottleSizeMl'> &
-    Partial<Pick<Alcohol, 'unit' | 'menuCategory' | 'group'>>;
+    Partial<Pick<Alcohol, 'unit' | 'menuCategory' | 'group' | 'photo'>>;
 }) {
   const label = inventoryGroups.find(([id]) => id === inventoryGroup(drink))?.[1] || 'Прочее';
   return (

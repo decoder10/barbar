@@ -1,5 +1,10 @@
 import { choicePhotoKey } from '../../../domain/catalog/legacy-images';
-import sources from './photo-manifest.json';
+import {
+  uploadedPhotoSize,
+  uploadedPhotoUrl,
+  uploadedPhotoWidths,
+} from '../../../domain/catalog/uploaded-photos';
+import manifest from './photo-manifest.json';
 export interface Photo {
   file: string;
   author: string;
@@ -8,7 +13,55 @@ export interface Photo {
   webp: string;
   avif: string;
 }
-export const photos: Record<string, Photo> = sources;
+type ManifestEntry = [
+  file: string,
+  author: number,
+  width: number,
+  height: number,
+  webp: string,
+  avif: string,
+];
+// `scripts/photo-manifest.mjs` stores each variant as `<width>.<hash>` to keep the shared chunk small.
+const srcSet = (key: string, format: 'webp' | 'avif', variants: string) =>
+  variants
+    ? variants
+        .split(' ')
+        .map((variant) => {
+          const [width, hash] = variant.split('.');
+          return `/barbar/photos/optimized/${key}-${width}-${hash}.${format} ${width}w`;
+        })
+        .join(', ')
+    : '';
+export const photos: Record<string, Photo> = Object.fromEntries(
+  Object.entries(manifest.p as unknown as Record<string, ManifestEntry>).map(
+    ([key, [file, author, width, height, webp, avif]]) => [
+      key,
+      {
+        file: file.startsWith('/') ? file : `/barbar/photos/${key}.webp?v=${file}`,
+        author: manifest.a[author],
+        width,
+        height,
+        webp: srcSet(key, 'webp', webp),
+        avif: srcSet(key, 'avif', avif),
+      },
+    ],
+  ),
+);
+/** The owner's own photo, served from file storage by name; the author is the venue itself. */
+export function uploadedPhoto(name: string): Photo | undefined {
+  const size = uploadedPhotoSize(name);
+  if (!size) return undefined;
+  return {
+    file: uploadedPhotoUrl(name, size.width),
+    author: 'Фото заведения',
+    width: size.width,
+    height: size.height,
+    webp: uploadedPhotoWidths(size.width)
+      .map((width) => `${uploadedPhotoUrl(name, width)} ${width}w`)
+      .join(', '),
+    avif: '',
+  };
+}
 export interface PhotoChoice {
   key: string;
   example?: boolean;

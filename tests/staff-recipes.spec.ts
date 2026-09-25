@@ -32,6 +32,7 @@ test('staff edits existing recipes and sees stock pictures and shortages without
   await expect(card.getByRole('img')).toBeVisible();
   await expect(card).toContainText('Не хватает: Gin Beefeater');
   await card.click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Далее', exact: true }).click();
   await expect(page.getByLabel('Миллилитры ингредиента 1')).toHaveValue('50');
   await expect(page.getByRole('dialog')).toContainText('Нет в наличии');
   await page.getByLabel('Миллилитры ингредиента 1').fill('60');

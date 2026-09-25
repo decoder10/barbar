@@ -27,6 +27,8 @@ export interface GuestMenuItem {
   /** Stored name, used only to choose the illustrative photo. */
   photoName: string;
   image: number;
+  /** The owner's own photo name; it replaces the illustrative one. */
+  photo?: string;
   category: GuestSectionId;
   serving?: 'glass' | 'bottle';
   prices: GuestPrice[];
@@ -88,6 +90,9 @@ export function guestMenu(
     if (existing) {
       existing.prices.push(price);
       if (glass) Object.assign(existing, { image: c.image, photoName: c.name, serving: 'glass' });
+      // The glass photo leads, as its illustrative image does; the bottle's own photo is the fallback.
+      const photo = glass ? c.photo || existing.photo : existing.photo || c.photo;
+      if (photo) existing.photo = photo;
       continue;
     }
     const item: GuestMenuItem = {
@@ -96,6 +101,7 @@ export function guestMenu(
       ...(split > 0 ? { group: base.slice(0, split) } : {}),
       photoName: c.name,
       image: c.image,
+      ...(c.photo ? { photo: c.photo } : {}),
       category,
       ...(glass ? { serving: 'glass' as const } : bottle ? { serving: 'bottle' as const } : {}),
       prices: [price],
@@ -110,6 +116,7 @@ export function guestMenu(
         name: a.name,
         photoName: a.name,
         image: 0,
+        ...(a.photo ? { photo: a.photo } : {}),
         category: 'alcohol',
         prices: [
           {

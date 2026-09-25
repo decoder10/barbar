@@ -56,7 +56,10 @@ export interface CatalogUpgradesConfig {
 export interface PresetsConfig {
   bottleSizesMl: number[];
   glassSizesMl: number[];
-  purchaseQuickAmounts: { pcs: number[]; bottle: number[]; volume: number[] };
+  /** Packages a product can be priced for instead of 1,000 ml/g (`volume`) or 1 piece (`pcs`). */
+  packSizes: { volume: number[]; pcs: number[] };
+  /** `packs` counts whole packages for products priced per package. */
+  purchaseQuickAmounts: { pcs: number[]; bottle: number[]; volume: number[]; packs: number[] };
   batchExpirySoonDays: number;
   cardPageSize: number;
   /** Sales window in days, ending on the chosen day, behind the «most sold first» order. */
@@ -244,6 +247,11 @@ export function validateConfig(config: BarConfig = barConfig, ledgerMenuCategori
   const p = config.presets;
   positive('bottleSizesMl', p.bottleSizesMl);
   positive('glassSizesMl', p.glassSizesMl);
+  for (const [unit, values] of Object.entries(p.packSizes)) {
+    positive(`packSizes.${unit}`, values);
+    if (values.some((n) => !Number.isInteger(n) || n > 10000))
+      problems.push(`packSizes.${unit}: whole numbers up to 10000 are required`);
+  }
   for (const [unit, values] of Object.entries(p.purchaseQuickAmounts))
     positive(`purchaseQuickAmounts.${unit}`, values);
   if (!(Number.isInteger(p.cardPageSize) && p.cardPageSize >= 1 && p.cardPageSize <= 200))

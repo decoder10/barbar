@@ -1,0 +1,244 @@
+@use 'mixins' as *;
+
+/* Month and day picker (`ui/date-picker.tsx`): a trigger, then a popover on computers or a bottom sheet on phones. */
+.date-picker {
+  position: relative;
+  min-width: 0;
+}
+
+.date-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  max-width: 100%;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 0.15s;
+
+  > svg {
+    flex-shrink: 0;
+    color: var(--muted);
+  }
+
+  > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .date-picker-chevron {
+    margin-left: auto;
+    transition: transform 0.15s;
+  }
+
+  &:hover,
+  &[aria-expanded='true'] {
+    border-color: var(--pink);
+  }
+
+  &[aria-expanded='true'] .date-picker-chevron {
+    transform: rotate(180deg);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--pink);
+    outline-offset: 2px;
+  }
+}
+
+/* Inside a form field the trigger fills the column like the other inputs. */
+.field .date-picker-trigger {
+  width: 100%;
+  height: 43px;
+  font-weight: 500;
+}
+
+.date-picker-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  width: 304px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 18px 50px #19273d33;
+
+  &.align-end {
+    left: auto;
+    right: 0;
+  }
+
+  &.in-sheet {
+    position: static;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+}
+
+.date-picker-head {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+
+  strong {
+    text-align: center;
+    font-size: 15px;
+  }
+
+  button {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: var(--text);
+  }
+
+  button:hover:not(:disabled) {
+    background: var(--pink-light);
+    color: var(--pink);
+  }
+
+  button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.date-picker-weekdays,
+.date-picker-grid.days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.date-picker-weekdays span {
+  padding: 4px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.date-picker-grid.months {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.date-picker-grid button {
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.12s;
+
+  &:hover:not(:disabled):not(.selected) {
+    background: var(--pink-light);
+    color: var(--pink);
+  }
+
+  &.today {
+    box-shadow: inset 0 0 0 1px var(--pink);
+  }
+
+  &.outside {
+    color: var(--muted);
+  }
+
+  &.selected {
+    background: var(--pink);
+    color: var(--surface);
+    font-weight: 700;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--pink);
+    outline-offset: 1px;
+  }
+}
+
+.date-picker-grid.months button {
+  min-height: 44px;
+}
+
+.date-picker-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+
+  .button {
+    min-height: 40px;
+    font-size: 14px;
+  }
+}
+
+/* Report filter: one trigger, or two with a dash for a range. */
+.report-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  > span {
+    color: var(--muted);
+  }
+}
+
+@include below(760px) {
+  .date-picker-grid button {
+    min-height: 44px;
+    font-size: 15px;
+  }
+
+  .date-picker-foot .button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .report-date {
+    width: 100%;
+
+    > .date-picker {
+      flex: 1;
+    }
+
+    .date-picker-trigger {
+      width: 100%;
+      min-height: 44px;
+    }
+  }
+
+  /* Two dates share one row: without icons both fit whole. */
+  .report-date.is-range .date-picker-trigger {
+    justify-content: center;
+    padding: 6px 10px;
+
+    > svg {
+      display: none;
+    }
+  }
+}

@@ -87,7 +87,8 @@ export function CocktailCard({
   icon,
   unavailable,
 }: {
-  cocktail: Pick<Cocktail, 'name' | 'image' | 'category' | 'serving' | 'price'>;
+  cocktail: Pick<Cocktail, 'name' | 'image' | 'category' | 'serving' | 'price'> &
+    Partial<Pick<Cocktail, 'photo'>>;
   detail: ReactNode;
   footer: ReactNode;
   action: () => void;
@@ -109,6 +110,7 @@ export function CocktailCard({
           name={cocktail.name}
           category={cocktail.category}
           serving={cocktail.serving}
+          photo={cocktail.photo}
         />
       }
       badge={categoryLabel(cocktail.category).toLocaleUpperCase()}
@@ -129,7 +131,7 @@ export function AlcoholCard({
   selling,
 }: {
   drink: Pick<Alcohol, 'name' | 'category' | 'color' | 'pricePerLiter'> &
-    Partial<Pick<Alcohol, 'menuCategory'>>;
+    Partial<Pick<Alcohol, 'menuCategory' | 'photo'>>;
   ml: number;
   action: () => void;
   /** On a selling screen an empty bottle cannot be poured. */

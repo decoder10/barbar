@@ -3,6 +3,7 @@ import alcoholDefaults from '../data/alcohol.json' with { type: 'json' };
 import cocktailDefaults from '../data/cocktails.json' with { type: 'json' };
 import salesDefaults from '../data/sales/initial.json' with { type: 'json' };
 import { maxMenuImage } from './catalog/legacy-images';
+import { uploadedPhotoValid } from './catalog/uploaded-photos';
 import { batchConsumption, batchRemaining, type BatchConsumption } from './batches';
 import { applyOperations, validateOperations } from './operations';
 import { businessToday } from './business-day';
@@ -283,8 +284,15 @@ function alcoholValid(a: Alcohol) {
         a.glassSizeMl > 0 &&
         !!a.bottleSizeMl &&
         a.glassSizeMl <= a.bottleSizeMl)) &&
+    (a.packSize === undefined ||
+      (a.category !== 'goods' &&
+        a.unit !== 'bottle' &&
+        Number.isInteger(a.packSize) &&
+        a.packSize > 0 &&
+        a.packSize <= 10000)) &&
     (a.glassPrice === undefined || number(a.glassPrice)) &&
     (a.guestHidden === undefined || typeof a.guestHidden === 'boolean') &&
+    (a.photo === undefined || uploadedPhotoValid(a.photo)) &&
     (a.favorite === undefined || a.favorite === true) &&
     (a.supplierId === undefined || identifier(a.supplierId)) &&
     (a.leadDays === undefined || daysValid(a.leadDays)) &&
@@ -346,6 +354,7 @@ function cocktailValid(c: Cocktail, data: BarData) {
     Number.isInteger(c.image) &&
     c.image >= 0 &&
     c.image <= maxMenuImage &&
+    (c.photo === undefined || uploadedPhotoValid(c.photo)) &&
     (c.category === undefined || categories.some((k) => k.id === c.category)) &&
     (c.notes === undefined || (typeof c.notes === 'string' && c.notes.length <= 1000)) &&
     (c.portion === undefined || (typeof c.portion === 'string' && c.portion.length <= 40)) &&

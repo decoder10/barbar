@@ -9,10 +9,14 @@
 [functions]
   node_bundler = "esbuild"
 
-[[redirects]]
-  from = "/menu"
-  to = "/menu.html"
-  status = 200
+# Owner photo uploads are optimised with sharp, a native module: ship it unbundled together with its
+# Linux binaries, which sharp loads by platform name.
+[functions."barbar-photos"]
+  external_node_modules = ["sharp"]
+  included_files = ["node_modules/@img/sharp-linux-x64/**", "node_modules/@img/sharp-libvips-linux-x64/**"]
+
+# `/menu` is rendered by `netlify/functions/barbar-menu-page.ts` (prices in the HTML); the built
+# `menu.html` stays its template and fallback.
 
 [[redirects]]
   from = "/*"

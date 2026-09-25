@@ -13,12 +13,16 @@ export interface Alcohol {
   bottleSizeMl?: number;
   glassSizeMl?: number;
   glassPrice?: number;
+  /** Outside goods and bottles: prices are entered per this package (500 ml, 10 pcs), stored per 1,000 ml/g or 1 pc. */
+  packSize?: number;
   // Prices are per bottle for bottled drinks; per 1,000 units otherwise.
   costPerLiter: number;
   pricePerLiter: number;
   color: string;
   /** Poured alcohol is listed in the public guest menu unless hidden. */
   guestHidden?: boolean;
+  /** The owner's own photo (`domain/catalog/uploaded-photos.ts`); the library photo otherwise. */
+  photo?: string;
   /** Owner's bar-wide favourite: a shortcut in the sales catalog for every role. */
   favorite?: true;
   /** Purchasing (owner only): supplier, own lead time, safety days and safety stock in the item's unit. */
@@ -65,6 +69,8 @@ export interface Cocktail {
   ingredients: Ingredient[];
   price: number;
   image: number;
+  /** The owner's own photo; replaces the library photo chosen by `image` wherever the item is shown. */
+  photo?: string;
 }
 /** A supplier and its default delivery time; an item may override it. */
 export interface Supplier {
@@ -292,6 +298,7 @@ export interface StaffProduct {
   name: string;
   category: MenuCategory | 'alcohol';
   image?: number;
+  photo?: string;
   available: number | null;
   ready: boolean;
 }
@@ -313,7 +320,7 @@ export type StaffSale = Pick<
 >;
 export interface StaffRecipe extends Pick<
   Cocktail,
-  'id' | 'name' | 'category' | 'image' | 'notes' | 'ingredients' | 'noIngredients' | 'components'
+  'id' | 'name' | 'category' | 'image' | 'photo' | 'notes' | 'ingredients' | 'noIngredients' | 'components'
 > {
   editable: boolean;
   managedIngredientIds: string[];
@@ -323,7 +330,16 @@ export interface StaffData {
   recipes: StaffRecipe[];
   ingredients: (Pick<
     Alcohol,
-    'id' | 'name' | 'unit' | 'category' | 'bottleSizeMl' | 'glassSizeMl' | 'color' | 'menuCategory' | 'group'
+    | 'id'
+    | 'name'
+    | 'unit'
+    | 'category'
+    | 'bottleSizeMl'
+    | 'glassSizeMl'
+    | 'color'
+    | 'menuCategory'
+    | 'group'
+    | 'photo'
   > & {
     available: number;
   })[];

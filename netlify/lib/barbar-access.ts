@@ -45,6 +45,7 @@ export function staffData(data: BarData): StaffData {
       name: c.name,
       category: c.category || 'cocktail',
       image: c.image,
+      ...(c.photo ? { photo: c.photo } : {}),
       notes: c.notes || '',
       ingredients: c.ingredients.map((i) => ({ alcoholId: i.alcoholId, ml: i.ml })),
       editable: !c.stockAlcoholId,
@@ -55,7 +56,7 @@ export function staffData(data: BarData): StaffData {
       managedIngredientIds: (c.extraCosts || []).map((i) => i.alcoholId),
     })),
     ingredients: data.alcohol.map(
-      ({ id, name, unit, category, bottleSizeMl, glassSizeMl, color, menuCategory, group }) => ({
+      ({ id, name, unit, category, bottleSizeMl, glassSizeMl, color, menuCategory, group, photo }) => ({
         id,
         name,
         unit: unit || 'ml',
@@ -66,6 +67,7 @@ export function staffData(data: BarData): StaffData {
         ...(glassSizeMl ? { glassSizeMl } : {}),
         ...(menuCategory ? { menuCategory } : {}),
         ...(group ? { group } : {}),
+        ...(photo ? { photo } : {}),
       }),
     ),
     products: [
@@ -78,6 +80,7 @@ export function staffData(data: BarData): StaffData {
         name: c.name,
         category: c.category || ('cocktail' as const),
         image: c.image,
+        ...(c.photo ? { photo: c.photo } : {}),
         ...(c.serving ? { serving: c.serving } : {}),
         ...(isGlassServing(c)
           ? { unit: 'glass' as const }
@@ -118,6 +121,7 @@ export function staffData(data: BarData): StaffData {
           ...(a.favorite ? { favorite: true as const } : {}),
           name: a.name,
           category: 'alcohol' as const,
+          ...(a.photo ? { photo: a.photo } : {}),
           available: remaining(a.id),
           ready: a.pricePerLiter > 0,
         })),

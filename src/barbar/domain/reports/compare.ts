@@ -127,6 +127,10 @@ export function decompose(current: Bucket[], base: Bucket[]): Decomposition {
   return { delta, volume, price, range, mix: round(delta - volume - price - range) };
 }
 
+/** Change against the base in percent to one decimal; null when the base is zero. */
+export const changePct = (now: number, before: number): number | null =>
+  before ? Math.round(((now - before) / before) * 1000) / 10 : null;
+
 const row = (
   key: string,
   label: string,
@@ -144,9 +148,7 @@ const row = (
     base,
     revenueDelta: round(current.revenue - base.revenue),
     profitDelta: round(current.profit - base.profit),
-    revenuePct: base.revenue
-      ? Math.round(((current.revenue - base.revenue) / base.revenue) * 1000) / 10
-      : null,
+    revenuePct: changePct(current.revenue, base.revenue),
   };
 };
 function rows(

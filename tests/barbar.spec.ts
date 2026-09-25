@@ -94,12 +94,15 @@ test('preloaded tinctures can be edited with grams and an independent selling pr
     .locator('.drink-card')
     .filter({ has: page.getByRole('heading', { name: 'Слива', exact: true }) })
     .click();
+  const next = page.getByRole('dialog').getByRole('button', { name: 'Далее', exact: true });
+  await next.click();
   await page.getByRole('button', { name: 'Добавить ингредиент' }).click();
   await page.getByLabel('Ингредиент 1', { exact: true }).selectOption('vodka');
   await page.getByLabel('Миллилитры ингредиента 1').fill('50');
   await page.getByRole('button', { name: 'Добавить ингредиент' }).click();
   await page.getByLabel('Ингредиент 2', { exact: true }).selectOption('sugar');
   await page.getByLabel('Граммы ингредиента 2').fill('5');
+  await next.click();
   await page.getByLabel('Цена продажи, ֏').fill('1800');
   await expect(page.getByRole('dialog')).toContainText('Себестоимость порции');
   await expect(page.getByRole('dialog')).toContainText('215 ֏');
@@ -252,6 +255,8 @@ test('menu has varied matched images and manual photo selection persists', async
   ]);
   await page.getByRole('button', { name: 'Авторские коктейли', exact: true }).click();
   await page.getByRole('button', { name: 'Изображение: Margarita', exact: true }).click();
+  // Saving is the last step; a step header jumps there directly.
+  await page.getByRole('dialog').getByRole('button', { name: /^Цена/ }).click();
   await page.getByRole('button', { name: 'Сохранить позицию' }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
   await page.reload();
@@ -278,11 +283,14 @@ test('products have their own inventory filter and can be costed per cocktail in
   await expect(page.locator('.inventory-table').getByText('Vodka', { exact: true })).toHaveCount(0);
   await page.getByRole('link', { name: /Меню и рецепты/ }).click();
   await page.getByRole('button', { name: /КОКТЕЙЛИ.*Gin tonic Beefeater/ }).click();
+  const next = page.getByRole('dialog').getByRole('button', { name: 'Далее', exact: true });
+  await next.click();
   await page.getByText('Дополнительные расходы на порцию').click();
   await page.getByRole('button', { name: 'Добавить расход' }).click();
   await page.getByLabel('Продукт по стоимости 1', { exact: true }).selectOption('lemon-fruit');
   await page.getByLabel('Стоимость продукта 1, ֏').fill('50');
-  await expect(page.getByRole('dialog')).toContainText('645 ֏');
+  await next.click();
+  await expect(page.getByRole('dialog').locator('.cost-box')).toContainText('645 ֏');
   await page.getByRole('button', { name: 'Сохранить позицию' }).click();
   await page.getByRole('link', { name: 'Продажи Каждый день' }).click();
   await page.getByRole('button', { name: /КОКТЕЙЛИ.*Gin tonic Beefeater/ }).click();
@@ -393,6 +401,7 @@ test('barbar can create a cocktail with a gram recipe without seeing or setting 
   await createButton.click();
   await expect(page.getByRole('dialog')).not.toContainText(/֏|Себестоимость|Цена|Выручка/);
   await page.getByLabel('Название позиции').fill('Коктейль сотрудника');
+  await page.getByRole('dialog').getByRole('button', { name: 'Далее', exact: true }).click();
   await page.getByRole('button', { name: 'Добавить ингредиент', exact: true }).click();
   await page.getByLabel('Ингредиент 1', { exact: true }).selectOption('vodka');
   await page.getByLabel('Миллилитры ингредиента 1').fill('50');

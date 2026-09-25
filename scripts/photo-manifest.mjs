@@ -7,34 +7,47 @@ const escape = (value) =>
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   );
-const manifest = Object.fromEntries(
+// Compact client manifest, expanded by `photo-catalog.ts`: `a` lists authors once, `p` maps each key to
+// [file or version, author index, width, height, webp variants, avif variants]. A variant `160.<hash>` is
+// the file `/barbar/photos/optimized/<key>-160-<hash>.<format>`; a bare version means
+// `/barbar/photos/<key>.webp?v=<version>`.
+const authors = [];
+const files = {};
+const compact = Object.fromEntries(
   Object.entries(imageInputs).map(([key, value]) => {
     const bytes = readFileSync(inputUrl(value.file));
     const optimized = variants[key];
     if (!optimized || optimized.inputHash !== createHash('sha256').update(bytes).digest('hex')) {
       throw new Error(`Run npm run photos:optimize for changed image: ${key}`);
     }
-    const srcSet = (format) =>
+    const version = createHash('sha256').update(bytes).digest('hex').slice(0, 12);
+    files[key] = `${value.file}?v=${version}`;
+    const list = (format) =>
       optimized.variants
         .filter((v) => v.format === format)
-        .map((v) => `/barbar/photos/optimized/${v.file} ${v.width}w`)
-        .join(', ');
+        .map((v) => {
+          const hash = v.file.slice(`${key}-${v.width}-`.length, -`.${format}`.length);
+          if (v.file !== `${key}-${v.width}-${hash}.${format}`) throw new Error(`Unexpected file: ${v.file}`);
+          return `${v.width}.${hash}`;
+        })
+        .join(' ');
+    if (!authors.includes(value.author)) authors.push(value.author);
     return [
       key,
-      {
-        file: value.file + '?v=' + createHash('sha256').update(bytes).digest('hex').slice(0, 12),
-        author: value.author,
-        width: optimized.width,
-        height: optimized.height,
-        webp: srcSet('webp'),
-        avif: optimized.preferAvif ? srcSet('avif') : '',
-      },
+      [
+        value.file === `/barbar/photos/${key}.webp` ? version : files[key],
+        authors.indexOf(value.author),
+        optimized.width,
+        optimized.height,
+        list('webp'),
+        optimized.preferAvif ? list('avif') : '',
+      ],
     ];
   }),
 );
 writeFileSync(
   new URL('../src/barbar/features/catalog/media/photo-manifest.json', import.meta.url),
-  JSON.stringify(manifest) + '\n',
+  JSON.stringify({ a: authors, p: compact }) + '\n',
 );
 writeFileSync(
   new URL('credits.html', root),
@@ -43,8 +56,8 @@ writeFileSync(
   )
     .map(
       ([key, p]) =>
-        `<article><img src="${escape(manifest[key].file)}" alt="" loading="lazy"><h2>${escape(p.title || key)}</h2><p>${escape(p.author)} · ${escape(p.license)}</p><a href="${escape(p.source)}" rel="noreferrer">Источник</a>${p.licenseUrl ? ` · <a href="${escape(p.licenseUrl)}" rel="noreferrer">Лицензия</a>` : ''}<p>${escape(p.modifications)}</p></article>`,
+        `<article><img src="${escape(files[key])}" alt="" loading="lazy"><h2>${escape(p.title || key)}</h2><p>${escape(p.author)} · ${escape(p.license)}</p><a href="${escape(p.source)}" rel="noreferrer">Источник</a>${p.licenseUrl ? ` · <a href="${escape(p.licenseUrl)}" rel="noreferrer">Лицензия</a>` : ''}<p>${escape(p.modifications)}</p></article>`,
     )
     .join('')}</html>`,
 );
-console.log(`Built ${Object.keys(manifest).length} versioned photo entries and credits.`);
+console.log(`Built ${Object.keys(compact).length} versioned photo entries and credits.`);

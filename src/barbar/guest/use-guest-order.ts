@@ -59,7 +59,10 @@ const settled = (r?: GuestRequest) => !!r && r.status !== 'pending';
  * an addition at once; only a submission without an answer keeps the cart locked until it is retried.
  */
 export function useGuestOrder(menu: GuestMenu | null) {
-  const [code] = useState(() => new URLSearchParams(window.location.search).get('table') || '');
+  // The server render has no table: the cart appears only after the code is confirmed, as in the browser.
+  const [code] = useState(() =>
+    typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('table') || '',
+  );
   const [table, setTable] = useState<{ id: string; name: string } | null>(null);
   const [lines, setLines] = useState<CartLine[]>([]);
   const prices = useMemo(
