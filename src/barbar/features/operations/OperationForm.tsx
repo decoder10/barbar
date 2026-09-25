@@ -2,6 +2,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useBar } from '../../app/providers/BarProvider';
 import { Field } from '../../ui/fields';
+import { DatePicker } from '../../ui/date-picker';
 import { Modal, Submit } from '../../ui/modal';
 import { averageCost, stock, unitLabel, priceUnit } from '../../domain/model';
 import { businessToday } from '../../domain/business-day';
@@ -254,11 +255,13 @@ export function OperationForm({
         {kind === 'prepare' && (
           <div className="form-grid">
             <Field label="Годен до" hint="Необязательно">
-              <input
-                type="date"
-                min={businessToday()}
+              <DatePicker
+                label="Годен до"
                 value={expires}
-                onChange={(e) => setExpires(e.target.value)}
+                min={businessToday()}
+                placeholder="Не указан"
+                clearable
+                onChange={setExpires}
               />
             </Field>
             <Field label="Название партии" hint="Например: партия 12.09">
@@ -281,12 +284,13 @@ export function OperationForm({
               </select>
             </Field>
             <Field label="Дата">
-              <input
-                type="date"
-                max={businessToday()}
-                required
+              <DatePicker
+                label="Дата"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                max={businessToday()}
+                onChange={(value) => {
+                  if (value) setDate(value);
+                }}
               />
             </Field>
           </div>

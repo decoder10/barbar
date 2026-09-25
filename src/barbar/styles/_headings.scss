@@ -45,21 +45,20 @@
   color: var(--muted);
 }
 
-.date-control input {
+/* The bar itself is the frame: the calendar trigger sits between the day arrows without its own border. */
+.date-control .date-picker-trigger {
+  min-height: 28px;
+  padding: 0 4px;
   border: 0;
   background: transparent;
-  font-size: 10px;
-  max-width: 143px;
-  min-height: 25px;
-  color: var(--text);
 }
 
-.date-control button {
+.date-control > button {
   display: grid;
   place-items: center;
   padding: 3px;
 }
 
-.date-control button:hover {
+.date-control > button:hover {
   color: var(--pink);
 }

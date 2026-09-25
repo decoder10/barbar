@@ -4,6 +4,7 @@ import { snapshotRead } from '../services/api-client';
 import { useEffect, useRef, useState } from 'react';
 import { download, ExportButton } from '../ui/export';
 import { Modal } from '../ui/modal';
+import { DatePicker } from '../ui/date-picker';
 import { PageHeading } from '../ui/layout';
 import { formatMoney as money } from '../presentation/currency/format-money';
 import { today, validateData } from '../domain/model';
@@ -202,19 +203,19 @@ export default function Backups() {
           ),
         )}
         <div className="cleanup-controls">
-          <label className="field">
-            <span>{t('Удалить историю раньше')}</span>
-            <input
-              type="date"
+          <div className="field">
+            <span aria-hidden>{t('Удалить историю раньше')}</span>
+            <DatePicker
+              label="Удалить историю раньше"
               value={cutoff}
               max={today()}
-              onChange={(e) => {
-                if (e.target.value && e.target.value <= today()) {
-                  setCutoff(e.target.value);
+              onChange={(value) => {
+                if (value && value <= today()) {
+                  setCutoff(value);
                 }
               }}
             />
-          </label>
+          </div>
           <button
             className="button danger-button"
             disabled={busy || !purgeSales.length}

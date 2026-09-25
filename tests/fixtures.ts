@@ -115,3 +115,21 @@ export async function mockRecentOrders(
     });
   });
 }
+
+const genitiveMonths =
+  'января февраля марта апреля мая июня июля августа сентября октября ноября декабря'.split(' ');
+
+/** Picks a `YYYY-MM-DD` day in the app's calendar (`ui/date-picker.tsx`), paging months towards it. */
+export async function pickDay(page: import('@playwright/test').Page, label: string, date: string) {
+  const trigger = page.getByRole('button', { name: new RegExp(`^${label}:`) });
+  const from = (await trigger.getAttribute('data-value')) || date;
+  await trigger.click();
+  const panel = page.getByRole('dialog', { name: label });
+  const [year, month, day] = date.split('-').map(Number);
+  const cell = panel.getByRole('button', {
+    name: new RegExp(`(^|\\s)${day} ${genitiveMonths[month - 1]} ${year}`),
+  });
+  const step = panel.getByRole('button', { name: date < from ? 'Предыдущий месяц' : 'Следующий месяц' });
+  for (let i = 0; i < 36 && !(await cell.count()); i++) await step.click();
+  await cell.first().click();
+}

@@ -1,6 +1,7 @@
 import { useInventoryCalculations } from './use-inventory-calculations';
 import { useState } from 'react';
 import { Field } from '../../ui/fields';
+import { DatePicker } from '../../ui/date-picker';
 import { Modal, Submit } from '../../ui/modal';
 import { formatMoney as money } from '../../presentation/currency/format-money';
 import { businessDayHint } from '../../domain/business-day';
@@ -124,7 +125,14 @@ export function PurchaseForm({ alcoholId, close }: { alcoholId?: string; close: 
           )}
         </div>
         <Field label="Дата закупки" hint={businessDayHint}>
-          <input required type="date" max={today()} value={date} onChange={(e) => setDate(e.target.value)} />
+          <DatePicker
+            label="Дата закупки"
+            value={date}
+            max={today()}
+            onChange={(value) => {
+              if (value) setDate(value);
+            }}
+          />
         </Field>
         <div className="form-total">
           <span>

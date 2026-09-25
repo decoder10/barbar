@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fixtureData } from './fixtures';
+import { fixtureData, pickDay } from './fixtures';
 import { staffData } from '../netlify/lib/barbar-access';
 
 test('owner filters survive refresh and navigation, while another tab starts fresh', async ({
@@ -17,9 +17,12 @@ test('owner filters survive refresh and navigation, while another tab starts fre
   await page.getByRole('button', { name: 'Пиво', exact: true }).click();
   await page.getByPlaceholder('Найти напиток…').fill('379');
   await page.getByLabel('Сортировка', { exact: true }).selectOption('name-desc');
-  await page.getByLabel('Дата продаж', { exact: true }).fill('2026-08-20');
+  await pickDay(page, 'Дата продаж', '2026-08-20');
   await page.reload();
-  await expect(page.getByLabel('Дата продаж', { exact: true })).toHaveValue('2026-08-20');
+  await expect(page.getByRole('button', { name: /^Дата продаж:/ })).toHaveAttribute(
+    'data-value',
+    '2026-08-20',
+  );
   await expect(page.getByRole('button', { name: 'Пиво', exact: true })).toHaveClass(/active/);
   await expect(page.getByPlaceholder('Найти напиток…')).toHaveValue('379');
   await expect(page.getByLabel('Сортировка', { exact: true })).toHaveValue('name-desc');

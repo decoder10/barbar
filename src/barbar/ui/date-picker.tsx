@@ -1,5 +1,13 @@
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { businessToday } from '../domain/business-day';
 import { locale, t } from '../presentation/i18n/runtime';
 import { Sheet } from './sheet';
@@ -54,7 +62,10 @@ const weekdays = () =>
 
 type PanelProps<T extends string> = { value: T; min?: T; max?: T; pick: (value: T) => void };
 
-/** Trigger plus a popover (a bottom sheet on phones); the panel content decides what is picked. */
+/**
+ * Trigger plus a popover (a bottom sheet on phones); the panel content decides what is picked.
+ * Inside a dialog the panel opens as its own sheet: the top layer is not clipped by the dialog's scroll.
+ */
 function Picker({
   id,
   label,
@@ -72,20 +83,41 @@ function Picker({
 }) {
   const compact = useCompact();
   const [open, setOpen] = useState(false);
-  const [alignEnd, setAlignEnd] = useState(false);
+  const [inDialog, setInDialog] = useState(false);
+  const [place, setPlace] = useState<CSSProperties>({});
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const popover = useRef<HTMLDivElement>(null);
+  const sheet = compact || inDialog;
   const close = () => {
     setOpen(false);
     requestAnimationFrame(() => trigger.current?.focus());
   };
+  // The popover is fixed to the viewport so a scrolling toolbar cannot clip it: under the trigger,
+  // above it when there is no room below, right-aligned when it would leave the window.
   useLayoutEffect(() => {
-    if (!open || compact || !trigger.current) return;
-    setAlignEnd(trigger.current.getBoundingClientRect().left + 320 > window.innerWidth);
-  }, [open, compact]);
+    if (!open || sheet) return;
+    const position = () => {
+      if (!trigger.current || !popover.current) return;
+      const rect = trigger.current.getBoundingClientRect();
+      const { offsetWidth: width, offsetHeight: height } = popover.current;
+      const below = rect.bottom + 6 + height <= window.innerHeight || rect.top - 6 - height < 0;
+      setPlace({
+        top: below ? rect.bottom + 6 : rect.top - 6 - height,
+        left: rect.left + width > window.innerWidth - 8 ? Math.max(8, rect.right - width) : rect.left,
+      });
+    };
+    position();
+    window.addEventListener('resize', position);
+    document.addEventListener('scroll', position, true);
+    return () => {
+      window.removeEventListener('resize', position);
+      document.removeEventListener('scroll', position, true);
+    };
+  }, [open, sheet]);
   // The popover closes on a click or focus outside it, and on Escape wherever the focus is.
   useEffect(() => {
-    if (!open || compact) return;
+    if (!open || sheet) return;
     const outside = (event: Event) => {
       if (!root.current?.contains(event.target as Node)) setOpen(false);
     };
@@ -103,7 +135,7 @@ function Picker({
       document.removeEventListener('focusin', outside);
       document.removeEventListener('keydown', escape, true);
     };
-  }, [open, compact]);
+  }, [open, sheet]);
   const content = panel(() => close());
   return (
     <div className="date-picker" ref={root}>
@@ -117,23 +149,22 @@ function Picker({
         aria-haspopup="dialog"
         aria-expanded={open}
         data-value={value}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          setInDialog(!!root.current?.closest('dialog'));
+          setOpen((o) => !o);
+        }}
       >
         <CalendarDays size={17} aria-hidden />
         <span>{text}</span>
         <ChevronDown size={16} aria-hidden className="date-picker-chevron" />
       </button>
       {open &&
-        (compact ? (
+        (sheet ? (
           <Sheet title={label} close={() => close()}>
             <div className="date-picker-panel in-sheet">{content}</div>
           </Sheet>
         ) : (
-          <div
-            className={`date-picker-panel ${alignEnd ? 'align-end' : ''}`}
-            role="dialog"
-            aria-label={t(label)}
-          >
+          <div ref={popover} className="date-picker-panel" style={place} role="dialog" aria-label={t(label)}>
             {content}
           </div>
         ))}
@@ -259,9 +290,10 @@ function MonthPanel({ value, min, max, pick }: PanelProps<string>) {
   );
 }
 
-function DayPanel({ value, min, max, pick }: PanelProps<string>) {
-  const [focused, setFocused] = useState(value);
-  const [view, setView] = useState(value.slice(0, 7));
+function DayPanel({ value, min, max, pick, clear }: PanelProps<string> & { clear?: () => void }) {
+  // An empty value opens on the business day, within the limits, with nothing selected.
+  const [focused, setFocused] = useState(() => value || clamp(businessToday(), min, max));
+  const [view, setView] = useState(focused.slice(0, 7));
   const move = (by: number) => {
     const next = clamp(addDays(focused, by), min, max);
     setFocused(next);
@@ -317,6 +349,11 @@ function DayPanel({ value, min, max, pick }: PanelProps<string>) {
         ))}
       </div>
       <div className="date-picker-foot">
+        {clear && value && (
+          <button type="button" className="button secondary" onClick={clear}>
+            {t('Очистить')}
+          </button>
+        )}
         <button
           type="button"
           className="button secondary"
@@ -364,14 +401,27 @@ export function MonthPicker({ label, value, min, max, onChange, id, ...rest }: P
   );
 }
 
-/** A day (`YYYY-MM-DD`) in the app's style; days outside min/max cannot be chosen. */
-export function DatePicker({ label, value, min, max, onChange, id, ...rest }: PickerProps<string>) {
+/**
+ * A day (`YYYY-MM-DD`) in the app's style; days outside min/max cannot be chosen.
+ * An optional date passes `placeholder` for the empty value and `clearable` to let it be emptied ('').
+ */
+export function DatePicker({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+  id,
+  placeholder = '',
+  clearable = false,
+  ...rest
+}: PickerProps<string> & { placeholder?: string; clearable?: boolean }) {
   return (
     <Picker
       id={id}
       label={label}
       value={value}
-      text={dayTitle(value)}
+      text={value ? dayTitle(value) : t(placeholder)}
       describedBy={rest['aria-describedby']}
       panel={(close) => (
         <DayPanel
@@ -382,6 +432,14 @@ export function DatePicker({ label, value, min, max, onChange, id, ...rest }: Pi
             onChange(day);
             close();
           }}
+          clear={
+            clearable
+              ? () => {
+                  onChange('');
+                  close();
+                }
+              : undefined
+          }
         />
       )}
     />

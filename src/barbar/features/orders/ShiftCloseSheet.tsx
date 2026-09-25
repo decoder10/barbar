@@ -10,6 +10,7 @@ import { api } from '../../services/api-client';
 import { t } from '../../presentation/i18n/runtime';
 import { Sheet } from '../../ui/sheet';
 import { Field } from '../../ui/fields';
+import { DatePicker } from '../../ui/date-picker';
 import type { ShiftPreview } from '../../domain/shifts';
 
 export function ShiftCloseSheet({ close, initialDay }: { close: () => void; initialDay?: string }) {
@@ -64,12 +65,13 @@ export function ShiftCloseSheet({ close, initialDay }: { close: () => void; init
       >
         <fieldset disabled={busy} className="guest-request-lines">
           <Field label="День смены">
-            <input
-              type="date"
-              required
+            <DatePicker
+              label="День смены"
               value={day}
               max={businessToday()}
-              onChange={(e) => setDay(e.target.value)}
+              onChange={(value) => {
+                if (value) setDay(value);
+              }}
             />
           </Field>
           <p className="form-help">

@@ -1,8 +1,9 @@
 import { ShiftCloseButton } from '../orders/ShiftCloseSheet';
 import type { ReactNode } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { businessToday } from '../../domain/business-day';
 import { t } from '../../presentation/i18n/runtime';
+import { DatePicker } from '../../ui/date-picker';
 import { SalesFullscreen } from './SalesFullscreen';
 
 export function SalesDayToolbar({
@@ -29,15 +30,12 @@ export function SalesDayToolbar({
         <button aria-label={t('Предыдущий день')} onClick={() => changeDate(-1)}>
           <ChevronLeft size={16} />
         </button>
-        <CalendarDays size={17} />
-        <input
-          aria-label={t('Дата продаж')}
-          type="date"
+        <DatePicker
+          label="Дата продаж"
           value={date}
           max={today}
-          required
-          onChange={(e) => {
-            if (e.target.value && e.target.value <= today) onChange(e.target.value);
+          onChange={(value) => {
+            if (value && value <= today) onChange(value);
           }}
         />
         <button aria-label={t('Следующий день')} disabled={date >= today} onClick={() => changeDate(1)}>

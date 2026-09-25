@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { staffData } from '../netlify/lib/barbar-access';
-import { applyCommand, today } from '../src/barbar/domain/model';
-import { fixtureData, mockOrders } from './fixtures';
+import { applyCommand } from '../src/barbar/domain/model';
+import { fixtureData, mockOrders, pickDay } from './fixtures';
 async function workspace(page: import('@playwright/test').Page, oldSale = false, lowStock = false) {
   let data = fixtureData();
   if (lowStock) {
@@ -147,7 +147,7 @@ test('old history can be removed through the site without returning stock', asyn
   await workspace(page, true);
   await page.getByRole('link', { name: 'Данные и копии Ваши данные' }).click();
   await expect(page.locator('.daily-file')).toContainText('sales/2026-09-02.json');
-  await page.getByLabel('Удалить историю раньше').fill('2026-09-05');
+  await pickDay(page, 'Удалить историю раньше', '2026-09-05');
   await page.getByRole('button', { name: 'Удалить старые продажи' }).click();
   await expect(page.getByRole('dialog')).toContainText('1 дней и 1 записей');
   await page.getByRole('button', { name: 'Удалить 1 записей' }).click();
@@ -346,7 +346,8 @@ test('barbar sees quantities and read-only stock but cannot open admin pages', a
   await expect(page.getByRole('complementary', { name: 'Сводка продаж за день' })).toContainText(
     'День только начинается',
   );
-  await page.getByLabel('Дата продаж').fill(today());
+  await page.getByRole('button', { name: /^Дата продаж:/ }).click();
+  await page.getByRole('dialog', { name: 'Дата продаж' }).getByRole('button', { name: 'Сегодня' }).click();
   await expect(page.getByRole('complementary', { name: 'Сводка продаж за день' })).toContainText('3 порц.');
   for (const path of ['/reports', '/files']) {
     await page.goto(path);

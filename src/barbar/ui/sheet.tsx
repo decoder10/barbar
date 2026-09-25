@@ -1,5 +1,5 @@
 import { SlidersHorizontal, X } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { t } from '../presentation/i18n/runtime';
 import { useModalDialog } from './use-modal-dialog';
 
@@ -16,11 +16,15 @@ export function Sheet({
   children: ReactNode;
 }) {
   const ref = useModalDialog();
+  const titleId = useId();
   return (
     <dialog
       ref={ref}
       className="modal sheet"
+      aria-labelledby={titleId}
       onCancel={(event) => {
+        // React bubbles `cancel` up its tree: a sheet opened inside a dialog must not close that dialog too.
+        event.stopPropagation();
         event.preventDefault();
         close();
       }}
@@ -31,7 +35,7 @@ export function Sheet({
       <div className="sheet-body">
         <div className="modal-heading">
           <div>
-            <h2>{t(title)}</h2>
+            <h2 id={titleId}>{t(title)}</h2>
             {subtitle && <p>{t(subtitle)}</p>}
           </div>
           <button type="button" className="icon-button" onClick={close} aria-label={t('Закрыть')}>
