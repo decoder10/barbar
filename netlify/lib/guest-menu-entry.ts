@@ -2,6 +2,11 @@ import type { DeployInfo } from './barbar-mongo';
 import { logError, observe } from './observability';
 import { siteHeaders } from './site-headers';
 
+// Every answer a guest can see is HTML: mobile and in-app browsers (a QR link opened from a messenger)
+// save a `text/plain` response as a file instead of showing it.
+const unavailablePage =
+  '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Меню</title></head><body><p>Меню временно недоступно. Обновите страницу через минуту.</p></body></html>';
+
 /** The server renderer of `/menu`, loaded on the first request (it pulls in React and the guest UI). */
 export type GuestMenuRenderer = (
   request: Request,
@@ -59,10 +64,12 @@ export function guestMenuPageFunction(
     // loop should `/menu.html` ever be redirected back here.
     const url = new URL(request.url);
     if (url.searchParams.has('static'))
-      return new Response('Меню временно недоступно. Обновите страницу через минуту.', {
+      return new Response(request.method === 'HEAD' ? null : unavailablePage, {
         status: 503,
         headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
+          ...siteHeaders,
+          'Content-Type': 'text/html; charset=utf-8',
+          'X-Robots-Tag': 'noindex',
           'Cache-Control': 'no-store',
           'Retry-After': '60',
         },

@@ -82,6 +82,11 @@ describe('/menu function entry', () => {
     const again = await handler(get('https://barbar.test/menu?static=1'), context);
     expect(again.status).toBe(503);
     expect(again.headers.get('retry-after')).toBe('60');
+    expect(again.headers.get('cache-control')).toBe('no-store');
+    const page = await again.text();
+    expect(page).toMatch(/^<!doctype html>/);
+    expect(page).toContain('<meta name="viewport"');
+    expect(page).toContain('Меню временно недоступно');
     expect(errorLines(errors).map((line: { stage: string }) => line.stage)).toEqual([
       'load',
       'template',
@@ -97,5 +102,21 @@ describe('/menu function entry', () => {
     expect(post.status).toBe(405);
     expect(post.headers.get('allow')).toBe('GET, HEAD');
     expect(load).not.toHaveBeenCalled();
+  });
+
+  it('answers a guest with HTML on every fallback, never text/plain', async () => {
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const withTemplate = guestMenuPageFunction(broken('down'), async () => html);
+    const withoutTemplate = guestMenuPageFunction(broken('down'), async () => {
+      throw new Error('menu.html: 500');
+    });
+    for (const response of [
+      await withTemplate(get(), context),
+      await withTemplate(get('https://barbar.test/menu?static=1'), context),
+      await withoutTemplate(get('https://barbar.test/menu?static=1'), context),
+      await withoutTemplate(get('https://barbar.test/menu?static=1', { method: 'HEAD' }), context),
+    ])
+      expect(response.headers.get('content-type')).toBe('text/html; charset=utf-8');
   });
 });
