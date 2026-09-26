@@ -8,6 +8,10 @@ export const businessDayLabel = (date: string) =>
     weekday: 'long',
   });
 
+/** The business day without the weekday («24 сентября»), for short labels. */
+export const businessDayShortLabel = (date: string) =>
+  new Date(`${date}T12:00:00`).toLocaleDateString(locale(), { day: 'numeric', month: 'long' });
+
 /** «12 мин» / «1 ч 05 мин» since an ISO instant; the caller supplies `now` so a list shares one clock. */
 export const elapsedLabel = (iso: string, now: number) => {
   const minutes = Math.max(0, Math.floor((now - Date.parse(iso)) / 60000));

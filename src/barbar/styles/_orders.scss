@@ -74,8 +74,158 @@
   color: var(--pink);
 }
 
+/* A table held by a receipt from an earlier shift: not part of tonight's service, but still to be settled. */
+.table-tile.stale {
+  border-color: var(--line);
+  background: var(--surface-muted);
+}
+
+.table-tile.stale .table-name {
+  color: var(--muted);
+}
+
+.table-tile.stale > .table-stale-since {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--warning-surface);
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.table-tile.stale > strong {
+  color: var(--muted);
+}
+
 .table-opener {
   color: var(--muted);
+}
+
+/* The way to receipts left open by earlier shifts; shown only while there are any. */
+.unpaid-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--warning);
+  border-radius: 12px;
+  background: var(--warning-surface);
+  color: var(--warning);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* The label wraps on phones; the count and the arrow stay on its right. */
+.unpaid-entry > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.unpaid-entry > b {
+  white-space: nowrap;
+}
+
+.unpaid-entry > svg {
+  flex-shrink: 0;
+}
+
+.unpaid-entry:hover {
+  filter: brightness(0.97);
+}
+
+/* Unpaid receipts page: one section per shift day, cards like the board's tiles. */
+.unpaid-day {
+  margin-bottom: 28px;
+}
+
+.unpaid-day-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.unpaid-day-head h2 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: -0.3px;
+}
+
+/* «пятница, 25 сентября» → «Пятница, 25 сентября»: only the first letter, not every word. */
+.unpaid-day-head h2::first-letter {
+  text-transform: uppercase;
+}
+
+.unpaid-day-head > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.unpaid-day-head strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.unpaid-list {
+  @include fluid-grid(200px, 12px);
+}
+
+.unpaid-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 14px 34px 14px 16px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warning);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  transition: box-shadow 0.18s;
+}
+
+.unpaid-card:not(:disabled):hover {
+  box-shadow: 0 8px 25px #2323330d;
+}
+
+.unpaid-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.unpaid-card .table-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+
+.unpaid-card-top > strong {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.unpaid-card > small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.unpaid-card-go {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  color: var(--muted);
+  transform: translateY(-50%);
 }
 
 .walk-in-orders h2 {
@@ -589,8 +739,49 @@
 }
 
 .guest-requests,
-.table-qr-list {
-  margin-block: 16px;
+/* Table QR codes: their own page, one tile per active table */
+.table-qr-grid {
+  @include fluid-grid(150px, 12px);
+  margin-block: 8px 28px;
+}
+
+.table-qr-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 118px;
+  padding: 16px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  transition:
+    box-shadow 0.18s,
+    border-color 0.18s;
+}
+
+.table-qr-tile > svg {
+  color: var(--pink);
+}
+
+.table-qr-tile .table-name {
+  margin-top: auto;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.table-qr-tile > small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.table-qr-tile:hover {
+  border-color: var(--pink);
+  box-shadow: 0 8px 25px #2323330d;
 }
 .guest-requests h2 {
   display: flex;

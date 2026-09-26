@@ -1,27 +1,28 @@
 import { ShiftCloseButton } from '../features/orders/ShiftCloseSheet';
 import { GuestRequestSheet, GuestRequests, useGuestRequests } from '../features/orders/GuestRequests';
 import { requestsByTable as groupRequests } from '../domain/guest-requests';
-import type { BarTable } from '../domain/types';
-import { Armchair, BellRing, Settings2, X, Zap } from 'lucide-react';
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Armchair, BellRing, ChevronRight, QrCode, ReceiptText, Settings2, X, Zap } from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useBar } from '../app/providers/BarProvider';
 import { TablesEditor } from '../features/orders/TablesEditor';
 import { useOrders } from '../features/orders/use-orders';
 import { byId } from '../domain/lookup';
-import { orderLines, orderTotal, receiptCount } from '../domain/orders';
+import {
+  linesByOrder as groupLines,
+  orderBusinessDay,
+  orderTotal,
+  receiptCount,
+  splitOrdersByShift,
+} from '../domain/orders';
 import type { Order } from '../domain/types';
 import { formatMoney as money } from '../presentation/currency/format-money';
-import { elapsedLabel } from '../presentation/format-date';
+import { businessDayShortLabel, elapsedLabel } from '../presentation/format-date';
+import { useBusinessToday } from '../features/sales/use-business-date';
 import { t } from '../presentation/i18n/runtime';
 import { PageHeading } from '../ui/layout';
 import { SalesFullscreen } from '../features/sales/SalesFullscreen';
 import { LoadingStatus } from '../ui/loading';
-
-// The QR card brings the QR encoder and the whole photo catalog; the board is the first screen of a shift,
-// so the card is fetched when the QR list is opened, not before the tables can be shown.
-const loadQr = () => import('../features/guest/GuestMenuQr');
-const GuestMenuQrModal = lazy(() => loadQr().then((m) => ({ default: m.GuestMenuQrModal })));
 
 /** Ticks on its own, so the board is not re-rendered just to refresh «N мин». */
 function Elapsed({ since }: { since: string }) {
@@ -39,21 +40,23 @@ export default function Tables() {
   const navigate = useNavigate();
   const { tables, orders, sales, loading, error } = useOrders();
   const feed = useGuestRequests();
-  const [qr, setQr] = useState<BarTable | null>(null);
   // The table whose pending requests are open: all of them, not only the first.
   const [requestTable, setRequestTable] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const linesByOrder = useMemo(() => {
-    const groups = new Map<string, typeof sales>();
-    for (const line of orderLines(sales, undefined))
-      groups.set(line.orderId!, [...(groups.get(line.orderId!) || []), line]);
-    return groups;
-  }, [sales]);
+  const linesByOrder = useMemo(() => groupLines(sales), [sales]);
+  // The board belongs to the current shift (06:00–05:59 Yerevan): receipts left open from earlier shifts
+  // stay in the database, untouched, and the board is clean when the shift day turns.
+  const today = useBusinessToday();
+  const shift = useMemo(() => splitOrdersByShift(orders, today), [orders, today]);
+  // Every open receipt still holds its table: the server allows one open receipt per table, whatever the day.
   const byTable = new Map(orders.filter((o) => o.tableId).map((o) => [o.tableId!, o]));
   const requestsByTable = groupRequests(feed.requests);
   const tableById = byId(tables);
   const active = tables.filter((table) => table.active);
-  const walkIns = orders.filter((o) => !o.tableId || !tableById.get(o.tableId)?.active);
+  const walkIns = shift.current.filter((o) => !o.tableId || !tableById.get(o.tableId)?.active);
+  // Receipts of earlier shifts are off the board but never out of sight: the strip leads to their page.
+  const unpaid = shift.earlier.flatMap((day) => day.orders);
+  const unpaidTotal = orderTotal(unpaid.flatMap((o) => linesByOrder.get(o.id) || []));
   // The receipt is created with its first line, so a table someone only glanced at stays free.
   const openAt = (tableId?: string) =>
     navigate(tableId ? `/orders/new?table=${encodeURIComponent(tableId)}` : '/orders/new');
@@ -118,6 +121,27 @@ export default function Tables() {
       </>,
     );
   };
+  /** A table still held by a receipt of an earlier shift: muted, without the running timer, opens that receipt. */
+  const staleTile = (order: Order, name: string) => {
+    const lines = linesByOrder.get(order.id) || [];
+    const since = `${t('Счёт с')} ${businessDayShortLabel(orderBusinessDay(order))}`;
+    return wrap(
+      order.id,
+      order.tableId,
+      name,
+      <button
+        type="button"
+        className="table-tile stale"
+        disabled={busy}
+        title={t('Незакрытый счёт прошлой смены')}
+        onClick={() => navigate(`/orders/${order.id}`)}
+      >
+        <span className="table-name">{t(name)}</span>
+        <small className="table-stale-since">{since}</small>
+        <strong>{t(money(orderTotal(lines)))}</strong>
+      </button>,
+    );
+  };
   return (
     <>
       <div className="tables-heading">
@@ -143,6 +167,11 @@ export default function Tables() {
             <Zap size={16} />
             {t('Быстрая продажа')}
           </button>
+          {/* Last: codes are printed once, the shift's own actions come first on a phone's scrolling row. */}
+          <Link className="button secondary" to="/tables/qr" title={t('QR-коды столов')}>
+            <QrCode size={16} />
+            {t('QR-коды')}
+          </Link>
         </PageHeading>
       </div>
       <GuestRequests feed={feed} open={setRequestTable} />
@@ -151,6 +180,16 @@ export default function Tables() {
         <LoadingStatus label="Открываем столы…" />
       ) : (
         <>
+          {unpaid.length > 0 && (
+            <Link className="unpaid-entry" to="/tables/unpaid">
+              <ReceiptText size={18} aria-hidden="true" />
+              <span>{t('Незакрытые счета прошлых смен')}</span>
+              <b>
+                {unpaid.length} · {t(money(unpaidTotal))}
+              </b>
+              <ChevronRight size={16} aria-hidden="true" />
+            </Link>
+          )}
           {!active.length && (
             <div className="empty tables-empty">
               <span className="empty-icon">
@@ -169,7 +208,10 @@ export default function Tables() {
           <div className="tables-board">
             {active.map((table) => {
               const order = byTable.get(table.id);
-              if (order) return tile(order, table.name);
+              if (order)
+                return orderBusinessDay(order) >= today
+                  ? tile(order, table.name)
+                  : staleTile(order, table.name);
               return wrap(
                 table.id,
                 table.id,
@@ -196,32 +238,12 @@ export default function Tables() {
           )}
         </>
       )}
-      <details
-        className="table-qr-list"
-        onToggle={(event) => {
-          if (event.currentTarget.open) void loadQr().catch(() => undefined);
-        }}
-      >
-        <summary>{t('QR-коды столов')}</summary>
-        <div className="guest-request-actions">
-          {active.map((table) => (
-            <button type="button" className="button secondary" key={table.id} onClick={() => setQr(table)}>
-              {table.name}
-            </button>
-          ))}
-        </div>
-      </details>
       {requestTable && (
         <GuestRequestSheet
           requests={requestsByTable.get(requestTable) || []}
           close={() => setRequestTable(null)}
           reload={feed.reload}
         />
-      )}
-      {qr && (
-        <Suspense fallback={null}>
-          <GuestMenuQrModal table={qr} close={() => setQr(null)} />
-        </Suspense>
       )}
       {editing && <TablesEditor tables={tables} orders={orders} close={() => setEditing(false)} />}
     </>

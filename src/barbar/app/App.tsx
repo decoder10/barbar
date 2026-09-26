@@ -47,6 +47,13 @@ const Reports = lazy(() => import('../pages/Reports'));
 const Backups = lazy(() => import('../pages/Backups'));
 const Tables = lazy(() => import('../pages/Tables'));
 const OrderPage = lazy(() => import('../pages/Order'));
+const UnpaidOrders = lazy(() => import('../pages/UnpaidOrders'));
+const TableQrCodes = lazy(() => import('../pages/TableQrCodes'));
+// Pages reached from the tables board rather than from the navigation.
+const boardPages: Record<string, string> = {
+  '/tables/unpaid': 'Незакрытые счета',
+  '/tables/qr': 'QR-коды столов',
+};
 const navigation = [
   { path: '/', label: 'Столы', icon: Armchair, caption: 'Заказы и оплата' },
   { path: '/sales', label: 'Продажи', icon: ShoppingBag, caption: 'Каждый день' },
@@ -210,6 +217,7 @@ function Workspace() {
             <strong>
               {t(
                 navigation.find((n) => n.path === pathname)?.label ||
+                  boardPages[pathname] ||
                   (pathname.startsWith('/orders/') ? 'Заказ' : 'Barbar'),
               )}
             </strong>
@@ -275,6 +283,8 @@ function Workspace() {
             >
               <Routes>
                 <Route path="/" element={<Tables />} />
+                <Route path="/tables/unpaid" element={<UnpaidOrders />} />
+                <Route path="/tables/qr" element={<TableQrCodes />} />
                 <Route path="/orders/:orderId" element={<OrderPage />} />
                 <Route path="/sales" element={role === 'admin' ? <Sales /> : <StaffSales />} />
                 <Route path="/inventory" element={role === 'admin' ? <Inventory /> : <StaffInventory />} />

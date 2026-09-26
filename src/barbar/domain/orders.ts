@@ -1,4 +1,5 @@
 import { barConfig } from '../config';
+import { businessToday } from './business-day';
 import { round } from './money';
 import type { BarTable, Order, OrderPayment, Sale } from './types';
 
@@ -14,6 +15,13 @@ export const orderLines = <T extends Line>(sales: T[], orderId: string | undefin
   sales
     .filter((s) => !!s.orderId && (orderId === undefined || s.orderId === orderId) && !s.voided)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+/** Active lines of every order, keyed by order id. */
+export function linesByOrder<T extends Line>(sales: T[]) {
+  const groups = new Map<string, T[]>();
+  for (const line of orderLines(sales, undefined))
+    groups.set(line.orderId!, [...(groups.get(line.orderId!) || []), line]);
+  return groups;
+}
 export const orderTotal = (lines: Pick<Sale, 'revenue'>[]) =>
   round(lines.reduce((sum, line) => sum + (line.revenue || 0), 0));
 /** How many things are on the receipt: menu portions count each, a poured volume counts once. */
@@ -22,6 +30,32 @@ export const receiptCount = (lines: Pick<Sale, 'kind' | 'quantity'>[]) =>
 export const openOrders = (orders: Order[] | undefined) => (orders || []).filter((o) => o.status === 'open');
 export const openOrderAt = (orders: Order[] | undefined, tableId: string) =>
   openOrders(orders).find((o) => o.tableId === tableId);
+
+type ShiftOrder = Pick<Order, 'id' | 'businessDay' | 'openedAt'>;
+/** The shift a receipt belongs to; a receipt saved without one falls back to the shift it was opened in. */
+export const orderBusinessDay = (order: ShiftOrder) =>
+  order.businessDay || businessToday(new Date(order.openedAt));
+/**
+ * Open receipts of the current shift (`today`, from `businessToday()`) and those left over from earlier
+ * shifts, grouped by day, newest day first. A receipt dated after `today` stays current: the device clock
+ * may be behind the server's.
+ */
+export function splitOrdersByShift<T extends ShiftOrder>(orders: T[], today: string) {
+  const current: T[] = [];
+  const days = new Map<string, T[]>();
+  for (const order of orders) {
+    const day = orderBusinessDay(order);
+    if (day >= today) current.push(order);
+    else days.set(day, [...(days.get(day) || []), order]);
+  }
+  const earlier = [...days.entries()]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([businessDay, list]) => ({
+      businessDay,
+      orders: list.sort((a, b) => a.openedAt.localeCompare(b.openedAt) || a.id.localeCompare(b.id)),
+    }));
+  return { current, earlier };
+}
 /** The tables board from a ledger or a board response: every table, the open receipts and their active lines. */
 export function ordersSnapshot<S extends Pick<Sale, 'id' | 'orderId' | 'voided'>>(data: {
   tables?: BarTable[];

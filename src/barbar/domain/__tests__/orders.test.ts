@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyCommand, initialData, stock, validateData } from '../model';
-import { changeDue, groupReceipt, orderLines, orderTotal, splitEvenly } from '../orders';
+import {
+  changeDue,
+  groupReceipt,
+  linesByOrder,
+  orderBusinessDay,
+  orderLines,
+  orderTotal,
+  splitEvenly,
+  splitOrdersByShift,
+} from '../orders';
 import type { BarData, Command } from '../types';
 
 let counter = 0;
@@ -190,6 +199,72 @@ describe('receipt helpers', () => {
       ['X', 3, 300, 'b'],
       ['V', 50, 900, 'c'],
     ]);
+  });
+  it('groups active lines by receipt, in the order they were added', () => {
+    const sale = (id: string, orderId: string | undefined, createdAt: string, voided = false) => ({
+      id,
+      orderId,
+      createdAt,
+      voided,
+      revenue: 100,
+    });
+    const groups = linesByOrder([
+      sale('b', 'o1', '2026-09-25T20:05:00Z'),
+      sale('a', 'o1', '2026-09-25T20:00:00Z'),
+      sale('x', 'o1', '2026-09-25T20:01:00Z', true),
+      sale('c', 'o2', '2026-09-25T21:00:00Z'),
+      sale('free', undefined, '2026-09-25T21:00:00Z'),
+    ]);
+    expect([...groups].map(([order, lines]) => [order, lines.map((l) => l.id)])).toEqual([
+      ['o1', ['a', 'b']],
+      ['o2', ['c']],
+    ]);
+    expect(orderTotal(groups.get('o1')!)).toBe(200);
+  });
+  it('keeps only the current shift on the board and groups earlier receipts by day', () => {
+    const at = (id: string, businessDay: string, openedAt: string, tableId?: string) => ({
+      id,
+      businessDay,
+      openedAt,
+      tableId,
+    });
+    const orders = [
+      at('late', '2026-09-24', '2026-09-24T22:00:00Z', 'table-1'),
+      at('now', '2026-09-26', '2026-09-26T08:00:00Z', 'table-2'),
+      at('walk-in-b', '2026-09-25', '2026-09-25T18:00:00Z'),
+      at('ahead', '2026-09-27', '2026-09-27T02:30:00Z'),
+      at('walk-in-a', '2026-09-25', '2026-09-25T09:00:00Z'),
+    ];
+    const { current, earlier } = splitOrdersByShift(orders, '2026-09-26');
+    expect(current.map((o) => o.id)).toEqual(['now', 'ahead']);
+    expect(earlier.map((d) => [d.businessDay, d.orders.map((o) => o.id)])).toEqual([
+      ['2026-09-25', ['walk-in-a', 'walk-in-b']],
+      ['2026-09-24', ['late']],
+    ]);
+    expect(splitOrdersByShift([], '2026-09-26')).toEqual({ current: [], earlier: [] });
+  });
+  it('dates a receipt without a stored shift by the Yerevan shift it was opened in', () => {
+    // 00:30 and 05:59 in Yerevan still belong to the previous shift; 06:00 starts the next one.
+    expect(orderBusinessDay({ id: 'a', businessDay: '', openedAt: '2026-09-25T20:30:00Z' })).toBe(
+      '2026-09-25',
+    );
+    expect(orderBusinessDay({ id: 'b', businessDay: '', openedAt: '2026-09-26T01:59:00Z' })).toBe(
+      '2026-09-25',
+    );
+    expect(orderBusinessDay({ id: 'c', businessDay: '', openedAt: '2026-09-26T02:00:00Z' })).toBe(
+      '2026-09-26',
+    );
+  });
+  it('clears the board when the shift turns, not at midnight', () => {
+    vi.setSystemTime(new Date('2026-09-25T21:30:00Z'));
+    const night = open(initialData(), undefined, 'night');
+    const [receipt] = night.orders!;
+    expect(receipt.businessDay).toBe('2026-09-25');
+    expect(splitOrdersByShift(night.orders!, '2026-09-25').current).toHaveLength(1);
+    expect(splitOrdersByShift(night.orders!, '2026-09-26')).toEqual({
+      current: [],
+      earlier: [{ businessDay: '2026-09-25', orders: [receipt] }],
+    });
   });
   it('splits evenly without losing a dram and computes the change', () => {
     expect(splitEvenly(1000, 3)).toEqual([333.33, 333.33, 333.34]);

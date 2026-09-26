@@ -151,6 +151,87 @@ test('worker sees the same board, makes a quick sale and cancels an empty order 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
+/** Two receipts left open by a shift long past: one without a table (Gin tonic), one on the terrace (vodka). */
+const leftOpen = (data: BarData) => {
+  const context = { actor: { id: 'barbar', fullName: 'Ани' } };
+  const gin = data.cocktails.find((c) => c.name === 'Gin tonic Beefeater')!;
+  let next = applyCommand(data, { id: 'stale-walk-in', type: 'openOrder' }, context);
+  next = applyCommand(
+    next,
+    {
+      id: 'stale-1',
+      type: 'sale',
+      value: {
+        kind: 'cocktail',
+        productId: gin.id,
+        quantity: 1,
+        date: '2026-09-01',
+        orderId: 'stale-walk-in',
+      },
+    },
+    context,
+  );
+  next = applyCommand(next, { id: 'stale-terrace', type: 'openOrder', tableId: 'table-2' }, context);
+  next = applyCommand(
+    next,
+    {
+      id: 'stale-2',
+      type: 'sale',
+      value: {
+        kind: 'alcohol',
+        productId: 'vodka',
+        quantity: 50,
+        date: '2026-09-01',
+        orderId: 'stale-terrace',
+      },
+    },
+    context,
+  );
+  // Dated explicitly, so the check does not depend on the time of day it runs at.
+  return {
+    ...next,
+    orders: next.orders!.map((o) => ({
+      ...o,
+      businessDay: '2026-09-01',
+      openedAt: '2026-09-01T18:30:00.000Z',
+    })),
+  };
+};
+
+test('the board shows only the current shift; earlier bills and table QR codes have their own pages', async ({
+  page,
+}) => {
+  const ledger = await workspace(page, 'admin', leftOpen);
+  // The earlier walk-in is off the board; the terrace stays held by its bill, muted and without a timer.
+  await expect(page.getByRole('heading', { name: 'Без стола' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^1\s*Свободен/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Терраса\s*Счёт с 1 сентября/ })).toBeVisible();
+  await expect(page.locator('details.table-qr-list')).toHaveCount(0);
+
+  await page.getByRole('link', { name: /Незакрытые счета прошлых смен\s*2 ·/ }).click();
+  await expect(page).toHaveURL(/\/tables\/unpaid$/);
+  await expect(page.getByRole('heading', { name: 'Незакрытые счета', level: 1 })).toBeVisible();
+  const day = page.locator('.unpaid-day');
+  await expect(day).toHaveCount(1);
+  await expect(day).toContainText('Счетов: 2');
+  await expect(day.getByRole('button', { name: /^Терраса/ })).toBeVisible();
+  await day.getByRole('button', { name: /^Без стола/ }).click();
+  await expect(page).toHaveURL(/\/orders\/stale-walk-in$/);
+  await expect(page.getByRole('complementary', { name: 'Чек заказа' })).toContainText('Gin tonic Beefeater');
+
+  await page.goto('/');
+  await page.getByRole('link', { name: 'QR-коды' }).click();
+  await expect(page).toHaveURL(/\/tables\/qr$/);
+  await expect(page.getByRole('heading', { name: 'QR-коды столов', level: 1 })).toBeVisible();
+  await page.getByRole('button', { name: 'QR-код · Стол Терраса' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('img', { name: 'QR-код гостевого меню' })).toBeVisible();
+  await expect(dialog).toContainText('Стол Терраса');
+  await expect(dialog).toContainText('/menu?table=');
+  // Only screens changed: both bills are still open in the ledger.
+  expect(ledger().orders!.map((o) => o.status)).toEqual(['open', 'open']);
+});
+
 /** A paid receipt of the asker: two Gin tonic and 50 ml of vodka, on table 1. */
 const paidBefore = (role: Role) => (data: BarData) => {
   const context = { actor: { id: role, fullName: 'Кто-то' } };
