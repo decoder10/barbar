@@ -74,11 +74,11 @@ describe('/menu function entry', () => {
   it('redirects to the static page only without a template, and never loops', async () => {
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     const handler = guestMenuPageFunction(broken('down'), async () => {
-      throw new Error('menu.html: 404');
+      throw new Error('guest-menu.html: 404');
     });
     const redirect = await handler(get('https://barbar.test/menu?table=T7'), context);
     expect(redirect.status).toBe(302);
-    expect(redirect.headers.get('location')).toBe('https://barbar.test/menu.html?table=T7&static=1');
+    expect(redirect.headers.get('location')).toBe('https://barbar.test/guest-menu.html?table=T7&static=1');
     const again = await handler(get('https://barbar.test/menu?static=1'), context);
     expect(again.status).toBe(503);
     expect(again.headers.get('retry-after')).toBe('60');
@@ -109,7 +109,7 @@ describe('/menu function entry', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const withTemplate = guestMenuPageFunction(broken('down'), async () => html);
     const withoutTemplate = guestMenuPageFunction(broken('down'), async () => {
-      throw new Error('menu.html: 500');
+      throw new Error('guest-menu.html: 500');
     });
     for (const response of [
       await withTemplate(get(), context),

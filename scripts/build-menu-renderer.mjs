@@ -1,7 +1,7 @@
 // Pre-builds the `/menu` server renderer as one self-contained ESM file: React, react-dom/server,
 // lucide-react and the guest UI are bundled inside it. Netlify keeps packages of a function external and
 // links their imports when the function loads; loading this file at request time instead lets
-// `barbar-menu-page` catch and log a renderer failure and still answer with the built `menu.html`.
+// `barbar-menu-page` catch and log a renderer failure and still answer with the built `guest-menu.html`.
 // `mongodb` stays external: the function already ships it (shared with `/api/menu`).
 import { build } from 'esbuild';
 import { statSync } from 'node:fs';

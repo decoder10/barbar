@@ -128,8 +128,8 @@ export function localApi(): Plugin {
             )) as typeof import('../netlify/lib/guest-menu-page');
             const template = async () =>
               server.transformIndexHtml(
-                '/menu.html',
-                await readFile(resolve(server.config.root, 'menu.html'), 'utf8'),
+                '/guest-menu.html',
+                await readFile(resolve(server.config.root, 'guest-menu.html'), 'utf8'),
               );
             const result = await handleGuestMenuPage(plain(), repository, template, 'local');
             // Like every other local page, no site headers: the CSP would block Vite's inline refresh script.

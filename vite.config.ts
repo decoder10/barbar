@@ -8,7 +8,7 @@ export default defineConfig({
   build: {
     // The public guest menu (`/menu`) is its own page and never downloads the workspace bundle.
     rollupOptions: {
-      input: { main: 'index.html', menu: 'menu.html' },
+      input: { main: 'index.html', menu: 'guest-menu.html' },
       output: {
         // React and the photo manifest change on different schedules: separate chunks keep a
         // photo edit from invalidating the cached framework, and both pages reuse the same files.

@@ -12,7 +12,7 @@ import { setTranslations } from '../../src/barbar/presentation/i18n/runtime';
 import type { Repository } from './barbar-repository';
 import { handleGuestMenuPage, siteHeaders } from './guest-menu-page';
 
-const template = readFileSync('menu.html', 'utf8');
+const template = readFileSync('guest-menu.html', 'utf8');
 const catalog = (data = initialData()) =>
   ({ readCatalog: async () => ({ catalogRevision: 'rev-7', data }) }) as unknown as Repository;
 const render = (repository: Repository, url = 'https://barbar.test/menu', headers: HeadersInit = {}) =>

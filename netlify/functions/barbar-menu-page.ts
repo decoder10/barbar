@@ -5,9 +5,9 @@ import { guestRepository } from '../lib/guest-repository';
 let template: { deploy: string; html: Promise<string> } | undefined;
 function builtPage(request: Request, deploy: string) {
   if (template?.deploy !== deploy) {
-    // Never follow a redirect: `/menu.html` must not lead back to this function.
-    const html = fetch(new URL('/menu.html', request.url), { redirect: 'manual' }).then((response) => {
-      if (response.status !== 200) throw new Error(`menu.html: ${response.status}`);
+    // Never follow a redirect: the template must not lead back to this function.
+    const html = fetch(new URL('/guest-menu.html', request.url), { redirect: 'manual' }).then((response) => {
+      if (response.status !== 200) throw new Error(`guest-menu.html: ${response.status}`);
       return response.text();
     });
     template = { deploy, html };
@@ -22,7 +22,7 @@ function builtPage(request: Request, deploy: string) {
 // into one self-contained file shipped next to this function (`included_files` in netlify.toml). A
 // non-literal specifier keeps this a real runtime import: the bundler neither inlines the renderer nor
 // hoists its packages to the top of this function, so a failure to load it is caught and logged by
-// `guestMenuPageFunction` and the guest still gets the built `menu.html`.
+// `guestMenuPageFunction` and the guest still gets the built `guest-menu.html`.
 type RendererModule = typeof import('../lib/guest-menu-page');
 const rendererUrl = () => new URL('../generated/guest-menu-renderer.mjs', import.meta.url).href;
 let renderer: Promise<RendererModule> | undefined;

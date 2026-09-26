@@ -6,7 +6,7 @@ import sharp from 'sharp';
 import { startGuestMenuStand, type GuestMenuStand } from '../scripts/guest-menu-stand.mjs';
 
 // Runs on the built page (`npm run build` or `vite build`) with an in-memory catalog: no database, no dev server.
-test.skip(!existsSync('dist/menu.html'), 'Build the site first: dist/menu.html is missing');
+test.skip(!existsSync('dist/guest-menu.html'), 'Build the site first: dist/guest-menu.html is missing');
 let stand: GuestMenuStand;
 let photos: string;
 test.beforeAll(async () => {

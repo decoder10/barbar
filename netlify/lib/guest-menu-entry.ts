@@ -17,7 +17,7 @@ export type GuestMenuRenderer = (
 
 /**
  * `/menu` entry point with a minimal import graph: a renderer that cannot load or throws is logged as
- * `barbar.error` and the guest still gets the built `menu.html`, which renders the menu in the browser.
+ * `barbar.error` and the guest still gets the built `guest-menu.html`, which renders the menu in the browser.
  * A redirect to the static page is the last resort, when even the template cannot be read.
  */
 export function guestMenuPageFunction(
@@ -61,7 +61,7 @@ export function guestMenuPageFunction(
         started,
       );
     // The static page renders the menu in the browser, as before server rendering. The marker stops a
-    // loop should `/menu.html` ever be redirected back here.
+    // loop should the template ever be redirected back here.
     const url = new URL(request.url);
     if (url.searchParams.has('static'))
       return new Response(request.method === 'HEAD' ? null : unavailablePage, {
@@ -75,6 +75,6 @@ export function guestMenuPageFunction(
         },
       });
     url.searchParams.set('static', '1');
-    return Response.redirect(new URL(`/menu.html${url.search}`, url), 302);
+    return Response.redirect(new URL(`/guest-menu.html${url.search}`, url), 302);
   };
 }

@@ -16,9 +16,10 @@
   included_files = ["node_modules/@img/sharp-linux-x64/**", "node_modules/@img/sharp-libvips-linux-x64/**"]
 
 # `/menu` is rendered by `netlify/functions/barbar-menu-page.ts` (prices in the HTML); the built
-# `menu.html` stays its template and fallback.
+# `guest-menu.html` stays its template and fallback. Never name it `menu.html`: a static page at a
+# function's path makes Netlify answer 500 before the function runs.
 # Its renderer is pre-built by `npm run build` (scripts/build-menu-renderer.mjs) and loaded at request
-# time, so a renderer failure falls back to `menu.html` instead of failing the function.
+# time, so a renderer failure falls back to `guest-menu.html` instead of failing the function.
 [functions."barbar-menu-page"]
   included_files = ["netlify/generated/guest-menu-renderer.mjs"]
 

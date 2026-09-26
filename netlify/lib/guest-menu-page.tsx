@@ -26,9 +26,9 @@ const safeJson = (value: unknown) =>
   JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 const root = '<div id="root"></div>';
 
-/** Server-rendered `/menu`: the built `menu.html` with the menu markup and the state it was rendered from. */
+/** Server-rendered `/menu`: the built `guest-menu.html` with the menu markup and the state it was rendered from. */
 export function renderGuestMenuPage(template: string, initial: GuestInitial) {
-  if (!template.includes(root)) throw new Error('menu.html has no empty #root');
+  if (!template.includes(root)) throw new Error('guest-menu.html has no empty #root');
   // Rendering is synchronous: nothing else can switch the shared dictionary before it finishes.
   setTranslations(initial.language, dictionaries[initial.language]);
   const { result: markup, translations } = recordTranslations(() =>

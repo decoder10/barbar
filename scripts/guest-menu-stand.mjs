@@ -23,7 +23,8 @@ const types = {
 export async function startGuestMenuStand({ root = process.cwd(), dist = 'dist', photos } = {}) {
   root = resolve(root);
   dist = resolve(root, dist);
-  if (!existsSync(resolve(dist, 'menu.html'))) throw new Error(`Build first: ${dist}/menu.html is missing`);
+  if (!existsSync(resolve(dist, 'guest-menu.html')))
+    throw new Error(`Build first: ${dist}/guest-menu.html is missing`);
   const vite = await createServer({
     root,
     configFile: false,
@@ -49,7 +50,7 @@ export async function startGuestMenuStand({ root = process.cwd(), dist = 'dist',
       return { catalogRevision: `stand-${kind}-${catalog[kind] ? 'own' : state.revision}`, data };
     },
   });
-  const template = readFileSync(resolve(dist, 'menu.html'), 'utf8');
+  const template = readFileSync(resolve(dist, 'guest-menu.html'), 'utf8');
   const compressed = new WeakMap();
   const send = (response, status, body, headers, acceptEncoding) => {
     // Headers of a function `Response` arrive in lower case, those of static files as written here.
@@ -87,7 +88,7 @@ export async function startGuestMenuStand({ root = process.cwd(), dist = 'dist',
         send(response, result.status, body, Object.fromEntries(result.headers), encoding);
         return;
       }
-      const path = url.pathname === '/menu' || url.pathname === '/menu/' ? '/menu.html' : url.pathname;
+      const path = url.pathname === '/menu' || url.pathname === '/menu/' ? '/guest-menu.html' : url.pathname;
       const file = resolve(dist, `.${decodeURIComponent(path)}`);
       if (!file.startsWith(dist + sep) || !existsSync(file)) {
         send(response, 404, Buffer.from('Not found'), { 'Content-Type': 'text/plain' }, encoding);
