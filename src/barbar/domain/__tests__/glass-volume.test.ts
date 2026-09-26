@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest';
 import { staffData } from '../../../../netlify/lib/barbar-access';
 import { migrateBottleCatalog } from '../catalog/bottles';
-import { applyCommand, initialData, stock, stockTotals, today, validateData } from '../model';
+import { businessToday } from '../business-day';
+import { applyCommand, initialData, stock, stockTotals, validateData } from '../model';
 import { bottlePhoto, menuPhoto } from '../../features/catalog/media/photo-catalog';
 
 function wine() {
@@ -24,7 +25,7 @@ function wine() {
   d = applyCommand(d, {
     id: 'buy-wine',
     type: 'purchase',
-    value: { id: 'pw', alcoholId: 'custom-wine', ml: 2, costPerLiter: 3000, date: today() },
+    value: { id: 'pw', alcoholId: 'custom-wine', ml: 2, costPerLiter: 3000, date: businessToday() },
   });
   return d;
 }
@@ -35,7 +36,7 @@ const sell = (ml: number, quantity = 2) => ({
     kind: 'cocktail' as const,
     productId: 'glass-custom-wine',
     quantity,
-    date: today(),
+    date: businessToday(),
     servingMl: ml,
   },
 });

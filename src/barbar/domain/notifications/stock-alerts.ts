@@ -1,4 +1,4 @@
-import { stockTotals } from '../model';
+import { stockTotals } from '../stock-totals';
 import type { BarData, StaffData, Ingredient } from '../types';
 export interface StockLevel {
   id: string;

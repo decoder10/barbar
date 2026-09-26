@@ -1,13 +1,41 @@
 import { createServer } from 'vite';
 import { MongoClient } from 'mongodb';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
+import { connect, createServer as createTcpServer } from 'node:net';
 import { performance } from 'node:perf_hooks';
 const uri = process.env.BARBAR_TEST_MONGODB_URI;
 if (!uri || !/^mongodb:\/\/(127\.0\.0\.1|localhost):/.test(uri))
   throw new Error('A local test MongoDB URI is required.');
 const client = new MongoClient(uri, { maxPoolSize: 16, serverSelectionTimeoutMS: 5000 });
 const db = client.db(`barbar_test_load_${randomUUID().replaceAll('-', '')}`);
+// Cold starts go through a local TCP proxy that delays every packet by half of BARBAR_LOAD_RTT_MS, so
+// their timing counts sequential MongoDB round trips as a remote cluster would. The default RTT is an
+// assumption, not a measurement of Atlas. A separate client observes every command of these instances.
+const rtt = Number(process.env.BARBAR_LOAD_RTT_MS ?? 20);
+const upstream = new URL(uri.replace(/^mongodb:/, 'http:'));
+const proxy = createTcpServer((socket) => {
+  const target = connect(Number(upstream.port), upstream.hostname);
+  const close = () => {
+    socket.destroy();
+    target.destroy();
+  };
+  for (const [from, to] of [
+    [socket, target],
+    [target, socket],
+  ])
+    from
+      .on('data', (chunk) => setTimeout(() => to.destroyed || to.write(chunk), rtt / 2))
+      .on('error', close)
+      .on('close', close);
+});
+await new Promise((resolve) => proxy.listen(0, '127.0.0.1', resolve));
+const monitored = new MongoClient(uri.replace(upstream.host, `127.0.0.1:${proxy.address().port}`), {
+  maxPoolSize: 16,
+  minPoolSize: 8,
+  serverSelectionTimeoutMS: 5000,
+  monitorCommands: true,
+});
 const server = await createServer({
   configFile: false,
   cacheDir: '/tmp/barbar-load-vite',
@@ -79,6 +107,107 @@ try {
 
   const other = mongoRepository(client, db);
   await other.readWorking();
+
+  // Cold start of a Functions instance on an already migrated database: a new repository and user store
+  // make their first auth, stock and catalog reads. For a single call chain a round is a sequential wave
+  // of MongoDB commands (it starts when nothing is in flight) and startupRounds is the cold call minus
+  // the same call on a ready instance. Parallel chains merge into waves, so for firstRequest only the
+  // time with the simulated RTT shows its critical path.
+  const { mongoUsers } = await server.ssrLoadModule('/netlify/lib/barbar-users.ts');
+  const token = randomBytes(32).toString('hex');
+  await db.collection('users').insertOne({
+    _id: 'load-owner',
+    id: 'load-owner',
+    username: 'load-owner',
+    fullName: 'Load owner',
+    email: '',
+    phone: '',
+    role: 'owner',
+    active: true,
+    createdAt: new Date().toISOString(),
+    passwordHash: 'disabled',
+  });
+  await db.collection('sessions').insertOne({
+    _id: createHash('sha256').update(token).digest('hex'),
+    userId: 'load-owner',
+    expiresAt: new Date(Date.now() + 3600000),
+    authVersion: 0,
+  });
+  await mongoUsers(db).list();
+  // Open the pool first: connection handshakes are not part of what the application code controls.
+  await Promise.all(Array.from({ length: 8 }, () => monitored.db('admin').command({ ping: 1 })));
+  let trace;
+  const settle = (event) => trace?.inFlight.delete(event.requestId);
+  monitored.on('commandStarted', (event) => {
+    if (!trace) return;
+    if (!trace.inFlight.size) trace.rounds++;
+    trace.inFlight.add(event.requestId);
+    const target =
+      event.commandName === 'getMore' ? event.command.collection : event.command[event.commandName];
+    trace.commands.push(`${event.commandName}:${typeof target === 'string' ? target : event.databaseName}`);
+  });
+  monitored.on('commandSucceeded', settle);
+  monitored.on('commandFailed', settle);
+  async function traced(fn) {
+    trace = { rounds: 0, commands: [], inFlight: new Set() };
+    const started = performance.now();
+    try {
+      await fn();
+      return { rounds: trace.rounds, commands: trace.commands, ms: performance.now() - started };
+    } finally {
+      trace = undefined;
+    }
+  }
+  // client.db() returns a new Db each time, so per-Db caches start empty like on a new instance.
+  const freshRepo = () => mongoRepository(monitored, monitored.db(db.databaseName));
+  const freshUsers = () => mongoUsers(monitored.db(db.databaseName));
+  const resolved = async (users) => assert.equal((await users.resolve(token))?.id, 'load-owner');
+  const coldPaths = {
+    resolve: { create: freshUsers, run: resolved, ready: (users) => users.list() },
+    readStock: { create: freshRepo, run: (repo) => repo.readStock(), ready: (repo) => repo.readRevision() },
+    readCatalog: {
+      create: freshRepo,
+      run: (repo) => repo.readCatalog(),
+      ready: (repo) => repo.readRevision(),
+    },
+    // The app's first data request on a new instance: auth, then stock and catalog requests in parallel.
+    firstRequest: {
+      parallel: true,
+      create: () => ({ users: freshUsers(), repo: freshRepo() }),
+      run: async ({ users, repo }) => {
+        await resolved(users);
+        await Promise.all([repo.readStock(), repo.readCatalog()]);
+      },
+      ready: async ({ users, repo }) => {
+        await users.list();
+        await repo.readRevision();
+      },
+    },
+  };
+  const coldStart = {},
+    coldSamples = 9;
+  const median = (list) => ms(list.map((t) => t.ms).sort((a, b) => a - b)[Math.floor(list.length / 2)]);
+  for (const [name, path] of Object.entries(coldPaths)) {
+    const cold = [],
+      warm = [];
+    for (let i = 0; i < coldSamples; i++) {
+      cold.push(await traced(() => path.run(path.create())));
+      const instance = path.create();
+      await path.ready(instance);
+      warm.push(await traced(() => path.run(instance)));
+    }
+    assert.ok(cold.every((t) => t.commands.length === cold[0].commands.length));
+    coldStart[name] = {
+      commands: cold[0].commands.length,
+      migrationLookups: cold[0].commands.filter((c) => c.endsWith(':appMigrations')).length,
+      ...(path.parallel ? {} : { rounds: cold[0].rounds, startupRounds: cold[0].rounds - warm[0].rounds }),
+      coldP50Ms: median(cold),
+      warmP50Ms: median(warm),
+      startupMs: ms(median(cold) - median(warm)),
+      sequence: cold[0].commands.join(' → '),
+    };
+  }
+
   const request = (path = '', command) =>
     new Request('https://barbar.example/api/barbar' + path, {
       method: command ? 'POST' : 'GET',
@@ -207,6 +336,7 @@ try {
           stage: popularityPlan.stages?.[0]?.$cursor?.queryPlanner?.winningPlan?.inputStage?.stage,
         },
         metrics,
+        coldStart: { simulatedRttMs: rtt, samples: coldSamples, ...coldStart },
         integrity: 'stock, valuation, 30 audit events and deduplicated retries verified',
       },
       null,
@@ -215,6 +345,8 @@ try {
   );
 } finally {
   await db.dropDatabase();
+  await monitored.close();
   await client.close();
   await server.close();
+  proxy.close();
 }

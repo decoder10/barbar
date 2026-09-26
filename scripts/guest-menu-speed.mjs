@@ -2,10 +2,11 @@
 // comes from the bootstrap catalog in memory, the page and assets from a built `dist`
 // (`scripts/guest-menu-stand.mjs`), the browser is the local Chrome.
 //
-//   npm run build && npm run speed:menu -- [--root <checkout>] [--runs 5] [--out file.json]
+//   npm run build && npm run speed:menu -- [--root <checkout>] [--runs 5] [--locale ru-RU] [--out file.json]
 //
 // `--root` measures another checkout (for example the previous revision, built there), so the numbers
-// before and after a change come from identical conditions.
+// before and after a change come from identical conditions. `--locale` is the browser language
+// (default en-US); it picks the menu language and so the translations the page embeds.
 import { writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import { startGuestMenuStand } from './guest-menu-stand.mjs';
@@ -16,6 +17,7 @@ const argument = (name, fallback) => {
 };
 const runs = Number(argument('runs', '5'));
 const out = argument('out');
+const locale = argument('locale', 'en-US');
 // Lighthouse "slow 4G" mobile profile: 150 ms RTT, 1.6 Mbit/s down, 750 kbit/s up, CPU four times slower.
 const profile = { latency: 150, download: (1.6 * 1024 * 1024) / 8, upload: (750 * 1024) / 8, cpu: 4 };
 
@@ -65,7 +67,7 @@ try {
       deviceScaleFactor: 3,
       isMobile: true,
       hasTouch: true,
-      locale: 'en-US',
+      locale,
     });
     const page = await context.newPage();
     const errors = [];
@@ -152,7 +154,7 @@ try {
   const report = {
     root: argument('root', process.cwd()),
     serverRendering: stand.serverRendering,
-    profile: { viewport: '390x844', ...profile, download: '1.6 Mbit/s', upload: '750 kbit/s', runs },
+    profile: { viewport: '390x844', ...profile, download: '1.6 Mbit/s', upload: '750 kbit/s', runs, locale },
     medianMs: {
       fcp: round(pick((s) => s.fcp)),
       lcp: round(pick((s) => s.lcp)),

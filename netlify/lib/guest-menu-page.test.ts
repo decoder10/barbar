@@ -88,6 +88,29 @@ describe('server-rendered guest menu page', () => {
     expect(response.headers.get('etag')).toContain('ledger-3');
   });
 
+  it('asks for the first row of photos with the page and leaves the rest lazy', async () => {
+    const html = await (await render(catalog())).text();
+    const markup = html.slice(0, html.indexOf('id="guest-menu-data"'));
+    const cards = markup
+      .split('<article class="menu-card')
+      .slice(1)
+      .map((card) => card.match(/<img [^>]*>/g) || []);
+    expect(cards.length).toBeGreaterThan(10);
+    for (const images of cards.slice(0, 2)) {
+      expect(images.length).toBeGreaterThan(0);
+      for (const image of images) {
+        // React writes `fetchPriority`; HTML attribute names are case-insensitive.
+        expect(image).toMatch(/ fetchpriority="high"/i);
+        expect(image).toContain('loading="eager"');
+        expect(image).not.toContain('loading="lazy"');
+      }
+    }
+    for (const image of cards.slice(2).flat()) {
+      expect(image).toContain('loading="lazy"');
+      expect(image).not.toMatch(/fetchpriority/i);
+    }
+  });
+
   it('keeps a hostile name inert in both the markup and the embedded data', async () => {
     const data = initialData();
     const index = data.cocktails.findIndex((c) => c.price > 0 && !c.guestHidden && !c.stockAlcoholId);

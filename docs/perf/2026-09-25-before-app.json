@@ -1,0 +1,148 @@
+{
+  "dist": "/tmp/barbar-dist-before",
+  "source": "local database barbar (read only), copied to a disposable database",
+  "documents": {
+    "guestEvents": 0,
+    "cocktails": 176,
+    "state": 1,
+    "identityState": 1,
+    "pushDevices": 1,
+    "shifts": 1,
+    "stockMovements": 0,
+    "expenses": 1,
+    "purchaseEvents": 4,
+    "appMigrations": 17,
+    "stockAlertEvents": 0,
+    "orders": 7,
+    "alcohol": 126,
+    "sales": 13,
+    "priceChanges": 0,
+    "suppliers": 0,
+    "sessions": 3,
+    "tables": 3,
+    "purchases": 4,
+    "stockBalances": 126,
+    "users": 2,
+    "guestLimits": 1,
+    "auditEvents": 35,
+    "guestRequests": 2,
+    "stockResets": 0
+  },
+  "profile": {
+    "viewport": "390x844",
+    "latency": 150,
+    "download": "1.6 Mbit/s",
+    "upload": "750 kbit/s",
+    "cpu": 4,
+    "runs": 5
+  },
+  "ready": ".tables-board .table-tile",
+  "owner": {
+    "cold": {
+      "medianMs": {
+        "fcp": 1196,
+        "dataLoaded": 2000,
+        "tablesBoard": 2625,
+        "afterData": 625
+      },
+      "samplesMs": [
+        2611,
+        2625,
+        2632,
+        2625,
+        2626
+      ],
+      "transferKb": {
+        "js": 154.2,
+        "css": 21.2,
+        "api": 63.2,
+        "other": 89.5
+      },
+      "requests": {
+        "js": 14,
+        "api": 7
+      },
+      "consoleErrors": []
+    },
+    "repeat": {
+      "medianMs": {
+        "fcp": 224,
+        "dataLoaded": 835,
+        "tablesBoard": 1327,
+        "afterData": 490
+      },
+      "samplesMs": [
+        1316,
+        1336,
+        1322,
+        1351,
+        1327
+      ],
+      "transferKb": {
+        "js": 0,
+        "css": 0,
+        "api": 63.2,
+        "other": 15.3
+      },
+      "requests": {
+        "js": 14,
+        "api": 7
+      },
+      "consoleErrors": []
+    }
+  },
+  "worker": {
+    "cold": {
+      "medianMs": {
+        "fcp": 1184,
+        "dataLoaded": 2200,
+        "tablesBoard": 2833,
+        "afterData": 624
+      },
+      "samplesMs": [
+        2839,
+        2833,
+        2839,
+        2820,
+        2817
+      ],
+      "transferKb": {
+        "js": 154.2,
+        "css": 21.2,
+        "api": 89.5,
+        "other": 89.5
+      },
+      "requests": {
+        "js": 14,
+        "api": 7
+      },
+      "consoleErrors": []
+    },
+    "repeat": {
+      "medianMs": {
+        "fcp": 232,
+        "dataLoaded": 988,
+        "tablesBoard": 1472,
+        "afterData": 487
+      },
+      "samplesMs": [
+        1493,
+        1493,
+        1470,
+        1472,
+        1457
+      ],
+      "transferKb": {
+        "js": 0,
+        "css": 0,
+        "api": 89.5,
+        "other": 15.3
+      },
+      "requests": {
+        "js": 14,
+        "api": 7
+      },
+      "consoleErrors": []
+    }
+  }
+}

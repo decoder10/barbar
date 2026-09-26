@@ -360,9 +360,9 @@ test('barbar sees quantities and read-only stock but cannot open admin pages', a
   await page.screenshot({ path: '/private/tmp/barbar-staff-mobile.png', fullPage: false });
 });
 
-test('real admin login uses the separate owner account and reads MongoDB', async ({ request }) => {
+test('real admin login uses the separate owner account and reads MongoDB', async ({ request, baseURL }) => {
   const result = await request.post('/api/barbar/auth', {
-    headers: { origin: 'http://127.0.0.1:4001' },
+    headers: { origin: new URL(baseURL!).origin },
     data: { username: 'admin', password: process.env.BARBAR_ADMIN_PASSWORD },
   });
   expect(result.status()).toBe(200);

@@ -8,7 +8,8 @@ import {
 } from '../../src/barbar/domain/guest-requests';
 import type { BarTable, BarData } from '../../src/barbar/domain/types';
 import { HttpError } from './http';
-import { ensureAuditIndexes, ensureLedgerIndexes } from './database/indexes';
+import { runMigrations } from './database/migrations';
+import { guestMigrations } from './database/registry';
 
 type Row = GuestRequest & { _id: string; accessCode: string; purgeAt: Date };
 /** Public projection: never return tokens, internal order IDs or ledger objects. */
@@ -38,12 +39,10 @@ export function guestOrderStore(db: Db, options: { migrations?: boolean } = {}) 
     if (options.migrations === false) return;
     // This public function may be the first request after a deploy. Create the
     // collections and TTL/audit indexes before starting the submission transaction.
-    ready ||= ensureLedgerIndexes(db)
-      .then(() => ensureAuditIndexes(db))
-      .catch((error) => {
-        ready = undefined;
-        throw error;
-      });
+    ready ||= runMigrations(db, guestMigrations).catch((error) => {
+      ready = undefined;
+      throw error;
+    });
     await ready;
   }
   return {

@@ -1,4 +1,3 @@
-import { initialData } from '../domain/model';
 import type { BarData, Role, StaffData } from '../domain/types';
 import type { CatalogResponse, StockResponse, StockEntry } from '../domain/sync/contracts';
 import { api } from './api-client';
@@ -18,7 +17,18 @@ const headers = (previous: WorkingState | null, conditional: boolean) => ({
     ? { 'X-Barbar-Revision': previous.revision, 'X-Barbar-Role': previous.role }
     : {}),
 });
-function hydrate(catalog: CatalogResponse, response: StockResponse, stock: StockEntry[]): WorkingState {
+/**
+ * Worker screens and legacy full snapshots keep the bundled bootstrap catalog as `data`. It is a
+ * separate chunk, so the owner's first screen does not download it; the module loads once per page.
+ */
+export const seedData = () => import('../domain/seed').then((m) => m.initialData());
+/** Starts the worker's catalog chunk alongside the first reads instead of after them. */
+export const preloadSeedData = () => void seedData().catch(() => undefined);
+async function hydrate(
+  catalog: CatalogResponse,
+  response: StockResponse,
+  stock: StockEntry[],
+): Promise<WorkingState> {
   const common = { role: response.role, revision: response.revision, catalog, stock };
   if (response.role === 'admin') {
     if (!catalog.data) throw new Error('Не удалось загрузить каталог. Повторите обновление.');
@@ -68,7 +78,7 @@ function hydrate(catalog: CatalogResponse, response: StockResponse, stock: Stock
   });
   return {
     ...common,
-    data: initialData(),
+    data: await seedData(),
     staffData: {
       ...template,
       ingredients,
@@ -102,7 +112,7 @@ export async function loadWorking(
     return {
       role: response.role,
       revision: response.revision,
-      data: response.role === 'admin' ? response.data : initialData(),
+      data: response.role === 'admin' ? response.data : await seedData(),
       staffData: response.role === 'barbar' ? response.staffData : null,
     };
   }

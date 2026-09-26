@@ -2,6 +2,11 @@ import { existsSync } from 'node:fs';
 import { describe, expect, it, test } from 'vitest';
 import sources from '../../../../../../public/barbar/photos/sources.json';
 import { bottlePhoto, menuPhoto, photos, uploadedPhoto } from '../photo-catalog';
+import { brandLogo } from '../brand-logo';
+
+test('the header logo file matches the full manifest (run npm run photos:manifest after a logo change)', () => {
+  expect(brandLogo).toEqual(photos['brand-logo']);
+});
 
 test('beer flavours never resolve to fruit ingredients and unknown brands get named bottle templates', () => {
   expect(bottlePhoto('Новая марка', 'beer')).toMatchObject({ template: 'beer' });

@@ -1,0 +1,42 @@
+{
+  "root": "/tmp/barbar-head",
+  "serverRendering": true,
+  "profile": {
+    "viewport": "390x844",
+    "latency": 150,
+    "download": "1.6 Mbit/s",
+    "upload": "750 kbit/s",
+    "cpu": 4,
+    "runs": 5,
+    "locale": "ru-RU"
+  },
+  "medianMs": {
+    "fcp": 784,
+    "lcp": 2020,
+    "firstPrice": 784,
+    "fontsLoaded": 1228,
+    "interactive": 1378,
+    "domContentLoaded": 1301,
+    "load": 2361
+  },
+  "cls": 0,
+  "transferKb": {
+    "html": 23.4,
+    "js": 103.2,
+    "css": 6.9,
+    "font": 66.1,
+    "menuApi": 3.8,
+    "image": 229.1,
+    "other": 0
+  },
+  "requests": {
+    "js": 8,
+    "font": 6,
+    "image": 14
+  },
+  "withoutJavaScript": {
+    "cards": 168,
+    "prices": 185
+  },
+  "consoleErrors": []
+}

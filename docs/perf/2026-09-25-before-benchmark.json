@@ -1,0 +1,8 @@
+{
+  "products": 70,
+  "sales": 10000,
+  "medianOf": 5,
+  "legacyMs": 30.72,
+  "indexedMs": 1.33,
+  "speedup": 23.1
+}

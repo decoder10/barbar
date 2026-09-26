@@ -1,0 +1,90 @@
+{
+  "source": "local database barbar (read only)",
+  "markers": "copied from the source",
+  "baseline": {
+    "orders": {
+      "count": 7,
+      "hash": "6cdc27698f29d82a"
+    },
+    "tables": {
+      "count": 3,
+      "hash": "a39b9474ca68c14a"
+    },
+    "sales": {
+      "count": 13,
+      "hash": "2e19cd6530eed448"
+    },
+    "purchases": {
+      "count": 4,
+      "hash": "e122b39569247644"
+    },
+    "users": {
+      "count": 2,
+      "hash": "b122e2057fbc143b"
+    },
+    "sessions": {
+      "count": 3,
+      "hash": "016363641371a7e9"
+    },
+    "stockMovements": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c14"
+    },
+    "stockResets": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c14"
+    },
+    "expenses": {
+      "count": 1,
+      "hash": "1d12ab7cf05b2b47"
+    },
+    "shifts": {
+      "count": 1,
+      "hash": "66a107222a7e9ebf"
+    },
+    "suppliers": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c14"
+    },
+    "priceChanges": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c14"
+    },
+    "alcohol": {
+      "count": 126,
+      "hash": "544f8b6d3eeae9c1"
+    },
+    "cocktails": {
+      "count": 176,
+      "hash": "eab099845927206c"
+    },
+    "stockBalances": {
+      "count": 126,
+      "hash": "cceeeec81067fab0"
+    }
+  },
+  "stepsRun": [],
+  "firstRunChanges": {},
+  "phases": [
+    {
+      "name": "first cold start",
+      "ms": 5,
+      "markerReads": 1,
+      "changedSinceBaseline": []
+    },
+    {
+      "name": "second cold start",
+      "ms": 2,
+      "markerReads": 1,
+      "changedSinceBaseline": []
+    },
+    {
+      "name": "three concurrent cold starts",
+      "ms": 4,
+      "markerReads": 3,
+      "changedSinceBaseline": []
+    }
+  ],
+  "verdict": "passed",
+  "problems": []
+}

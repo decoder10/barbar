@@ -5,6 +5,7 @@ import { publicCatalog } from '../../../../netlify/lib/barbar-sync';
 import { staffData } from '../../../../netlify/lib/barbar-access';
 import { api } from '../api-client';
 import { loadWorking } from '../working-state';
+import { initialData } from '../../domain/model';
 import type { CatalogResponse, StockResponse, CatalogPartResponse } from '../../domain/sync/contracts';
 import type { BarData } from '../../domain/types';
 vi.mock('../api-client', () => ({ api: vi.fn() }));
@@ -184,6 +185,23 @@ describe('working-state synchronization', () => {
     ]);
     release(supply(stock));
     expect((await pending).revision).toBe('stock-1');
+  });
+  it('gives worker screens the same bundled catalog as before, loaded on demand', async () => {
+    queueCatalog(publicCatalog({ catalogRevision: 'catalog-1', data }, 'barbar'));
+    const worker = await loadWorking(
+      null,
+      supply({
+        ...stock,
+        role: 'barbar',
+        stock: stock.stock!.map(({ alcoholId, ml }) => ({ alcoholId, ml })),
+      }),
+    );
+    expect(worker.data).toEqual(initialData());
+    expect(worker.data.cocktails.length).toBeGreaterThan(0);
+    mock
+      .mockResolvedValueOnce({ role: 'barbar', revision: 'legacy', data, staffData: staffData(data) })
+      .mockRejectedValueOnce(new Error('Endpoint not available'));
+    expect((await loadWorking(null)).data).toEqual(initialData());
   });
   it('keeps legacy full-snapshot servers usable when the speculative catalog endpoint is absent', async () => {
     mock

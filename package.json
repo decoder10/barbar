@@ -15,12 +15,14 @@
     "check-format": "prettier --check src netlify server tests *.ts *.json *.md *.html",
     "db:start": "docker compose up -d --wait",
     "db:stop": "docker compose stop",
-    "test:db": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" vitest run --testTimeout=30000 netlify/lib/barbar-mongo.test.ts netlify/lib/barbar-users.test.ts netlify/lib/database/indexes.test.ts netlify/lib/notifications/notifications.test.ts netlify/lib/barbar-sync.test.ts netlify/lib/history-corrections.test.ts netlify/lib/orders-workflows.test.ts netlify/lib/priority2-workflows.test.ts",
+    "test:db": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" vitest run --testTimeout=30000 netlify/lib/barbar-mongo.test.ts netlify/lib/barbar-users.test.ts netlify/lib/database/indexes.test.ts netlify/lib/database/migrations.test.ts netlify/lib/database/hot-paths.test.ts netlify/lib/notifications/notifications.test.ts netlify/lib/barbar-sync.test.ts netlify/lib/history-corrections.test.ts netlify/lib/orders-workflows.test.ts netlify/lib/priority2-workflows.test.ts",
     "photos:manifest": "node scripts/photo-manifest.mjs",
     "lint": "eslint . --max-warnings 0",
     "check": "npm run lint && npm run typecheck && npm test",
     "benchmark": "node scripts/benchmark.mjs",
     "speed:menu": "node scripts/guest-menu-speed.mjs",
+    "speed:app": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" node scripts/workspace-speed.mjs",
+    "perf:bundle": "node scripts/bundle-report.mjs",
     "db:backup": "BARBAR_BACKUP_ENV_FILE=.env.backup node scripts/db/backup.mjs backup",
     "db:verify": "BARBAR_BACKUP_ENV_FILE=.env.backup node scripts/db/backup.mjs verify",
     "db:restore": "BARBAR_BACKUP_ENV_FILE=.env.backup node scripts/db/backup.mjs restore",
@@ -31,6 +33,7 @@
     "test:scheduled-backup": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" node scripts/db/scheduled-backup-test.mjs",
     "test:backup": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" node scripts/db/backup-test.mjs",
     "test:load": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" node scripts/db/load-test.mjs",
+    "db:migrate:check": "BARBAR_TEST_MONGODB_URI=\"mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true\" node scripts/db/migrate-check.mjs",
     "photos:optimize": "node scripts/photo-optimize.mjs && npm run photos:manifest"
   },
   "dependencies": {

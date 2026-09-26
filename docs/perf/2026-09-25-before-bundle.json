@@ -1,0 +1,127 @@
+{
+  "page": "index.html",
+  "compression": {
+    "gzip": "zlib level 9",
+    "brotli": "quality 11"
+  },
+  "firstScreen": {
+    "files": [
+      {
+        "file": "assets/main-dKuFwW4Z.js",
+        "raw": 159905,
+        "gzip": 44709,
+        "brotli": 38451
+      },
+      {
+        "file": "assets/react-VlNyIE0d.js",
+        "raw": 221715,
+        "gzip": 68821,
+        "brotli": 59508
+      },
+      {
+        "file": "assets/photo-manifest-ChPQFKUX.js",
+        "raw": 30913,
+        "gzip": 15067,
+        "brotli": 12542
+      },
+      {
+        "file": "assets/photo-catalog-BIHX18pn.js",
+        "raw": 34028,
+        "gzip": 12993,
+        "brotli": 11255
+      },
+      {
+        "file": "assets/photo-catalog-Byuvsitd.css",
+        "raw": 8469,
+        "gzip": 1123,
+        "brotli": 931
+      },
+      {
+        "file": "assets/main-DLoop40I.css",
+        "raw": 110098,
+        "gzip": 20573,
+        "brotli": 17673
+      }
+    ],
+    "js": {
+      "raw": 446561,
+      "gzip": 141590,
+      "brotli": 121756
+    },
+    "css": {
+      "raw": 118567,
+      "gzip": 21696,
+      "brotli": 18604
+    },
+    "all": {
+      "raw": 565128,
+      "gzip": 163286,
+      "brotli": 140360
+    }
+  },
+  "seedCatalog": {
+    "markers": 7,
+    "foundIn": {
+      "assets/main-dKuFwW4Z.js": 7
+    },
+    "inFirstScreen": true
+  },
+  "otherJs": {
+    "files": 50,
+    "total": {
+      "raw": 602454,
+      "gzip": 197951,
+      "brotli": 167726
+    },
+    "largest": [
+      {
+        "file": "assets/hy-DgnSfdKe.js",
+        "raw": 163102,
+        "gzip": 40406,
+        "brotli": 33715
+      },
+      {
+        "file": "assets/en-C4waT0GJ.js",
+        "raw": 120641,
+        "gzip": 36335,
+        "brotli": 29656
+      },
+      {
+        "file": "assets/Reports-rYTTC3ZM.js",
+        "raw": 60790,
+        "gzip": 18899,
+        "brotli": 16405
+      },
+      {
+        "file": "assets/menu-DUgYfybg.js",
+        "raw": 28133,
+        "gzip": 9861,
+        "brotli": 8688
+      },
+      {
+        "file": "assets/GuestMenuQr-CvsC6mKi.js",
+        "raw": 24795,
+        "gzip": 9563,
+        "brotli": 8160
+      },
+      {
+        "file": "assets/Inventory-vnn5rU80.js",
+        "raw": 31931,
+        "gzip": 9561,
+        "brotli": 8342
+      },
+      {
+        "file": "assets/Order-BKEHmblm.js",
+        "raw": 23416,
+        "gzip": 8489,
+        "brotli": 7414
+      },
+      {
+        "file": "assets/Operations-DloSjprK.js",
+        "raw": 17404,
+        "gzip": 5865,
+        "brotli": 5129
+      }
+    ]
+  }
+}

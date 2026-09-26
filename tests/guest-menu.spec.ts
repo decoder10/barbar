@@ -50,7 +50,8 @@ test('public guest menu opens without a session, switches language and follows p
   await page.screenshot({ path: testInfo.outputPath('guest-menu-desktop.png') });
 });
 
-test('owner prints a QR card for the stable guest menu link', async ({ page }, testInfo) => {
+test('owner prints a QR card for the stable guest menu link', async ({ page, baseURL }, testInfo) => {
+  const menu = new URL('/menu', baseURL);
   const data = fixtureData();
   await page.route('**/api/barbar/auth', (route) =>
     route.fulfill({ json: { authenticated: true, role: 'admin' } }),
@@ -62,12 +63,9 @@ test('owner prints a QR card for the stable guest menu link', async ({ page }, t
   await page.getByRole('button', { name: 'Гостевое меню', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('img', { name: 'QR-код гостевого меню' })).toBeVisible();
-  await expect(dialog).toContainText('127.0.0.1:4001/menu');
+  await expect(dialog).toContainText(`${menu.host}/menu`);
   // Table cards append `?table=<code>`, so the link carries the same absolute address as the QR code.
-  await expect(dialog.getByRole('link', { name: 'Открыть меню' })).toHaveAttribute(
-    'href',
-    'http://127.0.0.1:4001/menu',
-  );
+  await expect(dialog.getByRole('link', { name: 'Открыть меню' })).toHaveAttribute('href', menu.href);
   await dialog.screenshot({ path: testInfo.outputPath('guest-qr-modal.png') });
 });
 

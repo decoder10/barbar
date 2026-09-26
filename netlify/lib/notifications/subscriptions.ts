@@ -1,4 +1,4 @@
-import { oncePerDatabase } from '../database/migrations';
+import { runMigrations, type Migration } from '../database/migrations';
 import { createHash } from 'node:crypto';
 import type { Db } from 'mongodb';
 import type { PushSubscription } from 'web-push';
@@ -39,27 +39,20 @@ export function validateSubscription(input: unknown): PushSubscription {
     throw new Error('Invalid keys');
   return { endpoint: url.href, keys: { p256dh: value.keys.p256dh, auth: value.keys.auth } };
 }
-const ready = new WeakMap<Db, Promise<unknown>>();
-export function ensurePushIndexes(db: Db) {
-  if (!ready.has(db))
-    ready.set(
-      db,
-      oncePerDatabase(db, 'push-indexes-v2', () =>
-        Promise.all([
-          db.collection('pushDevices').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
-          db.collection('pushDevices').createIndex({ userId: 1 }),
-          ...['stockAlertEvents', 'purchaseEvents'].flatMap((name) => [
-            db.collection(name).createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
-            db.collection(name).createIndex({ done: 1, nextAttempt: 1 }),
-          ]),
-        ]),
-      ).catch((error) => {
-        ready.delete(db);
-        throw error;
-      }),
-    );
-  return ready.get(db)!;
-}
+export const pushIndexMigration: Migration = {
+  id: 'push-indexes-v2',
+  description: 'Push devices and notification queue TTL/delivery indexes',
+  run: (db) =>
+    Promise.all([
+      db.collection('pushDevices').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+      db.collection('pushDevices').createIndex({ userId: 1 }),
+      ...['stockAlertEvents', 'purchaseEvents'].flatMap((name) => [
+        db.collection(name).createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+        db.collection(name).createIndex({ done: 1, nextAttempt: 1 }),
+      ]),
+    ]),
+};
+export const ensurePushIndexes = (db: Db) => runMigrations(db, [pushIndexMigration]);
 export async function handlePush(request: Request, db: Db, users: IdentityStore) {
   const user = await authenticated(request, users);
   if (!user) return json({ error: 'Войдите в Barbar Cafe.' }, 401);

@@ -16,12 +16,14 @@ export function RealPhoto({
   name,
   className,
   upload,
+  priority,
 }: {
   choice: PhotoChoice;
   name: string;
   className: string;
   /** The owner's own photo of this item: shown as is, never labelled as an example. */
   upload?: string;
+  priority?: boolean;
 }) {
   const own = upload ? uploadedPhoto(upload) : undefined;
   const photo = own || photos[choice.key];
@@ -33,7 +35,7 @@ export function RealPhoto({
     >
       {t(
         photo ? (
-          <CatalogImage photo={photo} alt={t(name)} />
+          <CatalogImage photo={photo} alt={t(name)} priority={priority} />
         ) : (
           <svg
             className="labelled-bottle"
@@ -74,6 +76,7 @@ export function CocktailArt({
   category,
   serving,
   photo,
+  priority,
 }: {
   image: number;
   name: string;
@@ -81,9 +84,18 @@ export function CocktailArt({
   serving?: string;
   /** The owner's own photo replaces every illustrative composition. */
   photo?: string;
+  priority?: boolean;
 }) {
   if (photo && uploadedPhoto(photo))
-    return <RealPhoto choice={{ key: '' }} upload={photo} name={name} className="cocktail-art" />;
+    return (
+      <RealPhoto
+        choice={{ key: '' }}
+        upload={photo}
+        name={name}
+        className="cocktail-art"
+        priority={priority}
+      />
+    );
   if (category === 'set') {
     const count = Math.min(32, Math.max(1, Number(name.match(/\d+/)?.[0]) || 6));
     return (
@@ -91,6 +103,7 @@ export function CocktailArt({
         choice={{ key: `shot-set-${[6, 10, 16, 32].includes(count) ? count : 6}`, example: true }}
         name={name}
         className="cocktail-art set-photo"
+        priority={priority}
       />
     );
   }
@@ -98,19 +111,31 @@ export function CocktailArt({
   if (ingredient)
     return (
       <div className="cocktail-art tincture-composition">
-        <RealPhoto choice={{ key: shotPhoto(name) }} name={name} className="tincture-glass" />
+        <RealPhoto
+          choice={{ key: shotPhoto(name) }}
+          name={name}
+          className="tincture-glass"
+          priority={priority}
+        />
         <CatalogImage className="tincture-fruit" photo={photos[ingredient]} alt={t(`Вкус: ${name}`)} />
       </div>
     );
   return (
-    <RealPhoto choice={menuPhoto(name, image, category, serving)} name={name} className="cocktail-art" />
+    <RealPhoto
+      choice={menuPhoto(name, image, category, serving)}
+      name={name}
+      className="cocktail-art"
+      priority={priority}
+    />
   );
 }
 
 export function BottleArt({
   drink,
+  priority,
 }: {
   drink: Pick<Alcohol, 'name' | 'color'> & Partial<Pick<Alcohol, 'category' | 'menuCategory' | 'photo'>>;
+  priority?: boolean;
 }) {
   return (
     <RealPhoto
@@ -118,6 +143,7 @@ export function BottleArt({
       upload={drink.photo}
       name={drink.name}
       className="bottle-art"
+      priority={priority}
     />
   );
 }

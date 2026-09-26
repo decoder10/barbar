@@ -1,7 +1,4 @@
 import { closeShift, validShifts, paidOrderTotals } from './shifts';
-import alcoholDefaults from '../data/alcohol.json' with { type: 'json' };
-import cocktailDefaults from '../data/cocktails.json' with { type: 'json' };
-import salesDefaults from '../data/sales/initial.json' with { type: 'json' };
 import { maxMenuImage } from './catalog/legacy-images';
 import { uploadedPhotoValid } from './catalog/uploaded-photos';
 import { batchConsumption, batchRemaining, type BatchConsumption } from './batches';
@@ -13,6 +10,14 @@ import { barConfig } from '../config';
 import { round } from './money';
 import { openOrderAt, orderLines, orderTotal, paymentMethod } from './orders';
 import { productGroupIds } from './inventory-groups';
+import {
+  priceBasis,
+  quantityRound,
+  retiredStock as retired,
+  stockResets as resets,
+  stockTotals,
+  unitBasis,
+} from './stock-totals';
 import {
   Alcohol,
   BarData,
@@ -32,12 +37,13 @@ import {
 } from './types';
 
 export { round };
+export { emptyBarData, uid } from './bar-data';
+export { priceBasis, quantityRound, stockTotals, unitBasis };
 export const today = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Yerevan' }).format(new Date());
 export const money = (n: number) =>
   `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(n)} ֏`;
 export const volume = (n: number) =>
   `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(n)} мл`;
-export const uid = () => crypto.randomUUID();
 /** Menu categories and their behaviour come from `config/menu-categories.json`. */
 export const menuCategoryConfig = (category?: MenuCategory) =>
   barConfig.menu.categories.find((c) => c.id === (category || 'cocktail'));
@@ -54,10 +60,6 @@ export const unitLabel = (unit?: Alcohol['unit']) =>
 type UnitSource = { alcohol: Pick<Alcohol, 'id' | 'unit'>[] };
 export const ingredientUnit = (data: UnitSource, id: string) =>
   unitLabel(data.alcohol.find((a) => a.id === id)?.unit);
-/** Bottles and pieces are priced per unit; millilitres and grams per 1,000. */
-export const unitBasis = (unit?: Alcohol['unit']) => (unit === 'bottle' || unit === 'pcs' ? 1 : 1000);
-export const priceBasis = (data: BarData, id: string) =>
-  unitBasis(data.alcohol.find((a) => a.id === id)?.unit);
 export const priceUnit = (unit?: Alcohol['unit']) =>
   unit === 'bottle' ? '1 бутылку' : unit === 'pcs' ? '1 шт.' : `1 000 ${unitLabel(unit)}`;
 const amountValid = (data: BarData, id: string, amount: unknown, positive = true) =>
@@ -80,8 +82,6 @@ export const saleUnit = (sale: {
         : sale.kind === 'cocktail'
           ? 'порц.'
           : 'мл';
-export const quantityRound = (data: BarData, id: string, n: number) =>
-  priceBasis(data, id) === 1 ? (Math.abs(n) < 1e-7 ? 0 : Math.round(n * 1e8) / 1e8) : round(n);
 // Poured bottles and cut pieces (half a lemon) consume fractions; purchases stay whole units.
 const ingredientAmountValid = (data: BarData, id: string, n: unknown) =>
   data.alcohol.some(
@@ -93,8 +93,6 @@ const ingredientAmountValid = (data: BarData, id: string, n: unknown) =>
   )
     ? typeof n === 'number' && Number.isFinite(n) && n > 0 && n <= 1e9
     : amountValid(data, id, n);
-const resets = (data: BarData) => data.stockResets || [];
-const retired = (data: BarData) => data.archived?.ingredients || [];
 
 const fail = (message: string): never => {
   throw new Error(message);
@@ -114,14 +112,7 @@ const dateValid = (s: unknown): s is string =>
   new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s &&
   s <= today();
 
-export const initialData = (): BarData => ({
-  version: 1,
-  alcohol: alcoholDefaults as Alcohol[],
-  cocktails: cocktailDefaults as Cocktail[],
-  purchases: [],
-  sales: salesDefaults,
-  operations: [],
-});
+export { initialData } from './seed';
 export const activeSales = (data: BarData) => data.sales.filter((s) => !s.voided);
 export const stock = (data: BarData, id: string) =>
   quantityRound(
@@ -139,30 +130,6 @@ export const stock = (data: BarData, id: string) =>
       ) -
       [...retired(data), ...resets(data)].filter((i) => i.alcoholId === id).reduce((n, i) => n + i.ml, 0),
   );
-
-// Build one immutable view of current quantities instead of rescanning history per card.
-export function stockTotals(data: BarData): Map<string, number> {
-  const purchased = new Map<string, number>();
-  const consumed = new Map<string, number>();
-  const removed = new Map<string, number>();
-  const add = (map: Map<string, number>, id: string, quantity: number) =>
-    map.set(id, (map.get(id) || 0) + quantity);
-  for (const i of data.opening?.ingredients || []) add(purchased, i.alcoholId, i.ml);
-  for (const p of data.purchases) add(purchased, p.alcoholId, p.ml);
-  for (const m of data.stockMovements || []) for (const i of m.lines) add(purchased, i.alcoholId, i.ml);
-  for (const s of data.sales) if (!s.voided) for (const i of s.ingredients) add(consumed, i.alcoholId, i.ml);
-  for (const i of [...retired(data), ...resets(data)]) add(removed, i.alcoholId, i.ml);
-  return new Map(
-    data.alcohol.map((a) => [
-      a.id,
-      quantityRound(
-        data,
-        a.id,
-        (purchased.get(a.id) || 0) - (consumed.get(a.id) || 0) - (removed.get(a.id) || 0),
-      ),
-    ]),
-  );
-}
 
 // Historical purchase prices and sale costs remain immutable. The current average
 // is the cost of remaining stock divided by remaining volume.

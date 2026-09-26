@@ -1,7 +1,6 @@
-import type { Db, MongoClient } from 'mongodb';
 import alcoholDefaults from '../../../src/barbar/data/alcohol.json' with { type: 'json' };
 import type { Alcohol } from '../../../src/barbar/domain/types';
-import { oncePerDatabase } from './migrations';
+import type { Migration } from './migrations';
 
 export const foodDefaults = (alcoholDefaults as Alcohol[]).filter((a) => a.category === 'food');
 
@@ -13,8 +12,10 @@ export function missingFoodDefaults(existing: Pick<Alcohol, 'id' | 'name'>[]) {
 }
 
 /** Insert-only catalog upgrade: snack products with zero stock, one new catalog revision. */
-export const seedFoodCatalog = (client: MongoClient, db: Db) =>
-  oncePerDatabase(db, 'food-catalog-v1', () =>
+export const foodCatalogMigration: Migration = {
+  id: 'food-catalog-v1',
+  description: 'Insert missing snack products with zero stock',
+  run: (db, client) =>
     client.withSession((session) =>
       session.withTransaction(
         async () => {
@@ -57,4 +58,4 @@ export const seedFoodCatalog = (client: MongoClient, db: Db) =>
         },
       ),
     ),
-  );
+};

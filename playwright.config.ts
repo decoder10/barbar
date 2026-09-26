@@ -6,7 +6,8 @@ export default defineConfig({
   timeout: 30000,
   fullyParallel: false,
   use: {
-    baseURL: 'http://127.0.0.1:4001',
+    // A separate dev server with a throwaway database keeps e2e traffic away from the owner's :4001.
+    baseURL: process.env.BARBAR_E2E_BASE_URL || 'http://127.0.0.1:4001',
     channel: 'chrome',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',

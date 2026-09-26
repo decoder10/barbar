@@ -1,4 +1,4 @@
-import { oncePerDatabase } from './migrations';
+import { runMigrations, type Migration } from './migrations';
 import type { Db, IndexDescription } from 'mongodb';
 
 export const ledgerCollections = [
@@ -119,7 +119,15 @@ async function buildAuditIndexes(db: Db) {
     ]);
 }
 
-export const ensureLedgerIndexes = (db: Db) =>
-  oncePerDatabase(db, 'ledger-indexes-v5', () => buildLedgerIndexes(db));
-export const ensureAuditIndexes = (db: Db) =>
-  oncePerDatabase(db, 'audit-indexes-v2', () => buildAuditIndexes(db));
+export const ledgerIndexMigration: Migration = {
+  id: 'ledger-indexes-v5',
+  description: 'Ledger, order and guest indexes; retire exact legacy date indexes',
+  run: buildLedgerIndexes,
+};
+export const auditIndexMigration: Migration = {
+  id: 'audit-indexes-v2',
+  description: 'Audit journal indexes',
+  run: buildAuditIndexes,
+};
+export const ensureLedgerIndexes = (db: Db) => runMigrations(db, [ledgerIndexMigration]);
+export const ensureAuditIndexes = (db: Db) => runMigrations(db, [auditIndexMigration]);

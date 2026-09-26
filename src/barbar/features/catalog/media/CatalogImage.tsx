@@ -6,13 +6,17 @@ export function CatalogImage({
   alt,
   className,
   eager = false,
+  priority = false,
 }: {
   photo: Photo;
   alt: string;
   className?: string;
   eager?: boolean;
+  /** A card photo in the first screen: fetched with the page instead of after layout, card sizes kept. */
+  priority?: boolean;
 }) {
   const sizes = eager ? '180px' : 'auto, (max-width: 600px) 90vw, 320px';
+  const urgent = eager || priority;
   return (
     <picture className="catalog-picture">
       {photo.avif && <source type="image/avif" srcSet={photo.avif} sizes={sizes} />}
@@ -24,9 +28,9 @@ export function CatalogImage({
         width={photo.width}
         height={photo.height}
         alt={alt}
-        loading={eager ? 'eager' : 'lazy'}
-        // The first-screen logo is the LCP candidate: ask for it before the lazy card photos.
-        fetchPriority={eager ? 'high' : undefined}
+        loading={urgent ? 'eager' : 'lazy'}
+        // The first-screen logo and card photos are LCP candidates: ask for them before the lazy ones.
+        fetchPriority={urgent ? 'high' : undefined}
         decoding="async"
       />
     </picture>

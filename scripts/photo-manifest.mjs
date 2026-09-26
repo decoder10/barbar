@@ -49,6 +49,12 @@ writeFileSync(
   new URL('../src/barbar/features/catalog/media/photo-manifest.json', import.meta.url),
   JSON.stringify({ a: authors, p: compact }) + '\n',
 );
+// The workspace header needs only the logo; its own copy keeps the full manifest off the first screen.
+const [logoFile, logoAuthor, ...logo] = compact['brand-logo'];
+writeFileSync(
+  new URL('../src/barbar/features/catalog/media/brand-logo.json', import.meta.url),
+  JSON.stringify({ a: [authors[logoAuthor]], p: { 'brand-logo': [logoFile, 0, ...logo] } }) + '\n',
+);
 writeFileSync(
   new URL('credits.html', root),
   `<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Barbar · Источники фотографий</title><style>body{font:16px/1.7 system-ui;margin:40px auto;padding:0 24px;max-width:1000px;color:#243347}article{border-bottom:1px solid #ddd;padding:24px 0}a{color:#a84473}img{width:100px;height:130px;object-fit:contain;float:left;margin:0 24px 16px 0}article:after{content:'';display:block;clear:both}h2{font-size:18px}</style><a href="/">← Barbar Cafe</a><h1>Источники фотографий</h1><p>Фото используются как примеры упаковки и подачи. Изображения, созданные или обработанные ИИ, отмечены отдельно. Они не подтверждают фактический состав рецепта или объём порции.</p>${Object.entries(

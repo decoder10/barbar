@@ -1,0 +1,127 @@
+{
+  "environment": "local MongoDB replica set; synthetic data; not an Atlas/Netlify latency guarantee",
+  "historySales": 50000,
+  "products": 70,
+  "compactBytes": 47322,
+  "historyPageBytes": 12209,
+  "historyDeepPageBytes": 11932,
+  "fullBytes": 11861060,
+  "reduction": 250.65,
+  "historyQuery": {
+    "returned": 51,
+    "examined": 51,
+    "keys": 51
+  },
+  "popularityQuery": {
+    "examined": 50030,
+    "keys": 50030
+  },
+  "metrics": {
+    "workingState": {
+      "requests": 60,
+      "concurrency": 10,
+      "p50Ms": 11.21,
+      "p95Ms": 22.41,
+      "totalMs": 79.74
+    },
+    "historyFirstPage": {
+      "requests": 12,
+      "concurrency": 4,
+      "p50Ms": 4.19,
+      "p95Ms": 227.62,
+      "totalMs": 232.72
+    },
+    "historyDeepPage": {
+      "requests": 12,
+      "concurrency": 4,
+      "p50Ms": 1.99,
+      "p95Ms": 7.5,
+      "totalMs": 9.9
+    },
+    "cardsPopularCold": {
+      "requests": 1,
+      "concurrency": 1,
+      "p50Ms": 30.04,
+      "p95Ms": 30.04,
+      "totalMs": 30.05
+    },
+    "cardsPopularCached": {
+      "requests": 12,
+      "concurrency": 4,
+      "p50Ms": 3.83,
+      "p95Ms": 7.35,
+      "totalMs": 14.14
+    },
+    "reportCold": {
+      "requests": 1,
+      "concurrency": 1,
+      "p50Ms": 320.59,
+      "p95Ms": 320.59,
+      "totalMs": 320.6
+    },
+    "reportCached": {
+      "requests": 40,
+      "concurrency": 8,
+      "p50Ms": 1.57,
+      "p95Ms": 3.38,
+      "totalMs": 10.27
+    },
+    "sales": {
+      "requests": 30,
+      "concurrency": 6,
+      "p50Ms": 17.97,
+      "p95Ms": 194.09,
+      "totalMs": 290.7
+    },
+    "retries": {
+      "requests": 30,
+      "concurrency": 6,
+      "p50Ms": 5.78,
+      "p95Ms": 6.82,
+      "totalMs": 29.03
+    }
+  },
+  "coldStart": {
+    "simulatedRttMs": 20,
+    "samples": 9,
+    "resolve": {
+      "commands": 2,
+      "migrationLookups": 1,
+      "rounds": 2,
+      "startupRounds": 1,
+      "coldP50Ms": 51.62,
+      "warmP50Ms": 27.06,
+      "startupMs": 24.56,
+      "sequence": "find:appMigrations → aggregate:sessions"
+    },
+    "readStock": {
+      "commands": 10,
+      "migrationLookups": 6,
+      "rounds": 10,
+      "startupRounds": 7,
+      "coldP50Ms": 262.81,
+      "warmP50Ms": 82.75,
+      "startupMs": 180.06,
+      "sequence": "find:state → find:appMigrations → find:appMigrations → find:appMigrations → find:appMigrations → find:appMigrations → find:appMigrations → find:state → find:stockBalances → commitTransaction:admin"
+    },
+    "readCatalog": {
+      "commands": 12,
+      "migrationLookups": 6,
+      "rounds": 12,
+      "startupRounds": 7,
+      "coldP50Ms": 318.72,
+      "warmP50Ms": 139.6,
+      "startupMs": 179.12,
+      "sequence": "find:state → find:appMigrations → find:appMigrations → find:appMigrations → find:appMigrations → find:appMigrations → find:appMigrations → find:state → find:alcohol → find:cocktails → getMore:cocktails → commitTransaction:admin"
+    },
+    "firstRequest": {
+      "commands": 17,
+      "migrationLookups": 7,
+      "coldP50Ms": 357.36,
+      "warmP50Ms": 162.62,
+      "startupMs": 194.74,
+      "sequence": "find:appMigrations → aggregate:sessions → find:state → find:appMigrations → find:appMigrations → find:appMigrations → find:appMigrations → find:appMigrations → find:appMigrations → find:state → find:state → find:stockBalances → find:alcohol → commitTransaction:admin → find:cocktails → getMore:cocktails → commitTransaction:admin"
+    }
+  },
+  "integrity": "stock, valuation, 30 audit events and deduplicated retries verified"
+}

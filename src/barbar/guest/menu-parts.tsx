@@ -48,12 +48,13 @@ function SectionIcon({ id }: { id: GuestSectionId }) {
                   : Milk;
   return <Icon size={22} strokeWidth={1.5} aria-hidden="true" />;
 }
-export function MenuPhoto({ item }: { item: GuestMenuItem }) {
+export function MenuPhoto({ item, priority }: { item: GuestMenuItem; priority?: boolean }) {
   return (
     <div className="menu-card-photo">
       {item.category === 'alcohol' ? (
         <BottleArt
           drink={{ name: item.photoName, color: '#8c775b', category: 'alcohol', photo: item.photo }}
+          priority={priority}
         />
       ) : (
         <CocktailArt
@@ -66,6 +67,7 @@ export function MenuPhoto({ item }: { item: GuestMenuItem }) {
           category={item.category}
           serving={item.serving}
           photo={item.photo}
+          priority={priority}
         />
       )}
     </div>
@@ -145,12 +147,15 @@ export function MenuCard({
   saved,
   toggle,
   cart,
+  priority,
 }: {
   item: GuestMenuItem;
   language: Language;
   saved: boolean;
   toggle: (item: GuestMenuItem) => void;
   cart?: MenuCartControls;
+  /** One of the first cards on screen: its photo is the page's largest paint. */
+  priority?: boolean;
 }) {
   const sellable = item.prices.filter((p) => p.productId);
   // A portion name is needed only to tell several prices of one drink apart.
@@ -161,7 +166,7 @@ export function MenuCard({
   const soldOut = known.length > 0 && known.every((p) => !p.available);
   return (
     <article className={`menu-card${soldOut ? ' sold-out' : ''}`}>
-      <MenuPhoto item={item} />
+      <MenuPhoto item={item} priority={priority} />
       <div className="menu-card-body">
         <h3>{item.name}</h3>
         {known.length > 0 && (

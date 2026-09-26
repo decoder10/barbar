@@ -1,0 +1,90 @@
+{
+  "source": "synthetic ledger, 20000 sales",
+  "markers": "copied from the source",
+  "baseline": {
+    "orders": {
+      "count": 2000,
+      "hash": "912682e0e96008b1"
+    },
+    "tables": {
+      "count": 12,
+      "hash": "fde8642febd5d7b3"
+    },
+    "sales": {
+      "count": 20001,
+      "hash": "ed986eb31c20441f"
+    },
+    "purchases": {
+      "count": 1,
+      "hash": "7a66a5f56c750c82"
+    },
+    "users": {
+      "count": 2,
+      "hash": "5152f721dcfaa650"
+    },
+    "sessions": {
+      "count": 1,
+      "hash": "aab045c07d3c479c"
+    },
+    "stockMovements": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c14"
+    },
+    "stockResets": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c14"
+    },
+    "expenses": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c14"
+    },
+    "shifts": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c14"
+    },
+    "suppliers": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c14"
+    },
+    "priceChanges": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c14"
+    },
+    "alcohol": {
+      "count": 125,
+      "hash": "9f2c85146a029781"
+    },
+    "cocktails": {
+      "count": 176,
+      "hash": "bdee79e813370dfc"
+    },
+    "stockBalances": {
+      "count": 125,
+      "hash": "d89bf58b03f08900"
+    }
+  },
+  "stepsRun": [],
+  "firstRunChanges": {},
+  "phases": [
+    {
+      "name": "first cold start",
+      "ms": 1,
+      "markerReads": 1,
+      "changedSinceBaseline": []
+    },
+    {
+      "name": "second cold start",
+      "ms": 1,
+      "markerReads": 1,
+      "changedSinceBaseline": []
+    },
+    {
+      "name": "three concurrent cold starts",
+      "ms": 1,
+      "markerReads": 3,
+      "changedSinceBaseline": []
+    }
+  ],
+  "verdict": "passed",
+  "problems": []
+}

@@ -2,7 +2,7 @@ import { barConfig, configHash } from '../../../src/barbar/config';
 import type { ClientSession, Db, MongoClient } from 'mongodb';
 import { mergeGoodsDuplicates, migrateGoodsCatalog } from '../../../src/barbar/domain/catalog/goods';
 import type { Alcohol, Cocktail } from '../../../src/barbar/domain/types';
-import { oncePerDatabase } from './migrations';
+import { runMigrations, type Migration } from './migrations';
 
 type Row<T> = T & { _id: string; _order: number };
 
@@ -33,10 +33,12 @@ async function renumberCatalog(db: Db, session: ClientSession) {
 }
 
 /** One-time link of untouched piece items (soft drinks, packs, tea bags) to piece stock with zero balance. */
-export const convertGoodsCatalog = (client: MongoClient, db: Db) =>
+export const goodsCatalogMigration: Migration = {
   // v3: v2 could be marked done by a build without the duplicate cleanup. The hash reruns it when the
   // goods or duplicate lists in config change; the migration itself is idempotent.
-  oncePerDatabase(db, goodsCatalogKey, () =>
+  id: goodsCatalogKey,
+  description: 'Link untouched piece items to goods stock; remove unused duplicates',
+  run: (db, client) =>
     client.withSession((session) =>
       session.withTransaction(
         async () => {
@@ -136,12 +138,14 @@ export const convertGoodsCatalog = (client: MongoClient, db: Db) =>
         { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' }, readPreference: 'primary' },
       ),
     ),
-  );
+};
 
 /** One item per drink: merge bar Tonic/Cola/Soda in ml with their goods counterparts (owner decisions). */
-export const mergeGoodsCatalog = (client: MongoClient, db: Db) =>
+export const goodsMergeMigration: Migration = {
   // v3 preserves custom recipes, every recipe reference and archived usage. Reruns when config changes.
-  oncePerDatabase(db, goodsMergeKey, () =>
+  id: goodsMergeKey,
+  description: 'Merge bar mixers in ml with their goods counterparts',
+  run: (db, client) =>
     client.withSession((session) =>
       session.withTransaction(
         async () => {
@@ -215,4 +219,6 @@ export const mergeGoodsCatalog = (client: MongoClient, db: Db) =>
         { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' }, readPreference: 'primary' },
       ),
     ),
-  );
+};
+export const mergeGoodsCatalog = (client: MongoClient, db: Db) =>
+  runMigrations(db, [goodsMergeMigration], client);

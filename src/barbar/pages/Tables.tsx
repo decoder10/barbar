@@ -1,10 +1,9 @@
 import { ShiftCloseButton } from '../features/orders/ShiftCloseSheet';
 import { GuestRequestSheet, GuestRequests, useGuestRequests } from '../features/orders/GuestRequests';
 import { requestsByTable as groupRequests } from '../domain/guest-requests';
-import { GuestMenuQrModal } from '../features/guest/GuestMenuQr';
 import type { BarTable } from '../domain/types';
 import { Armchair, BellRing, Settings2, X, Zap } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBar } from '../app/providers/BarProvider';
 import { TablesEditor } from '../features/orders/TablesEditor';
@@ -18,6 +17,11 @@ import { t } from '../presentation/i18n/runtime';
 import { PageHeading } from '../ui/layout';
 import { SalesFullscreen } from '../features/sales/SalesFullscreen';
 import { LoadingStatus } from '../ui/loading';
+
+// The QR card brings the QR encoder and the whole photo catalog; the board is the first screen of a shift,
+// so the card is fetched when the QR list is opened, not before the tables can be shown.
+const loadQr = () => import('../features/guest/GuestMenuQr');
+const GuestMenuQrModal = lazy(() => loadQr().then((m) => ({ default: m.GuestMenuQrModal })));
 
 /** Ticks on its own, so the board is not re-rendered just to refresh «N мин». */
 function Elapsed({ since }: { since: string }) {
@@ -192,7 +196,12 @@ export default function Tables() {
           )}
         </>
       )}
-      <details className="table-qr-list">
+      <details
+        className="table-qr-list"
+        onToggle={(event) => {
+          if (event.currentTarget.open) void loadQr().catch(() => undefined);
+        }}
+      >
         <summary>{t('QR-коды столов')}</summary>
         <div className="guest-request-actions">
           {active.map((table) => (
@@ -209,7 +218,11 @@ export default function Tables() {
           reload={feed.reload}
         />
       )}
-      {qr && <GuestMenuQrModal table={qr} close={() => setQr(null)} />}
+      {qr && (
+        <Suspense fallback={null}>
+          <GuestMenuQrModal table={qr} close={() => setQr(null)} />
+        </Suspense>
+      )}
       {editing && <TablesEditor tables={tables} orders={orders} close={() => setEditing(false)} />}
     </>
   );

@@ -37,13 +37,11 @@ const scenarios = (['ru', 'en', 'hy'] as const).flatMap((language) =>
 for (const { language, theme, width, role } of scenarios) {
   test(`guest request → worker → payment → shift ${language}/${theme}/${width}/${role}`, async ({
     browser,
+    baseURL,
   }) => {
     const tr = (value: string) =>
       language === 'ru' ? value : (language === 'en' ? en : hy)[value as keyof typeof en] || value;
-    const context = await browser.newContext({
-      viewport: { width, height: 1000 },
-      baseURL: 'http://127.0.0.1:4001',
-    });
+    const context = await browser.newContext({ viewport: { width, height: 1000 }, baseURL });
     await context.addInitScript(
       ({ language, theme }) => {
         localStorage.setItem('barbar-guest-language', language);
@@ -139,7 +137,7 @@ for (const { language, theme, width, role } of scenarios) {
       await expect(staff.getByRole('button', { name: tr('Скачать CSV смен') })).toBeEnabled();
     } else {
       // A worker closes shifts but never reaches the money reports behind them.
-      await expect(staff).toHaveURL('http://127.0.0.1:4001/');
+      await expect(staff).toHaveURL(new URL('/', baseURL).href);
       await expect(staff.getByRole('heading', { name: tr('Чеки и смены') })).toHaveCount(0);
       await expect(staff.getByRole('button', { name: tr('Скачать CSV смен') })).toHaveCount(0);
     }

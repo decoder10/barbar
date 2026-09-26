@@ -21,6 +21,8 @@ import { favoriteKey, useGuestPreferences } from './use-guest-preferences';
 
 const { copy, languages } = barConfig.guest;
 const wideQuery = '(min-width: 1280px)';
+// Cards per row on a phone; more urgent photos would share the slow link with each other and the script.
+const priorityCards = 2;
 /**
  * The public menu. The server renders it with `initial` (`netlify/lib/guest-menu-page.tsx`) and the browser
  * hydrates the same state, so the first render reads nothing from `window` or storage. Styles are
@@ -61,6 +63,9 @@ export default function GuestMenuPage({ initial }: { initial?: GuestInitial }) {
     .flatMap((section) => section.items)
     .filter((item) => saved.has(favoriteKey(item)));
   const currentSection = active || sections[0]?.id || null;
+  // The first row of the first section is on screen before any script: fetch those photos with the page.
+  // Depends only on the menu order, so the server markup and hydration agree.
+  const firstPhotos = new Set(sections[0]?.items.slice(0, priorityCards));
   useEffect(() => {
     const query = window.matchMedia(wideQuery);
     setWide(query.matches);
@@ -319,6 +324,7 @@ export default function GuestMenuPage({ initial }: { initial?: GuestInitial }) {
                               saved={saved.has(favoriteKey(item))}
                               toggle={toggleFavorite}
                               cart={cart}
+                              priority={firstPhotos.has(item)}
                             />
                           ))}
                         </div>

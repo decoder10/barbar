@@ -5,7 +5,6 @@ import {
 } from '../../src/barbar/domain/guest-requests';
 import { shiftPreview, paidOrderTotals } from '../../src/barbar/domain/shifts';
 import { guestOrderStore } from './guest-order-store';
-import { ensurePushIndexes } from './notifications/subscriptions';
 import { recordPurchaseEvent, recordStockAlerts } from './notifications/events';
 import { MongoClient, type ClientSession, type Db, type Document } from 'mongodb';
 import { migrateBottleCatalog } from '../../src/barbar/domain/catalog/bottles';
@@ -26,14 +25,10 @@ import { commandAudit, appendAudit } from './audit/store';
 import { loadBatchSources } from './batch-sources';
 import type { Repository, Snapshot } from './barbar-repository';
 
-import {
-  ensureAuditIndexes,
-  ensureLedgerIndexes,
-  ledgerCollections as collections,
-} from './database/indexes';
+import { ledgerCollections as collections } from './database/indexes';
+import { loadMigrationMarkers, runMigrations } from './database/migrations';
+import { dataMigrations, schemaMigrations } from './database/registry';
 import { revisionQuery } from './queries/cache';
-import { seedFoodCatalog } from './database/food-catalog';
-import { convertGoodsCatalog, mergeGoodsCatalog } from './database/goods-catalog';
 
 export interface RepositoryOptions {
   /** False for an explicitly selected live database: never import, reseed or migrate on start. */
@@ -110,15 +105,17 @@ export function mongoRepository(
     ...(data.archived ? { archived: data.archived } : {}),
   });
   async function initialize() {
-    const existing = await state.findOne({ _id: 'state' });
+    // All migration markers come in one query, in the same round trip as the ledger state.
+    const [existing] = await Promise.all([
+      state.findOne({ _id: 'state' }),
+      migrations ? loadMigrationMarkers(db) : undefined,
+    ]);
     if (!migrations) {
       if (existing?.readModelVersion !== 1) throw migrationBlocked();
       return;
     }
     // Also upgrade indexes for an existing ledger; never reimport its catalog.
-    await ensureLedgerIndexes(db);
-    await ensureAuditIndexes(db);
-    await ensurePushIndexes(db);
+    await runMigrations(db, schemaMigrations, client);
     if (existing?.readModelVersion === 1) return;
     if (existing) {
       await client.withSession((session) =>
@@ -190,9 +187,7 @@ export function mongoRepository(
       .then(async () => {
         // Insert-only catalog upgrades, once per database and never for an explicitly selected live DB.
         if (!migrations) return;
-        await seedFoodCatalog(client, db);
-        await convertGoodsCatalog(client, db);
-        await mergeGoodsCatalog(client, db);
+        await runMigrations(db, dataMigrations, client);
       })
       .catch((error) => {
         ready = undefined;

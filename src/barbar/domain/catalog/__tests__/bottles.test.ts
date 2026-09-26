@@ -8,9 +8,9 @@ import {
   portions,
   recipeCost,
   stock,
-  today,
   validateData,
 } from '../../model';
+import { businessToday } from '../../business-day';
 import type { Alcohol, BarData } from '../../types';
 
 const add = (data: BarData, value: Alcohol) =>
@@ -19,13 +19,14 @@ const purchase = (data: BarData, alcoholId: string, ml: number, costPerLiter: nu
   applyCommand(data, {
     id: crypto.randomUUID(),
     type: 'purchase',
-    value: { id: crypto.randomUUID(), alcoholId, ml, costPerLiter, date: today() },
+    // Stock resets take the business day (06:00–05:59 Yerevan); entries use it too, as in the app.
+    value: { id: crypto.randomUUID(), alcoholId, ml, costPerLiter, date: businessToday() },
   });
 const sell = (data: BarData, productId: string, quantity = 1) =>
   applyCommand(data, {
     id: crypto.randomUUID(),
     type: 'sale',
-    value: { kind: 'cocktail', productId, quantity, date: today() },
+    value: { kind: 'cocktail', productId, quantity, date: businessToday() },
   });
 const beer: Alcohol = {
   id: 'test-beer',

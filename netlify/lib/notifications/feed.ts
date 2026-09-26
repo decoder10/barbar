@@ -1,4 +1,4 @@
-import type { Db } from 'mongodb';
+import type { Db, Document } from 'mongodb';
 import { authenticated, json } from '../barbar-auth';
 import type { IdentityStore } from '../barbar-users';
 import type { StockAlert } from '../../../src/barbar/domain/notifications/stock-alerts';
@@ -16,36 +16,23 @@ export async function handleNotificationsFeed(request: Request, db: Db, users: I
   if (!user) return json({ error: 'Войдите в Barbar Cafe.' }, 401);
   if (request.method !== 'GET') return json({ error: 'Метод не поддерживается.' }, 405);
   const limit = 50;
-  const options = { maxTimeMS: 5000 };
-  const stock = (await db
-    .collection('stockAlertEvents')
-    .find({}, { ...options, projection: { alerts: 1, createdAt: 1, done: 1 } })
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .toArray()) as unknown as { _id: string; alerts: StockAlert[]; createdAt: Date; done: boolean }[];
-  const purchases =
-    user.role === 'owner'
-      ? ((await db
-          .collection('purchaseEvents')
-          .find({}, { ...options, projection: { purchase: 1, createdAt: 1, done: 1 } })
-          .sort({ createdAt: -1 })
-          .limit(limit)
-          .toArray()) as unknown as {
-          _id: string;
-          purchase: PurchaseNotice;
-          createdAt: Date;
-          done: boolean;
-        }[])
-      : [];
-  const guests = (await db
-    .collection('guestEvents')
-    .find(
+  // The newest events of each queue, read together through the createdAt indexes.
+  const newest = <T>(name: string, filter: Document, projection: Document) =>
+    db
+      .collection(name)
+      .find(filter, { maxTimeMS: 5000, projection: { ...projection, createdAt: 1, done: 1 } })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .toArray() as unknown as Promise<(T & { _id: string; createdAt: Date; done: boolean })[]>;
+  const [stock, purchases, guests] = await Promise.all([
+    newest<{ alerts: StockAlert[] }>('stockAlertEvents', {}, { alerts: 1 }),
+    user.role === 'owner' ? newest<{ purchase: PurchaseNotice }>('purchaseEvents', {}, { purchase: 1 }) : [],
+    newest<GuestNotice>(
+      'guestEvents',
       { expiresAt: { $gt: new Date() } },
-      { ...options, projection: { tableName: 1, lines: 1, total: 1, comment: 1, createdAt: 1, done: 1 } },
-    )
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .toArray()) as unknown as (GuestNotice & { _id: string; createdAt: Date; done: boolean })[];
+      { tableName: 1, lines: 1, total: 1, comment: 1 },
+    ),
+  ]);
   const items: FeedItem[] = [
     ...guests.map((event) => ({
       id: `guest:${event._id}`,

@@ -1,0 +1,42 @@
+{
+  "root": "/tmp/barbar-a1",
+  "serverRendering": true,
+  "profile": {
+    "viewport": "390x844",
+    "latency": 150,
+    "download": "1.6 Mbit/s",
+    "upload": "750 kbit/s",
+    "cpu": 4,
+    "runs": 5,
+    "locale": "en-US"
+  },
+  "medianMs": {
+    "fcp": 788,
+    "lcp": 1708,
+    "firstPrice": 788,
+    "fontsLoaded": 1121,
+    "interactive": 1338,
+    "domContentLoaded": 1265,
+    "load": 2411
+  },
+  "cls": 0,
+  "transferKb": {
+    "html": 25.1,
+    "js": 138.8,
+    "css": 6.9,
+    "font": 50.2,
+    "menuApi": 3.8,
+    "image": 229.1,
+    "other": 0
+  },
+  "requests": {
+    "js": 11,
+    "font": 4,
+    "image": 14
+  },
+  "withoutJavaScript": {
+    "cards": 168,
+    "prices": 185
+  },
+  "consoleErrors": []
+}

@@ -1,0 +1,22 @@
+{
+  "method": "node + vite ssrLoadModule, temporary local database barbar_perf_feed_<uuid>, dropped afterwards; indexes created by runMigrations(schemaMigrations) from netlify/lib/database/registry.ts; queries copied from netlify/lib/notifications/feed.ts (find, projection, sort createdAt -1, limit 50, maxTimeMS 5000); explain('executionStats')",
+  "documentsPerCollection": 2000,
+  "stockAlertEvents": {
+    "stages": "LIMIT > PROJECTION_SIMPLE > FETCH > IXSCAN(createdAt_-1)",
+    "returned": 50,
+    "docsExamined": 50,
+    "keysExamined": 50
+  },
+  "purchaseEvents": {
+    "stages": "LIMIT > PROJECTION_SIMPLE > FETCH > IXSCAN(createdAt_-1)",
+    "returned": 50,
+    "docsExamined": 50,
+    "keysExamined": 50
+  },
+  "guestEvents": {
+    "stages": "LIMIT > PROJECTION_SIMPLE > FETCH > IXSCAN(createdAt_-1)",
+    "returned": 50,
+    "docsExamined": 50,
+    "keysExamined": 50
+  }
+}

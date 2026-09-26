@@ -1,0 +1,22 @@
+{
+  "method": "mongosh explain('executionStats') in a temporary local database barbar_perf_feed_<uuid>, dropped afterwards; indexes as created by push-indexes-v2 and ledger-indexes-v5; queries copied from netlify/lib/notifications/feed.ts",
+  "documentsPerCollection": 2000,
+  "stockAlertEvents": {
+    "stages": "PROJECTION_SIMPLE > SORT > COLLSCAN",
+    "returned": 50,
+    "docsExamined": 2000,
+    "keysExamined": 0
+  },
+  "purchaseEvents": {
+    "stages": "PROJECTION_SIMPLE > SORT > COLLSCAN",
+    "returned": 50,
+    "docsExamined": 2000,
+    "keysExamined": 0
+  },
+  "guestEvents": {
+    "stages": "PROJECTION_SIMPLE > SORT > FETCH > IXSCAN(expiresAt_1)",
+    "returned": 50,
+    "docsExamined": 2000,
+    "keysExamined": 2000
+  }
+}

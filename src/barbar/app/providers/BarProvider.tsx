@@ -1,4 +1,4 @@
-import { loadWorking, type WorkingState } from '../../services/working-state';
+import { loadWorking, preloadSeedData, type WorkingState } from '../../services/working-state';
 import { useAsyncTask, type AsyncTaskRunner } from '../../ui/use-async-task';
 import {
   createContext,
@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { initialData, uid } from '../../domain/model';
+import { emptyBarData, uid } from '../../domain/bar-data';
 import type { Action, BarData, Command, Role, StaffData } from '../../domain/types';
 import type { Preferences } from '../../domain/identity/preferences';
 import { PresentationContext } from '../../presentation/presentation-context';
@@ -46,7 +46,8 @@ interface Store {
 const Context = createContext<Store | null>(null);
 export function BarProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [data, setData] = useState<BarData>(initialData);
+  // Screens render only after the first snapshot (`hasData`), so the placeholder needs no catalog.
+  const [data, setData] = useState<BarData>(emptyBarData);
   const [role, setRole] = useState<Role | null>(null);
   const [staffData, setStaffData] = useState<StaffData | null>(null);
   const [mode, setMode] = useState<Mode>('loading');
@@ -86,7 +87,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
       }
       setConnected(false);
       if (error instanceof ApiError && error.status === 401) {
-        setData(initialData());
+        setData(emptyBarData());
         setStaffData(null);
         setUser(null);
         setRole(null);
@@ -104,6 +105,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
     const initialize = async () => {
       try {
         const auth = await api('/api/barbar/auth');
+        if (auth.authenticated && auth.role === 'barbar') preloadSeedData();
         if (active) {
           setUser(auth.user || null);
           setRole(auth.role || null);
@@ -111,7 +113,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         if (active) {
-          setData(initialData());
+          setData(emptyBarData());
           setStaffData(null);
           setUser(null);
           setRole(null);
@@ -184,7 +186,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
             return { id };
           } catch (error) {
             if (error instanceof ApiError && error.status === 401) {
-              setData(initialData());
+              setData(emptyBarData());
               setStaffData(null);
               setUser(null);
               setRole(null);
@@ -214,9 +216,10 @@ export function BarProvider({ children }: { children: ReactNode }) {
           'Входим…',
         );
         if (!auth) return;
+        if (auth.role === 'barbar') preloadSeedData();
         clearSessionFilters();
         ++sequence.current;
-        setData(initialData());
+        setData(emptyBarData());
         setHasData(false);
         setStaffData(null);
         setUser(auth.user || null);
@@ -243,7 +246,7 @@ export function BarProvider({ children }: { children: ReactNode }) {
         }
         clearSessionFilters();
         ++sequence.current;
-        setData(initialData());
+        setData(emptyBarData());
         setStaffData(null);
         setUser(null);
         setRole(null);

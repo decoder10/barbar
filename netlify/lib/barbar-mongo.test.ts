@@ -90,7 +90,8 @@ describe.skipIf(!uri)('MongoDB transactions and migration (isolated test databas
     // Simulate an older database that has not completed the versioned index migration.
     await db.collection('appMigrations').deleteMany({});
     const neverImport = vi.fn(async () => initialData());
-    const reopened = mongoRepository(client, db, neverImport);
+    // A new Db handle is a new Functions instance: it reads the migration markers again.
+    const reopened = mongoRepository(client, client.db(db.databaseName), neverImport);
     expect(await reopened.readRevision!()).toBe(current.revision);
     expect((await db.collection('sales').indexes()).some((i) => i.name === '_order_1')).toBe(true);
     expect((await reopened.read()).data).toEqual(current.data);
