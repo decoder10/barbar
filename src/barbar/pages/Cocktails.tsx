@@ -87,11 +87,7 @@ export default function Cocktails() {
   );
   return (
     <>
-      <PageHeading
-        eyebrow="ИСКУССТВО В КАЖДОЙ ПОРЦИИ"
-        title={t('Меню и рецепты')}
-        description="Ваши рецепты, точные пропорции и цены, в которых всё учтено."
-      >
+      <PageHeading title={t('Меню и рецепты')}>
         {!compact && <ExportButton name="cocktails.json" value={data.cocktails} />}
         {!compact && (
           <button className="button secondary" onClick={() => setQr(true)}>

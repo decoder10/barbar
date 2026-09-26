@@ -125,11 +125,7 @@ export default function Inventory() {
   const unitOf = (id: string) => data.alcohol.find((a) => a.id === id)?.unit;
   return (
     <>
-      <PageHeading
-        eyebrow="ВСЁ НА СВОИХ ПОЛКАХ"
-        title={t('Склад напитков')}
-        description="Закупки складываются. Продажи списываются. Остатки всегда перед глазами."
-      >
+      <PageHeading title={t('Склад напитков')}>
         {compact ? (
           <>
             <button className="button primary" onClick={() => setPurchase('')}>
@@ -169,6 +165,11 @@ export default function Inventory() {
           </>
         ) : (
           <>
+            {/* First: the daily action stays in view when the one-line row scrolls. */}
+            <button className="button primary" onClick={() => setPurchase('')}>
+              <PackagePlus size={17} />
+              {t(' Добавить закупку')}
+            </button>
             <button
               className="button secondary"
               onClick={() => {
@@ -213,10 +214,6 @@ export default function Inventory() {
             >
               <Plus size={17} />
               {t(' Товар целиком')}
-            </button>
-            <button className="button primary" onClick={() => setPurchase('')}>
-              <PackagePlus size={17} />
-              {t(' Добавить закупку')}
             </button>
           </>
         )}

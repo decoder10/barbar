@@ -21,8 +21,8 @@
   padding: 10px 15px;
 }
 
-/* Catalog toolbars (sales, warehouse, phone recipes): sort and search share one row at the right edge,
-   category tabs take the full row beneath. */
+/* Catalog toolbars (sales, warehouse, phone recipes): sort and search share one row at the right edge
+   and never wrap (the sort control shrinks instead), category tabs take the full row beneath. */
 .catalog-tools {
   display: flex;
   flex-direction: column;
@@ -34,20 +34,46 @@
 
 .catalog-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+  min-width: 0;
 }
 
 .catalog-actions .search {
   flex: 0 1 260px;
+  min-width: 140px;
   max-width: 100%;
   min-height: 42px;
 }
 
 .catalog-actions .segmented {
   align-self: center;
+  flex-shrink: 0;
+}
+
+/* The select keeps its aria-label; the visible caption only costs width in the one-line row.
+   Inside the phone filter sheet the caption stays. */
+.catalog-actions > .catalog-sort {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.catalog-actions > .catalog-sort > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.catalog-actions > .catalog-sort select {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .catalog-tools .menu-categories {

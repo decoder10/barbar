@@ -8,15 +8,14 @@
   padding-inline: clamp(16px, 2.4vw, 44px);
 }
 
-.page-heading,
 .catalog-tools,
 .section-title {
   flex-wrap: wrap;
   gap: 16px;
 }
 
-.heading-actions {
-  flex-wrap: wrap;
+.page-heading {
+  gap: 16px;
 }
 
 .drink-grid,

@@ -47,11 +47,7 @@ export default function Users() {
   }
   return (
     <>
-      <PageHeading
-        eyebrow="КОМАНДА BARBAR"
-        title={t('Пользователи')}
-        description="Личные аккаунты и доступ вашей команды."
-      >
+      <PageHeading title={t('Пользователи')}>
         <button
           className="button primary"
           onClick={() => {

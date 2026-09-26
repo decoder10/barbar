@@ -37,18 +37,8 @@
   .topbar {
     padding-inline: 25px;
   }
-  .page-heading {
-    align-items: start;
-  }
   .page-heading h1 {
     font-size: 25px;
-  }
-  .page-heading p {
-    max-width: 430px;
-  }
-  .heading-actions {
-    max-width: 250px;
-    justify-content: end;
   }
   .heading-actions .button {
     font-size: 10px;
@@ -116,14 +106,6 @@
 }
 
 @include below(1000px) {
-  .page-heading {
-    flex-direction: column;
-    gap: 16px;
-  }
-  .heading-actions {
-    max-width: 100%;
-    justify-content: start;
-  }
   .hero h2 {
     font-size: 28px;
   }
@@ -315,13 +297,6 @@
   .page-heading h1 {
     font-size: 28px;
     max-width: 460px;
-  }
-  .page-heading .eyebrow {
-    font-size: 7px;
-  }
-  .page-heading p {
-    font-size: 10px;
-    margin-top: 8px;
   }
   .hero {
     min-height: 236px;
@@ -534,9 +509,6 @@
 @include below(480px) {
   .page-heading h1 {
     font-size: 25px;
-  }
-  .page-heading p {
-    font-size: 9px;
   }
   .topbar {
     padding-inline: 10px;

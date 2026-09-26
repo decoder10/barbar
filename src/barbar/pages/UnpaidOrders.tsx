@@ -35,11 +35,7 @@ export default function UnpaidOrders() {
   const tableById = byId(tables);
   return (
     <>
-      <PageHeading
-        eyebrow="ЗАЛ"
-        title="Незакрытые счета"
-        description="Счета прошлых смен, которые ещё не оплачены. Откройте счёт, чтобы принять оплату или отменить его."
-      >
+      <PageHeading title="Незакрытые счета">
         <Link className="button secondary" to="/">
           <ArrowLeft size={16} />
           {t('Столы')}

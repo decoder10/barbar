@@ -1,14 +1,16 @@
+/* One row: the title on the left, every action on the right. Actions never wrap;
+   when they do not fit, the row scrolls sideways and the title keeps its place. */
 .page-heading {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 20px;
   margin-bottom: 25px;
 }
 
-.page-heading .eyebrow {
-  font-size: 8px;
-  margin-bottom: 9px;
+.page-heading > div:first-child {
+  flex-shrink: 0;
+  max-width: 55%;
 }
 
 .page-heading h1 {
@@ -19,18 +21,31 @@
   font-weight: 500;
 }
 
-.page-heading p {
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 10px;
-  line-height: 1.7;
-}
-
 .heading-actions {
   display: flex;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
   gap: 9px;
   align-items: center;
-  flex-shrink: 0;
+  min-width: 0;
+  margin-left: auto;
+}
+
+/* Phones keep their own heading row in `_compact.scss`. */
+@media (min-width: 761px) {
+  .heading-actions {
+    overflow-x: auto;
+    /* Room for focus rings, which the scrolling box would otherwise clip. */
+    padding: 3px;
+    margin: -3px -3px -3px auto;
+    /* Visible but slim, so a mouse can reach actions that scrolled out of view. */
+    scrollbar-width: thin;
+  }
+
+  .heading-actions > * {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 }
 
 .date-control {

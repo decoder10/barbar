@@ -79,11 +79,7 @@ export default function Backups() {
     return loadError ? <p role="alert">{t(loadError)}</p> : <LoadingStatus label="Загружаем полную копию…" />;
   return (
     <>
-      <PageHeading
-        eyebrow="ВАШИ ДАННЫЕ В ВАШИХ РУКАХ"
-        title={t('Данные и резервные копии')}
-        description="Скачивайте отдельные справочники или полный архив вашего бара."
-      />
+      <PageHeading title={t('Данные и резервные копии')} />
       <section className="panel">
         <div className="section-title">
           <div>

@@ -299,7 +299,6 @@ export function SalesCatalog({
         <div className="section-title">
           <div>
             <h2>{t('Что наливаем?')}</h2>
-            <p>{t('Касание открывает быстрый заказ без стола: несколько позиций и оплата')}</p>
           </div>
         </div>
       )}

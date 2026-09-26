@@ -104,11 +104,7 @@ export default function Reports() {
   }
   return (
     <>
-      <PageHeading
-        eyebrow="ЦИФРЫ СО ВКУСОМ"
-        title={t('Отчёты и аналитика')}
-        description="Посмотрите, что любят гости и сколько приносит каждый напиток."
-      >
+      <PageHeading title={t('Отчёты и аналитика')}>
         <button className="button secondary" onClick={exportCsv} disabled={!!data.opening && !remote.report}>
           <ArrowDownToLine size={17} />
           {t(' Скачать CSV')}

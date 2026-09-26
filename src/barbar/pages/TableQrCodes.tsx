@@ -24,11 +24,7 @@ export default function TableQrCodes() {
   }, []);
   return (
     <>
-      <PageHeading
-        eyebrow="ЗАЛ"
-        title="QR-коды столов"
-        description="Гость сканирует код стола, открывает меню и отправляет заявку. Коды постоянные, их не нужно перепечатывать после изменения цен."
-      >
+      <PageHeading title="QR-коды столов">
         <Link className="button secondary" to="/">
           <ArrowLeft size={16} />
           {t('Столы')}

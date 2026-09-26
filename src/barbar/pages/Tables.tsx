@@ -145,11 +145,7 @@ export default function Tables() {
   return (
     <>
       <div className="tables-heading">
-        <PageHeading
-          eyebrow="ЗАЛ"
-          title="Столы"
-          description="Откройте стол, добавьте напитки и примите оплату."
-        >
+        <PageHeading title="Столы">
           <SalesFullscreen home />
           <ShiftCloseButton />
           {role === 'admin' && (

@@ -16,23 +16,11 @@ export function Brand({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function PageHeading({
-  eyebrow,
-  title,
-  description,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  children?: ReactNode;
-}) {
+export function PageHeading({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className="page-heading">
       <div>
-        <div className="eyebrow">{t(eyebrow)}</div>
         <h1>{t(title)}</h1>
-        <p>{t(description)}</p>
       </div>
       <div className="heading-actions">{t(children)}</div>
     </div>

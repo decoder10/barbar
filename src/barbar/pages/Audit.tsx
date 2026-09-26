@@ -69,11 +69,7 @@ export default function Audit() {
   }, [actor, action, cursor]);
   return (
     <>
-      <PageHeading
-        eyebrow="КОНТРОЛЬ ИЗМЕНЕНИЙ"
-        title={t('Журнал действий')}
-        description="Кто и когда изменил данные. Журнал ведётся с момента установки этой версии."
-      />
+      <PageHeading title={t('Журнал действий')} />
       <section className="panel">
         <div className="form-grid">
           <Field label="Сотрудник">

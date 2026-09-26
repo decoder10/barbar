@@ -64,11 +64,7 @@ export default function StaffInventory() {
   );
   return (
     <>
-      <PageHeading
-        eyebrow="ВСЁ НА СВОИХ ПОЛКАХ"
-        title={t('Остатки на складе')}
-        description="Проверяйте наличие напитков и ингредиентов. Для пополнения обратитесь к администратору."
-      />
+      <PageHeading title={t('Остатки на складе')} />
       <section className="metrics">
         <Metric
           label="Напитков в каталоге"

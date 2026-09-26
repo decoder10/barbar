@@ -78,11 +78,7 @@ export default function StaffRecipes() {
   const name = (id: string) => staffData.ingredients.find((a) => a.id === id)?.name;
   return (
     <>
-      <PageHeading
-        eyebrow="ИСКУССТВО В КАЖДОЙ ПОРЦИИ"
-        title={t('Меню и рецепты')}
-        description="Добавляйте ингредиенты, указывайте количество на порцию и способ приготовления."
-      >
+      <PageHeading title={t('Меню и рецепты')}>
         <button className="button primary" onClick={() => setSelected('new')}>
           <Plus size={17} />
           {t(' Добавить позицию')}

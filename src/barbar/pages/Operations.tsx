@@ -43,11 +43,7 @@ export default function Operations() {
   const statusLabel = { expired: 'Просрочена', soon: 'Скоро истекает', ok: 'В норме', none: 'Без срока' };
   return (
     <>
-      <PageHeading
-        eyebrow="УЧЁТ БАРА"
-        title={t('Операции склада и расходы')}
-        description="Пересчёт остатков, списания, выпуск заготовок и текущие расходы."
-      />
+      <PageHeading title={t('Операции склада и расходы')} />
       <div className="operation-toolbar">
         {(Object.keys(labels) as OperationKind[]).map((kind) => (
           <button
