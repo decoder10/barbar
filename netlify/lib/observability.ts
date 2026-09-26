@@ -19,3 +19,14 @@ export function observe(route: string, request: Request, response: Response, sta
   );
   return response;
 }
+
+/**
+ * Structured error line for Netlify function logs: the message and the top of the stack only. Never pass
+ * request bodies, cookies or user data here.
+ */
+export function logError(route: string, stage: string, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const stack =
+    error instanceof Error && error.stack ? error.stack.split('\n').slice(0, 6).join('\n') : undefined;
+  console.error(JSON.stringify({ metric: 'barbar.error', route, stage, message, stack }));
+}

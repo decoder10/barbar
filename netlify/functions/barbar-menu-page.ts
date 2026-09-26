@@ -1,7 +1,4 @@
-import type { DeployInfo } from '../lib/barbar-mongo';
-import { handleGuestMenuPage } from '../lib/guest-menu-page';
-import { guestRepository } from '../lib/guest-repository';
-import { observe } from '../lib/observability';
+import { guestMenuPageFunction, type GuestMenuRenderer } from '../lib/guest-menu-entry';
 
 // The built page is a static file of this deploy; it is read once per function instance.
 let template: { deploy: string; html: Promise<string> } | undefined;
@@ -20,34 +17,18 @@ function builtPage(request: Request, deploy: string) {
   return template.html;
 }
 
-export default async (request: Request, context: { deploy: DeployInfo }) => {
-  const started = performance.now();
-  const deploy = context?.deploy?.id || 'unknown';
-  try {
-    const response = await handleGuestMenuPage(
-      request,
-      guestRepository(context.deploy),
-      () => builtPage(request, deploy),
-      deploy,
-    );
-    return observe('/menu', request, response, started);
-  } catch {
-    // The static page renders the menu in the browser, as before server rendering. The marker stops a
-    // loop should `/menu.html` ever be redirected back here.
-    const url = new URL(request.url);
-    if (url.searchParams.has('static'))
-      return new Response('Меню временно недоступно. Обновите страницу через минуту.', {
-        status: 503,
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'no-store',
-          'Retry-After': '60',
-        },
-      });
-    url.searchParams.set('static', '1');
-    return Response.redirect(new URL(`/menu.html${url.search}`, url), 302);
-  }
-};
+// React, the guest UI and the database driver load inside the request, so a failure while initialising
+// them is caught and logged instead of failing the function before it can answer.
+async function loadRenderer(): Promise<GuestMenuRenderer> {
+  const [{ handleGuestMenuPage }, { guestRepository }] = await Promise.all([
+    import('../lib/guest-menu-page'),
+    import('../lib/guest-repository'),
+  ]);
+  return (request, context, page, deploy) =>
+    handleGuestMenuPage(request, guestRepository(context.deploy), page, deploy);
+}
+
+export default guestMenuPageFunction(loadRenderer, builtPage);
 export const config = {
   path: ['/menu', '/menu/'],
   rateLimit: { windowLimit: 120, windowSize: 60, aggregateBy: ['ip', 'domain'] },
