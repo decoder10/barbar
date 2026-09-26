@@ -140,7 +140,7 @@
 
 .sales-layout .drink-grid {
   gap: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(300px, calc((100% - 80px) / 5))), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(225px, calc((100% - 80px) / 5))), 1fr));
 }
 
 .sales-layout .card-image {

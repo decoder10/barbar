@@ -268,7 +268,7 @@ const paidBefore = (role: Role) => (data: BarData) => {
   );
 };
 
-test('owner marks personal and bar favorites and finds them under the Favorites tab', async ({ page }) => {
+test('owner marks a personal favorite and finds it under the Favorites tab', async ({ page }) => {
   const ledger = await workspace(page, 'admin');
   await page.getByRole('button', { name: /^1\s*Свободен/ }).click();
   await expect(page.getByRole('heading', { name: 'Стол 1', level: 1 })).toBeVisible();
@@ -279,23 +279,15 @@ test('owner marks personal and bar favorites and finds them under the Favorites 
     'aria-pressed',
     'true',
   );
-  const other = page.locator('.card-wrap').filter({ hasNotText: 'Gin tonic Beefeater' }).first();
-  const otherName = (await other.locator('h3').innerText()).trim();
-  await other.getByRole('button', { name: 'Добавить в избранное заведения' }).click();
-  await expect(other.getByRole('button', { name: 'Убрать из избранного заведения' })).toBeVisible();
-  expect(
-    ledger()
-      .cocktails.filter((c) => c.favorite)
-      .map((c) => c.name),
-  ).toEqual([otherName]);
+  await expect(page.getByRole('button', { name: /избранное заведения/ })).toHaveCount(0);
+  expect(ledger().cocktails.filter((c) => c.favorite)).toEqual([]);
   await page.getByRole('button', { name: 'Избранное', exact: true }).click();
-  await expect(page.locator('.drink-grid .card-wrap')).toHaveCount(2);
+  await expect(page.locator('.drink-grid .card-wrap')).toHaveCount(1);
   await expect(page.locator('.drink-grid')).toContainText('Gin tonic Beefeater');
-  await expect(page.locator('.drink-grid')).toContainText(otherName);
   // The star is a sibling of the card button, not inside it.
   expect(await page.locator('.drink-card button').count()).toBe(0);
   await page.getByRole('button', { name: 'Убрать из моего избранного' }).click();
-  await expect(page.locator('.drink-grid .card-wrap')).toHaveCount(1);
+  await expect(page.locator('.drink-grid .card-wrap')).toHaveCount(0);
 });
 
 test("worker keeps a personal favorite but cannot pin for the bar, and repeats a set with today's prices", async ({

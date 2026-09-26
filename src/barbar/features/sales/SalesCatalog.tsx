@@ -42,7 +42,7 @@ export function SalesCatalog({
   heading?: boolean;
   onSelect: (selection: CatalogSelection) => void;
 }) {
-  const { data, staffData, role, user, updateFavorites, run, busy, notify } = useBar();
+  const { data, staffData, role, user, updateFavorites, busy, notify } = useBar();
   const compact = useCompact();
   const inventory = useInventoryCalculations(data);
   const worker = role === 'barbar';
@@ -222,16 +222,8 @@ export function SalesCatalog({
         <FavoriteButtons
           name={name}
           personal={personal.has(key)}
-          bar={bar.has(key)}
-          canPinBar={!worker}
           busy={busy}
           onPersonal={() => togglePersonal(key)}
-          onBar={() =>
-            void run(
-              { type: 'setFavorite', kind, productId: id, favorite: !bar.has(key) },
-              bar.has(key) ? 'Убрано из избранного заведения.' : 'Добавлено в избранное заведения.',
-            )
-          }
         />
       </div>
     );
