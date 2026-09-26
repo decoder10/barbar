@@ -20,3 +20,4 @@ playwright-report/
 !.env.backup.example
 !.env.production-db.example
 !/.tandem/
+netlify/generated/

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "dev:production-db": "BARBAR_LOCAL_DATABASE=production vite --host localhost --port 4002",
-    "build": "npm run lint && npm run photos:manifest && tsc -b && vite build",
+    "build": "npm run lint && npm run photos:manifest && tsc -b && npm run build:menu-renderer && vite build",
+    "build:menu-renderer": "node scripts/build-menu-renderer.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "typecheck": "tsc -b",

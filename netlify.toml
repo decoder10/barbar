@@ -17,6 +17,10 @@
 
 # `/menu` is rendered by `netlify/functions/barbar-menu-page.ts` (prices in the HTML); the built
 # `menu.html` stays its template and fallback.
+# Its renderer is pre-built by `npm run build` (scripts/build-menu-renderer.mjs) and loaded at request
+# time, so a renderer failure falls back to `menu.html` instead of failing the function.
+[functions."barbar-menu-page"]
+  included_files = ["netlify/generated/guest-menu-renderer.mjs"]
 
 [[redirects]]
   from = "/*"

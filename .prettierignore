@@ -6,3 +6,4 @@ package-lock.json
 # Generated compact manifest and its header-logo entry
 src/barbar/features/catalog/media/photo-manifest.json
 src/barbar/features/catalog/media/brand-logo.json
+netlify/generated

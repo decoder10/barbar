@@ -2,7 +2,7 @@
 
 Статус: публикуется в `origin`, ветка `barbar`, production `https://barbar-cafe.netlify.app` (Netlify собирает по push). Результат проверки на проде после публикации указывается в отчёте о выпуске.
 
-База выпуска: `a633063`. В коммит входят только файлы функции `/menu`, её тесты и этот документ. Незакоммиченные правки интерфейса в рабочей копии (`src/barbar/pages/*`, `src/barbar/styles/*`, `src/barbar/ui/layout.tsx`), `tests/zz-tmp-heading.spec.ts`, `.env*`, локальные данные и артефакты тестов в коммит не входят.
+База выпуска: `a633063`; коммиты `fea40fb`, `6606afb` и третий — изолированный рендер. В коммиты входят только файлы функции `/menu`, скрипт сборки рендера, настройки сборки, тесты и документы. Незакоммиченные правки интерфейса в рабочей копии (`src/barbar/pages/*`, `src/barbar/styles/*`, `src/barbar/ui/layout.tsx`), `tests/zz-tmp-heading.spec.ts`, `.env*`, локальные данные и артефакты тестов в коммит не входят.
 
 ## Что было не так
 
@@ -12,25 +12,28 @@
 
 ## Что изменилось
 
-- `netlify/functions/barbar-menu-page.ts`: на верхнем уровне только лёгкий модуль `netlify/lib/guest-menu-entry.ts`. Рендер (`../lib/guest-menu-page` — React, `react-dom/server`, `GuestMenu`) и репозиторий каталога загружаются через `import()` внутри `try` при запросе. Кеш шаблона `builtPage`, `config` (пути `/menu`, `/menu/`, `rateLimit`) и `observe` сохранены.
+- `fea40fb`: `netlify/functions/barbar-menu-page.ts` загружал рендер через `import()` внутри `try`. Этого оказалось недостаточно: для v2-функций Netlify всегда использует сборщик `nft`, который встраивает локальный модуль из `import()` в тот же файл, а внешние пакеты (`react`, `react/jsx-runtime`, `react-dom/server`, `lucide-react`) поднимает в статические `import` в начало бандла. Сбой их загрузки по-прежнему происходил до обработчика.
+- Изоляция рендера (третий коммит): `scripts/build-menu-renderer.mjs` (`npm run build:menu-renderer`, входит в `npm run build` перед `vite build`) собирает `netlify/lib/guest-menu-page.tsx` вместе с React, `react-dom/server`, `lucide-react`, гостевым интерфейсом и словарями в один ESM-файл `netlify/generated/guest-menu-renderer.mjs` (esbuild, `platform=node`, `node22`, `NODE_ENV=production`, ~2,3 МБ; каталог в `.gitignore`, ESLint и Prettier его пропускают). Файл поставляется с функцией через `[functions."barbar-menu-page"] included_files` в `netlify.toml` и загружается при запросе по вычисляемому адресу `new URL('../generated/guest-menu-renderer.mjs', import.meta.url)` — сборщик не встраивает его и не поднимает его пакеты. Единственный пакет на верхнем уровне функции — `mongodb` (через `guest-repository`, как у работающей `/api/menu`). Неудачная загрузка не кешируется, следующая попытка — на следующем запросе.
 - Не `GET`/`HEAD` → 405 сразу, без загрузки рендера. После публикации `POST /menu` = 405 показывает, что функция на Netlify запускается.
 - Ошибка загрузки или рендера пишется в лог функции одной строкой `{"metric":"barbar.error","route":"/menu","stage":"load"|"render"|"template","message":…,"stack":…}` (до 6 строк стека; без тела запроса, cookie и данных гостя) — `logError` в `netlify/lib/observability.ts`.
 - Резервный ответ: собранный `menu.html` со статусом 200, `Cache-Control: no-store` и заголовками сайта (меню строится в браузере, как до серверного рендера) — гость получает страницу одним запросом. Если сам шаблон недоступен — прежний 302 на `/menu.html?static=1`; при уже заданном `static` — 503 с `Retry-After: 60` (защита от цикла сохранена). Все резервные ответы, которые может увидеть гость, — `text/html; charset=utf-8`: 503 теперь короткая HTML-страница («Меню временно недоступно. Обновите страницу через минуту.», `viewport`, `no-store`), а не `text/plain`, чтобы телефон не скачивал её как файл. `text/plain` остался только у 405 (браузер гостя не отправляет `POST` на `/menu`).
 - Заголовки сайта вынесены в `netlify/lib/site-headers.ts` (резервный ответ не загружает React); `guest-menu-page.tsx` реэкспортирует `siteHeaders`, тест сверки с `netlify.toml` не менялся.
-- `netlify.toml`, CSP, кеширование `/api/menu` и `/menu` на CDN (`guest-menu-handler.ts`) и гостевой интерфейс не менялись. Миграций нет.
+- В `netlify.toml` добавлен только `included_files` для `barbar-menu-page`; заголовки, CSP, кеширование `/api/menu` и `/menu` на CDN (`guest-menu-handler.ts`) и гостевой интерфейс не менялись. Миграций нет.
 
 ## Проверки до публикации
 
 - `npm run check` (ESLint, `tsc -b`, Vitest): прошла — 52 файла, 284 теста пройдено, 61 пропущен (наборы MongoDB без `test:db`).
 - Новый `netlify/lib/guest-menu-entry.test.ts`: успешный рендер проходит без изменений; при ошибке загрузки или рендера — 200 с `menu.html`, `no-store`, заголовки сайта, одна строка `barbar.error` без cookie; `HEAD` без тела; без шаблона — 302 с `static=1`, повторно — 503; `POST` — 405 без загрузки рендера; все резервные ответы (200 с шаблоном, 503, `HEAD`) имеют `Content-Type: text/html; charset=utf-8`. Время не подменяется.
 - `npm run build`: прошла. Ассеты гостевой страницы не изменились (`assets/menu-D9WEXUyK.js`, как на проде), поэтому публикация подтверждается поведением `/menu`, а не хешами.
-- Бандл новой функции через `@netlify/zip-it-and-ship-it` (Netlify выбирает `nft`, runtime API v2, маршруты `/menu`, `/menu/`) без `BARBAR_MONGODB_URI`: `GET` — 200 с шаблоном и строкой `barbar.error` (`stage: render`), `POST` — 405.
+- `npm run build` создаёт `netlify/generated/guest-menu-renderer.mjs: 2262.1 kB`; `dist` не меняется.
+- Бандл функций через `@netlify/zip-it-and-ship-it` (как на Netlify: `nft`, runtime API v2, маршруты `/menu`, `/menu/`, с `included_files`): в `netlify/functions/barbar-menu-page.mjs` из пакетов на верхнем уровне только `import { MongoClient } from "mongodb"`, рендер лежит в `netlify/generated/guest-menu-renderer.mjs` рядом. В Docker `node:22` (`NODE_ENV=production`): без `BARBAR_MONGODB_URI` — `GET` 200 `text/html` с шаблоном, `no-store` и `barbar.error` (`stage: render`), `POST` — 405; с удалённым файлом рендера — `GET` 200 с шаблоном и `barbar.error` (`stage: load`, `ERR_MODULE_NOT_FOUND`), `POST` — 405. Сам рендер из поставляемого файла с каталогом по умолчанию отдаёт 200, ETag и встроенный `application/json` (серверная разметка).
+- `netlify dev --offline` (отдельная копия без `.env`): `GET /menu` — 200 `text/html`, `no-store` (рендер загрузился, без базы — резервная страница, `stage: render`), `GET /menu?static=1` — 200, `POST /menu` — 405.
 - Не запускались: `test:db`, `test:backup`, `test:scheduled-backup`, e2e — изменение не касается базы, резервных копий и интерфейса.
 
 Состояние прода перед push (26.09.2026): `/` — 200, `/menu.html` — 200, `/api/menu` — 200, `GET /menu` и `POST /menu` — **500**.
 
 ## Ограничения и что сделать владельцу
 
-- Первопричина 500 не установлена. Сборщик Netlify (`nft`) оставляет пакеты `react`, `react-dom/server`, `lucide-react`, `mongodb` внешними и подключает их статически при загрузке модуля даже при `import()` внутри обработчика. Если сбой именно в разрешении этих пакетов на Netlify, `/menu` может по-прежнему отдавать 500 — тогда `POST /menu` тоже не будет давать 405.
+- Первопричина 500 не установлена (логов Netlify отсюда нет). После изоляции сбой в React, `react-dom/server`, `lucide-react` или гостевом интерфейсе больше не роняет функцию, а пишется в лог. Если прод всё равно отвечает 500 и на `POST /menu`, значит, сбой в оставшейся части (`mongodb`, `guest-repository`, загрузчик Netlify) — нужен лог функции.
 - Если после публикации `/menu` отдаёт резервную страницу (200, `Cache-Control: no-store`, без `<script type="application/json" id="guest-menu-data">`), серверный рендер по-прежнему не работает, но гости видят меню. Причину нужно взять из лога: Netlify → сайт → Logs → Functions → `barbar-menu-page`, строка `barbar.error` (поля `stage`, `message`, `stack`), и по ней завершить исправление.
-- После push первой части (`fea40fb`) прод 10 минут (10:48–10:58) отвечал 500 на `GET` и `POST /menu`. Опубликован ли коммит, отсюда не видно: статусов Netlify в GitHub нет, а ассеты не меняются. Проверить в панели Netlify → Deploys, что сборка прошла и опубликована.
+- После push `fea40fb` и `6606afb` прод отвечал 500 на `GET` и `POST /menu` (10:48–11:09). Опубликован ли коммит, отсюда не видно: статусов Netlify в GitHub нет, а ассеты не меняются. Проверить в панели Netlify → Deploys, что сборка прошла и опубликована.

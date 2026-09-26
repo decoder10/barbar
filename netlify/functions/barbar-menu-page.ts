@@ -1,4 +1,5 @@
 import { guestMenuPageFunction, type GuestMenuRenderer } from '../lib/guest-menu-entry';
+import { guestRepository } from '../lib/guest-repository';
 
 // The built page is a static file of this deploy; it is read once per function instance.
 let template: { deploy: string; html: Promise<string> } | undefined;
@@ -17,13 +18,20 @@ function builtPage(request: Request, deploy: string) {
   return template.html;
 }
 
-// React, the guest UI and the database driver load inside the request, so a failure while initialising
-// them is caught and logged instead of failing the function before it can answer.
+// The renderer (React, react-dom/server and the guest UI) is pre-built by `scripts/build-menu-renderer.mjs`
+// into one self-contained file shipped next to this function (`included_files` in netlify.toml). A
+// non-literal specifier keeps this a real runtime import: the bundler neither inlines the renderer nor
+// hoists its packages to the top of this function, so a failure to load it is caught and logged by
+// `guestMenuPageFunction` and the guest still gets the built `menu.html`.
+type RendererModule = typeof import('../lib/guest-menu-page');
+const rendererUrl = () => new URL('../generated/guest-menu-renderer.mjs', import.meta.url).href;
+let renderer: Promise<RendererModule> | undefined;
 async function loadRenderer(): Promise<GuestMenuRenderer> {
-  const [{ handleGuestMenuPage }, { guestRepository }] = await Promise.all([
-    import('../lib/guest-menu-page'),
-    import('../lib/guest-repository'),
-  ]);
+  const loading = (renderer ??= import(/* @vite-ignore */ rendererUrl()) as Promise<RendererModule>);
+  loading.catch(() => {
+    if (renderer === loading) renderer = undefined;
+  });
+  const { handleGuestMenuPage } = await loading;
   return (request, context, page, deploy) =>
     handleGuestMenuPage(request, guestRepository(context.deploy), page, deploy);
 }
